@@ -1,0 +1,21 @@
+DATABASE northwind
+
+SCREEN
+{
+┌───────────────────────────── Territories ────────────────────────────┐
+│ Territory ID:   [territoryid        ]                                │
+│ Description:    [territorydescription]                               │
+│ Region ID:      [regionid][regiondescription       ]                 │
+└──────────────────────────────────────────────────────────────────────┘
+}
+END
+ATTRIBUTES
+territoryid = FORMONLY.territoryid, TITLE="Territory ID";
+territorydescription = FORMONLY.territorydescription, TITLE="Description";
+regionid = FORMONLY.regionid TYPE SMALLINT, TITLE="Region ID";
+regiondescription = FORMONLY.regiondescription, TITLE="Region Description", NOENTRY;
+END
+INSTRUCTIONS
+SCREEN RECORD s_territories(formonly.territoryid, formonly.territorydescription, 
+                            formonly.regionid, formonly.regiondescription);
+END

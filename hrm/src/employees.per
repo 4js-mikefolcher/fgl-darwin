@@ -1,0 +1,47 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── Employees ───────────────────────────────┐
+│ Employee ID : [employeeid]   Last Name : [lastname                    ]│
+│ First Name  : [firstname]    Title :     [title                       ]│
+│ Courtesy    : [titleofcourtesy]                                        │
+│ Birth Date  : [birthdate    ] Hire Date : [hiredate    ]               │
+│ Address     : [address                                 ]               │
+│ City        : [city         ] Region : [region         ]               │
+│ Postal Code : [postalcode]    Country: [country        ]               │
+│ Home Phone  : [homephone    ] Ext: [extension]                         │
+│ Reports To  : [reportsto    ] [fullname                ]               │
+│ Photo Path  : [photopath                                              ]│
+│ Notes :                                                                │
+│ [notes                                                                ]│
+└──────────────────────────────────────────────────────────────────────--┘
+}
+
+ATTRIBUTES
+employeeid = formonly.employeeid TYPE  INTEGER;
+lastname = formonly.lastname;
+firstname = formonly.firstname;
+title = formonly.title;
+titleofcourtesy = formonly.titleofcourtesy;
+birthdate = formonly.birthdate;
+hiredate = formonly.hiredate;
+address = formonly.address;
+city = formonly.city;
+region = formonly.region;
+postalcode = formonly.postalcode;
+country = formonly.country;
+homephone = formonly.homephone;
+extension = formonly.extension;
+reportsto = formonly.reportsto;
+fullname = formonly.fullname, NOENTRY;
+photopath = formonly.photopath;
+notes = formonly.notes;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_employees(formonly.employeeid THRU formonly.notes);
+
+END --INSTRUCTIONS

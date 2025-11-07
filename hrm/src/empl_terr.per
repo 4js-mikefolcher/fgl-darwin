@@ -1,0 +1,42 @@
+DATABASE northwind
+
+SCREEN
+{
+["Employee ID"]["Employee Name     "]["Territory ID"]["Territory Name    "]["Region Name      "]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+}
+
+END --SCREEN
+
+TABLES
+   employees
+   territories
+   region
+   employeeterritories
+
+END --TABLES
+
+ATTRIBUTES
+
+   employeeid = employeeterritories.employeeid;
+   fullname = formonly.fullname, NOENTRY;
+   territoryid = employeeterritories.territoryid;
+   territorydescription = territories.territorydescription, NOENTRY;
+   regiondescription = region.regiondescription, NOENTRY;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD sa_empl_terr[10](employeeterritories.employeeid THRU region.regiondescription);
+
+END --INSTRUCTIONS

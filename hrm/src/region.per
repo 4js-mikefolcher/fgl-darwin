@@ -1,0 +1,17 @@
+DATABASE northwind
+
+SCREEN
+{
+┌──────────────────────────── Regions ─────────────────────────────┐
+│ [regionid] [regiondescription]                                   │
+└──────────────────────────────────────────────────────────────────┘
+}
+END
+ATTRIBUTES
+regionid = FORMONLY.regionid TYPE INTEGER, TITLE="Region ID";
+regiondescription = FORMONLY.regiondescription, TITLE="Description";
+END
+INSTRUCTIONS
+SCREEN RECORD s_region(formonly.regionid, formonly.regiondescription);
+END
+
