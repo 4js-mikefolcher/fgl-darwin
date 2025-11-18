@@ -26,7 +26,6 @@
 .DS_Store
 *.4pdb
 .gst
-*.sch
 
 #Compilation Files
 *.err
