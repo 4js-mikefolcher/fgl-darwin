@@ -60,12 +60,6 @@ FUNCTION submenu_empl_terr()
                  LET currentIdx = arr_size
               END IF
               EXIT MENU
-          COMMAND "Edit" "Edit an existing territory"
-              CALL edit_empl_terr()
-              IF int_flag == FALSE THEN
-                 CALL refresh_empl_terr(currentIdx, "C")
-              END IF
-              EXIT MENU
           COMMAND "Delete" "Delete a territory"
               CALL delete_empl_terr()
               IF int_flag == FALSE THEN
@@ -231,58 +225,6 @@ FUNCTION add_empl_terr()
     
 END FUNCTION
 
-
--- =====================================================================
--- Function: edit_empl_terr
--- Purpose : Edit an existing territory record
--- =====================================================================
-FUNCTION edit_empl_terr()
-    DEFINE empl_terr_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-    DEFINE selected_employee_id LIKE employees.employeeid
-    DEFINE selected_fullname VARCHAR(32)
-    DEFINE selected_territory_id LIKE employees.employeeid
-    DEFINE selected_territory_desc LIKE territories.territorydescription
-
-    LET int_flag = FALSE
-    INPUT BY NAME curr_empl_terr.territorydescription, curr_empl_terr.regionid
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
-            ACCEPT INPUT
-        ON KEY (CONTROL-P)
-            LET int_flag = TRUE
-            EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(regionid) THEN
-               CALL region_lookup()
-                  RETURNING selected_region_id, selected_region_desc
-               IF selected_region_id > 0 THEN
-                  LET curr_empl_terr.regionid = selected_region_id
-                  LET curr_empl_terr.regiondescription = selected_region_desc
-               END IF
-            END IF
-        BEFORE FIELD regionid
-           MESSAGE "Use Cntrl-T to open lookup window"
-        AFTER INPUT
-            CALL validate_empl_terr("C")
-               RETURNING territories_valid, valid_msg
-            IF NOT territories_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Territory update canceled"
-       RETURN
-    END IF
-
-    CALL update_curr_empl_terr()
-    MESSAGE "Territory record updated"
-
-END FUNCTION
-
-
 -- =====================================================================
 -- Function: delete_empl_terr
 -- Purpose : Delete an existing territory record
@@ -327,24 +269,16 @@ END FUNCTION
 
 FUNCTION insert_curr_empl_terr()
 
-   INSERT INTO territories (territoryid, territorydescription, regionid) 
-      VALUES (curr_empl_terr.territoryid, curr_empl_terr.territorydescription, curr_empl_terr.regionid)
-
-END FUNCTION
-
-FUNCTION update_curr_empl_terr()
-
-   UPDATE territories
-      SET territorydescription = curr_empl_terr.territorydescription,
-          regionid = curr_empl_terr.regionid
-    WHERE territoryid = curr_empl_terr.territoryid
+   INSERT INTO employeeterritories (employeeid, territoryid) 
+      VALUES ($curr_empl_terr.employeeid, $curr_empl_terr.territoryid)
 
 END FUNCTION
 
 FUNCTION delete_curr_empl_terr()
 
-   DELETE FROM territories
-    WHERE territoryid = curr_empl_terr.territoryid
+   DELETE FROM employeeterritories
+      WHERE territoryid = $curr_empl_terr.territoryid
+      AND employeeid = $curr_empl_terr.employeeid
 
 END FUNCTION
 
@@ -385,29 +319,29 @@ END FUNCTION #refresh_empl_terr
 
 FUNCTION validate_empl_terr(mode)
    DEFINE mode CHAR(1)
-   DEFINE territoriesExists SMALLINT
-   DEFINE region_desc LIKE region.regiondescription
+   DEFINE territorydesc LIKE territories.territorydescription
+   DEFINE employeeName VARCHAR(30)
+   DEFINE regionDesc LIKE region.regiondescription
 
-   SELECT 1 INTO territoriesExists FROM territories WHERE territories.territoryid = curr_empl_terr.territoryid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
+   SELECT territorydescription INTO territorydesc FROM territories
+      WHERE territories.territoryid = $curr_empl_terr.territoryid
+   IF sqlca.sqlcode == NOTFOUND THEN
       RETURN FALSE, "Territory ID is not found"
    END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Territory ID already exists"
+   LET curr_empl_terr.territorydescription = territorydesc
+
+   SELECT RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname INTO employeeName
+      FROM employees WHERE employeeid = $curr_empl_terr.employeeid
+   IF sqlca.sqlcode == 0 THEN
+      RETURN FALSE, "Employee ID already exists"
    END IF
-   IF curr_empl_terr.territoryid IS NULL OR LENGTH(curr_empl_terr.territoryid) == 0 THEN
-      RETURN FALSE, "Territory ID is required"
-   END IF
-   IF curr_empl_terr.territorydescription IS NULL OR LENGTH(curr_empl_terr.territorydescription) == 0 THEN
-      RETURN FALSE, "Territory Description is required"
-   END IF
-   IF curr_empl_terr.regionid IS NULL THEN
-      RETURN FALSE, "Region ID is required"
-   END IF
-   SELECT regiondescription INTO region_desc FROM region WHERE region.regionid = curr_empl_terr.regionid
-   IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Region ID does not exist in region table"
-   END IF
-   LET curr_empl_terr.regiondescription = region_desc
+   LET curr_empl_terr.fullname = employeeName
+
+   SELECT regiondescription INTO regionDesc
+      FROM region
+      INNER JOIN territories ON territories.regionid = region.regionid
+      WHERE territories.territoryid = $curr_empl_terr.territoryid
+   LET curr_empl_terr.regiondescription = regionDesc
+   
    RETURN TRUE, "Okay"
 END FUNCTION

@@ -84,15 +84,17 @@ END FUNCTION #submenu_territories
 
 FUNCTION territories_lookup()
    DEFINE territories_id LIKE territories.territoryid
+   DEFINE territories_desc LIKE territories.territorydescription
 
    OPEN WINDOW lookupWindow AT 5,5 WITH FORM "territories"
       ATTRIBUTES(BORDER)
 
-   LET territories_id = territories_lookup_menu()
+   CALL territories_lookup_menu()
+      RETURNING territories_id, territories_desc
 
    CLOSE WINDOW lookupWindow
 
-   RETURN territories_id
+   RETURN territories_id, territories_desc
 
 END FUNCTION #territories_lookup
 
@@ -145,9 +147,9 @@ FUNCTION territories_lookup_menu()
    END WHILE
 
    IF selectedIdx > 0 THEN
-      RETURN curr_territories.territoryid
+      RETURN curr_territories.territoryid, curr_territories.territorydescription
    END IF
-   RETURN ""
+   RETURN "", ""
 
 END FUNCTION #submenu_territories
 
