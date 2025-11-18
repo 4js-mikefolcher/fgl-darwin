@@ -26,53 +26,43 @@ FUNCTION submenu_empl_terr()
       RETURN
    END IF
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   LET int_flag = FALSE
+   WHILE int_flag == FALSE AND arr_size > 0
 
-       CALL load_curr_empl_terr(currentIdx)
-       CALL display_curr_empl_terr()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Territories Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF 
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
-              END IF 
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
-              EXIT MENU
-          COMMAND "Add" "Add a new territory"
-              CALL add_empl_terr()
-              IF int_flag == FALSE THEN
-                 CALL refresh_empl_terr(currentIdx, "A")
-                 LET currentIdx = arr_size
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete a territory"
-              CALL delete_empl_terr()
-              IF int_flag == FALSE THEN
-                 CALL refresh_empl_terr(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "Cancel" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
+      CALL set_count(arr_size)
+      DISPLAY ARRAY empl_terr_arr TO sa_empl_terr.*
+         BEFORE DISPLAY
+            DISPLAY "Press Ctrl-P to Cancel, Ctrl-D to Delete, Ctrl-A to Add"
+            AT 17,1
+         BEFORE ROW
+            LET currentIdx = arr_curr()
+            LET curr_empl_terr = empl_terr_arr[currentIdx]
+         ON KEY (ACCEPT)
+            ACCEPT DISPLAY
+         ON KEY (CONTROL-P)
+            LET int_flag = TRUE
+            EXIT DISPLAY
+         ON KEY (CONTROL-D)
+            CALL delete_empl_terr()
+            IF int_flag == FALSE THEN
+               CALL refresh_empl_terr(currentIdx, "D")
+               IF currentIdx > arr_size THEN
+                  LET currentIdx = arr_size
+               END IF
+               MESSAGE "Record Deleted"
+               EXIT DISPLAY
+            END IF
+         ON KEY (CONTROL-A)
+            CALL add_empl_terr()
+            IF int_flag == FALSE THEN
+               CALL refresh_empl_terr(currentIdx, "A")
+               IF currentIdx > arr_size THEN
+                  LET currentIdx = arr_size
+               END IF
+               MESSAGE "Record Added"
+               EXIT DISPLAY
+            END IF       
+      END DISPLAY
 
    END WHILE
 
@@ -93,7 +83,7 @@ FUNCTION query_empl_terr()
                               employeeterritories.territoryid,
                               territories.territorydescription, 
                               region.regiondescription
-       FROM s_empl_terr.*
+       FROM sa_empl_terr[1].*
         ON KEY (ACCEPT)
             ACCEPT CONSTRUCT
         ON KEY (CONTROL-P)
@@ -174,7 +164,7 @@ FUNCTION add_empl_terr()
     DEFINE valid_msg CHAR(75)
     DEFINE selected_employee_id LIKE employees.employeeid
     DEFINE selected_fullname VARCHAR(32)
-    DEFINE selected_territory_id LIKE employees.employeeid
+    DEFINE selected_territory_id LIKE territories.territoryid
     DEFINE selected_territory_desc LIKE territories.territorydescription
 
     CLEAR FORM
@@ -322,7 +312,10 @@ FUNCTION validate_empl_terr(mode)
    DEFINE territorydesc LIKE territories.territorydescription
    DEFINE employeeName VARCHAR(30)
    DEFINE regionDesc LIKE region.regiondescription
+   DEFINE messageStr CHAR(70)
 
+   LET messageStr = "Territory ID = (", curr_empl_terr.territoryid, ")"
+   CALL debug_message(messageStr)
    SELECT territorydescription INTO territorydesc FROM territories
       WHERE territories.territoryid = $curr_empl_terr.territoryid
    IF sqlca.sqlcode == NOTFOUND THEN
@@ -332,8 +325,8 @@ FUNCTION validate_empl_terr(mode)
 
    SELECT RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname INTO employeeName
       FROM employees WHERE employeeid = $curr_empl_terr.employeeid
-   IF sqlca.sqlcode == 0 THEN
-      RETURN FALSE, "Employee ID already exists"
+   IF sqlca.sqlcode == NOTFOUND THEN
+      RETURN FALSE, "Employee ID is not found"
    END IF
    LET curr_empl_terr.fullname = employeeName
 
@@ -345,3 +338,10 @@ FUNCTION validate_empl_terr(mode)
    
    RETURN TRUE, "Okay"
 END FUNCTION
+
+FUNCTION debug_message(str)
+   DEFINE str CHAR(70)
+
+   DISPLAY str AT 20, 1 ATTRIBUTES(REVERSE)
+
+END FUNCTION #debug_message

@@ -11,7 +11,7 @@ MAIN
         COMMAND "Add" "Add a new employee territory"
             CALL add_empl_terr()
         COMMAND "Query" "Search for employee territories"
-            CALL submenu_employee()
+            CALL submenu_empl_terr()
         COMMAND "Cancel" "Quit program"
             EXIT MENU
     END MENU

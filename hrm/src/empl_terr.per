@@ -2,17 +2,17 @@ DATABASE northwind
 
 SCREEN
 {
-["Employee ID"]["Employee Name     "]["Territory ID"]["Territory Name    "]["Region Name      "]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
-[employeeid   ][fullname            ][territoryid   ][territorydescription][regiondescription  ]
+["Empl ID"]["Employee Name     "]["Terr ID"]["Territory Name    "]["Region Name"]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
+[emplid   ][fullname            ][terrid   ][territorydescription][regiondesc]
 }
 
 END --SCREEN
@@ -27,11 +27,11 @@ END --TABLES
 
 ATTRIBUTES
 
-   employeeid = employeeterritories.employeeid;
+   emplid = employeeterritories.employeeid;
    fullname = formonly.fullname, NOENTRY;
-   territoryid = employeeterritories.territoryid;
+   terrid = employeeterritories.territoryid;
    territorydescription = territories.territorydescription, NOENTRY;
-   regiondescription = region.regiondescription, NOENTRY;
+   regiondesc = region.regiondescription, NOENTRY;
 
 END --ATTRIBUTES
 
