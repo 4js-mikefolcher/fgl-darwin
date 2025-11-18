@@ -105,7 +105,7 @@ FUNCTION territories_lookup_menu()
 
    CALL query_territories()
    IF arr_size == 0 THEN
-      RETURN
+      RETURN "", ""
    END IF
 
    LET currentIdx = 1

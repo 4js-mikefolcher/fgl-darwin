@@ -48,9 +48,9 @@ $(BINDIR)/territories.42f: territories.per
 	mv territories.42f $(BINDIR)/
 
 # Program compilation rules
-$(BINDIR)/main_employees.42r: main_employees.4gl main_lib.4gl employees.4gl
+$(BINDIR)/main_employees.42r: main_employees.4gl main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl
 	$(SRCCOMP) -o main_employees.42r $^
-	mv main_employees.42r main_employees.42m main_lib.42m employees.42m $(BINDIR)/
+	mv main_employees.42r main_employees.42m main_lib.42m employees.42m empl_terr.42m territories.42m region.42m $(BINDIR)/
 
 $(BINDIR)/main_empl_terr.42r: main_empl_terr.4gl main_lib.4gl empl_terr.4gl territories.4gl employees.4gl region.4gl
 	$(SRCCOMP) -o main_empl_terr.42r $^

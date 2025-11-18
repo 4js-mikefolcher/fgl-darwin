@@ -109,6 +109,8 @@ FUNCTION submenu_employee()
                     LET currentIdx = listCount
                  END IF
               END IF
+          COMMAND "Territories" "Employee Territories"
+              CALL terr_by_empl(currentRec.employeeid)
           COMMAND "Cancel" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

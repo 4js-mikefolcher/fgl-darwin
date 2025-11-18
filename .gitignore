@@ -26,6 +26,7 @@
 .DS_Store
 *.4pdb
 .gst
+.vscode
 
 #Compilation Files
 *.err
