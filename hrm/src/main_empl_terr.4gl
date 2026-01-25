@@ -12,7 +12,7 @@ MAIN
             CALL add_empl_terr()
         COMMAND "Query" "Search for employee territories"
             CALL submenu_empl_terr()
-        COMMAND "Cancel" "Quit program"
+        COMMAND "Exit" "Quit program"
             EXIT MENU
     END MENU
 END MAIN

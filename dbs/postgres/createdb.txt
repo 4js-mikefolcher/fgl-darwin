@@ -1,0 +1,10 @@
+
+#Create database
+createdb --host=localhost --username=genero northwind
+
+psql --host=localhost --username=genero northwind
+
+northwind=# CREATE USER nwuser PASSWORD 'fourjs123';
+northwind=# GRANT ALL PRIVILEGES ON DATABASE northwind TO nwuser;
+northwind=# GRANT CREATE ON SCHEMA public TO nwuser;
+northwind=# \q

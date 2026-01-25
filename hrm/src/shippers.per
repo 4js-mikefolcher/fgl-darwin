@@ -1,0 +1,23 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── Shippers ─────────────────────────────────┐
+│ Shipper ID    : [shipperid ]                                            |
+│ Company Name  : [companyname                               ]            |
+│ Phone         : [phone                  ]                               |
+└─────────────────────────────────────────────────────────────────────────┘
+}
+
+ATTRIBUTES
+shipperid = formonly.shipperid TYPE SMALLINT;
+companyname = formonly.companyname TYPE VARCHAR;
+phone = formonly.phone TYPE VARCHAR;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_shippers(formonly.shipperid, formonly.companyname, formonly.phone);
+
+END --INSTRUCTIONS

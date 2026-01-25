@@ -11,7 +11,7 @@ MAIN
             CALL submenu_region()
         COMMAND "Add" "Add a new region"
             CALL add_region()
-        COMMAND "Cancel" "Cancel the program"
+        COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU
 

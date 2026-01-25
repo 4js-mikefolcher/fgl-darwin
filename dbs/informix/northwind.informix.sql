@@ -106,9 +106,9 @@ GRANT ALL ON employeeterritories TO public;
 CREATE TABLE IF NOT EXISTS order_details (
     orderid smallint NOT NULL,
     productid smallint NOT NULL,
-    unitpricefloat8NOT NULL,
+    unitprice float NOT NULL,
     quantity smallint NOT NULL,
-    discountfloat8NOT NULL
+    discount float NOT NULL
 );
 
 

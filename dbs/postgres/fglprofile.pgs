@@ -1,0 +1,4 @@
+dbi.database.northwind.source = "northwind@localhost"
+dbi.database.northwind.driver = "dbmpgs_9"
+dbi.database.northwind.username = "nwuser"
+dbi.database.northwind.password = "fourjs123"

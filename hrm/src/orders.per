@@ -1,0 +1,53 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── Orders ─────────────────────────────────┐
+│ Order ID       : [orderid   ]                                         |
+| Customer ID    : [customerid          ][customername                ] |
+│ Employee ID    : [employeeid][employeename                          ] |
+│ Order Date     : [orderdt   ]                                         |
+| Required Date  : [reqireddt ]                                         |
+│ Shipped Date   : [shippeddt ]                                         |
+│ Ship Via       : [shipvia   ][companyname                           ] |
+│ Freight        : [freight         ]                                   |
+│ Ship To        : [shipname                                ]           |
+│ Address        : [shipaddress                                      ]  |
+│ City           : [shipcity        ]                                   |
+│ Region         : [shipregion      ]                                   |
+│ Postal Code    : [shippostal]                                         |
+│ Country        : [shipcountry     ]                                   │
+└───────────────────────────────────────────────────────────────────────┘
+}
+
+ATTRIBUTES
+orderid = formonly.orderid TYPE SMALLINT;
+customerid = formonly.customerid TYPE CHAR;
+customername = formonly.customername, NOENTRY;
+employeeid = formonly.employeeid TYPE SMALLINT;
+employeename = formonly.employeename TYPE CHAR, NOENTRY;
+orderdt = formonly.orderdate TYPE DATE;
+reqireddt = formonly.requireddate TYPE DATE;
+shippeddt = formonly.shippeddate TYPE DATE;
+shipvia = formonly.shipvia TYPE SMALLINT;
+companyname = formonly.companyname TYPE CHAR, NOENTRY;
+freight = formonly.freight TYPE FLOAT;
+shipname = formonly.shipname TYPE VARCHAR;
+shipaddress = formonly.shipaddress TYPE VARCHAR;
+shipcity = formonly.shipcity TYPE VARCHAR;
+shipregion = formonly.shipregion TYPE VARCHAR;
+shippostal = formonly.shippostalcode TYPE VARCHAR;
+shipcountry = formonly.shipcountry TYPE VARCHAR;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_orders(formonly.orderid, formonly.customerid, formonly.customername,
+                          formonly.employeeid, formonly.employeename,
+                          formonly.orderdate, formonly.requireddate, formonly.shippeddate,
+                          formonly.shipvia, formonly.companyname, formonly.freight,
+                          formonly.shipname, formonly.shipaddress, formonly.shipcity,
+                          formonly.shipregion, formonly.shippostalcode, formonly.shipcountry);
+
+END --INSTRUCTIONS

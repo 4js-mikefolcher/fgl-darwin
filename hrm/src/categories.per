@@ -1,0 +1,26 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── Categories ───────────────────────────────┐
+│ Category ID   : [categoryid]                                            |
+│ Category Name : [categoryname    ]                                      |
+│ Description   :                                                         |
+│ [description                                                           ]|
+│ [                                                                      ]|
+│ [                                                                      ]|
+└─────────────────────────────────────────────────────────────────────────┘
+}
+
+ATTRIBUTES
+categoryid = formonly.categoryid TYPE SMALLINT;
+categoryname = formonly.categoryname TYPE VARCHAR;
+description = formonly.description TYPE VARCHAR;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_categories(formonly.categoryid, formonly.categoryname, formonly.description);
+
+END --INSTRUCTIONS

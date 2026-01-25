@@ -95,7 +95,7 @@ FUNCTION submenu_employee()
                  LET currentIdx = listCount
               END IF
               EXIT MENU
-          COMMAND "Edit" "Edit an existing employee"
+          COMMAND "Modify" "Edit an existing employee"
               CALL edit_employee()
               IF int_flag == FALSE THEN
                  CALL updateEmployee()
@@ -111,7 +111,7 @@ FUNCTION submenu_employee()
               END IF
           COMMAND "Territories" "Employee Territories"
               CALL terr_by_empl(currentRec.employeeid)
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU
@@ -179,7 +179,7 @@ FUNCTION employee_lookup_menu()
               LET selectedIdx = currentIdx
               CALL fillCurrentRec(selectedIdx)
               EXIT MENU
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU
@@ -191,6 +191,53 @@ FUNCTION employee_lookup_menu()
    END IF
 
    RETURN 0, ""
+
+END FUNCTION
+
+FUNCTION view_employee(empl_id)
+   DEFINE empl_id LIKE employees.employeeid
+   DEFINE sqlText CHAR(2000)
+
+   IF empl_id IS NULL OR empl_id < 1 THEN
+      ERROR "Employee ID is missing or invalid"
+      RETURN
+   END IF
+
+   CALL init_employees()
+   OPEN WINDOW viewWindow AT 5,5 WITH FORM "employees"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET sqlText = "SELECT ",
+       "employees.employeeid, employees.lastname, employees.firstname, ",
+       "employees.title, employees.titleofcourtesy, ",
+       "employees.birthdate, employees.hiredate, employees.address, ",
+       "employees.city, employees.region, employees.postalcode, employees.country, ",
+       "employees.homephone, employees.extension, employees.reportsto, ",
+       "RTRIM(e2.firstname) || ' ' || RTRIM(e2.lastname) as fullname, ",
+       "employees.photopath, employees.notes ",
+       "FROM employees ",
+       "LEFT OUTER JOIN employees e2 ON e2.employeeid = employees.reportsto ",
+       "WHERE employees.employeeid = ", empl_id
+   CALL fillResultList(sqlText)
+
+   IF listCount == 0 THEN
+      ERROR "Employee not found"
+      RETURN
+   END IF
+
+   CALL fillCurrentRec(1)
+   CALL displayCurrentRec()
+   MENU "Employee View"
+
+      COMMAND "Territories" "Employee Territories"
+         CALL terr_by_empl(currentRec.employeeid)
+
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+
+   END MENU
+
+   CLOSE WINDOW viewWindow
 
 END FUNCTION
 
@@ -261,25 +308,6 @@ END FUNCTION
 
 
 FUNCTION delete_employee()
-    DEFINE rec RECORD
-        employeeid LIKE employees.employeeid,
-        lastname LIKE employees.lastname,
-        firstname LIKE employees.firstname,
-        title LIKE employees.title,
-        titleofcourtesy LIKE employees.titleofcourtesy,
-        birthdate LIKE employees.birthdate,
-        hiredate LIKE employees.hiredate,
-        address LIKE employees.address,
-        city LIKE employees.city,
-        region LIKE employees.region,
-        postalcode LIKE employees.postalcode,
-        country LIKE employees.country,
-        homephone LIKE employees.homephone,
-        extension LIKE employees.extension,
-        reportsto LIKE employees.reportsto,
-        photopath LIKE employees.photopath,
-        notes LIKE employees.notes
-    END RECORD
     DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
@@ -457,7 +485,24 @@ FUNCTION insertCurrentRec()
       reportsto,
       photopath,
       notes)
-   VALUES (currentRec.*)
+   VALUES
+      (currentRec.employeeid,
+      currentRec.lastname,
+      currentRec.firstname,
+      currentRec.title,
+      currentRec.titleofcourtesy,
+      currentRec.birthdate,
+      currentRec.hiredate,
+      currentRec.address,
+      currentRec.city,
+      currentRec.region,
+      currentRec.postalcode,
+      currentRec.country,
+      currentRec.homephone,
+      currentRec.extension,
+      currentRec.reportsto,
+      currentRec.photopath,
+      currentRec.notes)
 
 END FUNCTION #insertCurrentRec
 
@@ -524,7 +569,7 @@ FUNCTION employeeValidation(mode)
    END IF
    IF currentRec.reportsto IS NOT NULL AND currentRec.reportsto > 0 THEN
       SELECT RTRIM(firstname) || ' ' || RTRIM(lastname) INTO fullname
-        FROM employees WHERE employees.employeeid = currentRec.employeeid
+        FROM employees WHERE employees.employeeid = currentRec.reportsto
       IF sqlca.sqlcode == NOTFOUND THEN
          RETURN FALSE, "Invalid reports to employee id value"
       END IF

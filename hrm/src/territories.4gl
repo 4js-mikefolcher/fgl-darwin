@@ -58,7 +58,7 @@ FUNCTION submenu_territories()
                  LET currentIdx = arr_size
               END IF
               EXIT MENU
-          COMMAND "Edit" "Edit an existing territory"
+          COMMAND "Modify" "Edit an existing territory"
               CALL edit_territories()
               IF int_flag == FALSE THEN
                  CALL refresh_territories(currentIdx, "C")
@@ -73,7 +73,7 @@ FUNCTION submenu_territories()
                  END IF
               END IF
               EXIT MENU
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU
@@ -139,7 +139,7 @@ FUNCTION territories_lookup_menu()
           COMMAND "Select" "Select a territory"
               LET selectedIdx = currentIdx
               EXIT MENU
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU

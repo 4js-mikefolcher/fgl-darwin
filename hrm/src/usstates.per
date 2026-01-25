@@ -1,0 +1,25 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── US States ────────────────────────────────┐
+│ State ID      : [stateid   ]                                            |
+│ State Name    : [statename                                            ] |
+│ Abbreviation  : [stateabbr]                                             |
+│ Region        : [stateregion                                 ]          |
+└─────────────────────────────────────────────────────────────────────────┘
+}
+
+ATTRIBUTES
+stateid = formonly.stateid TYPE SMALLINT;
+statename = formonly.statename TYPE VARCHAR;
+stateabbr = formonly.stateabbr TYPE VARCHAR;
+stateregion = formonly.stateregion TYPE VARCHAR;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_usstates(formonly.stateid, formonly.statename, formonly.stateabbr, formonly.stateregion);
+
+END --INSTRUCTIONS

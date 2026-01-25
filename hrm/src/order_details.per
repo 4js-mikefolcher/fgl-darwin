@@ -1,0 +1,29 @@
+DATABASE northwind
+
+SCREEN
+{
+┌────────────────────────────── Order Details ────────────────────────────┐
+│ Order ID    : [orderid   ]                                              |
+│ Product ID  : [productid ][productname                               ]  |
+│ Unit Price  : [unitprice      ]                                         |
+│ Quantity    : [quantity  ]                                              |
+│ Discount    : [discount       ]                                         |
+└─────────────────────────────────────────────────────────────────────────┘
+}
+
+ATTRIBUTES
+orderid = formonly.orderid TYPE SMALLINT;
+productid = formonly.productid TYPE SMALLINT;
+productname = formonly.productname TYPE VARCHAR, NOENTRY;
+unitprice = formonly.unitprice TYPE FLOAT;
+quantity = formonly.quantity TYPE SMALLINT;
+discount = formonly.discount TYPE FLOAT;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_order_details(formonly.orderid, formonly.productid,
+                                 formonly.unitprice, formonly.quantity, formonly.discount);
+
+END --INSTRUCTIONS

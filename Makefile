@@ -29,5 +29,29 @@ region:
 territories:
 	$(MAKE) -C $(HRMDIR) territories
 
-.PHONY: all clean rebuild employees empl_terr region territories
+orders:
+	$(MAKE) -C $(HRMDIR) orders
+
+order_details:
+	$(MAKE) -C $(HRMDIR) order_details
+
+categories:
+	$(MAKE) -C $(HRMDIR) categories
+
+customers:
+	$(MAKE) -C $(HRMDIR) customers
+
+products:
+	$(MAKE) -C $(HRMDIR) products
+
+shippers:
+	$(MAKE) -C $(HRMDIR) shippers
+
+suppliers:
+	$(MAKE) -C $(HRMDIR) suppliers
+
+usstates:
+	$(MAKE) -C $(HRMDIR) usstates
+
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates
 

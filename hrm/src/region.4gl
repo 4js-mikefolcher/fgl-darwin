@@ -55,7 +55,7 @@ FUNCTION submenu_region()
                  LET currentIdx = arr_size
               END IF
               EXIT MENU
-          COMMAND "Edit" "Edit an existing region"
+          COMMAND "Modify" "Edit an existing region"
               CALL edit_region()
               IF int_flag == FALSE THEN
                  CALL refresh_regions(currentIdx, "C")
@@ -70,7 +70,7 @@ FUNCTION submenu_region()
                  END IF
               END IF
               EXIT MENU
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU
@@ -138,7 +138,7 @@ FUNCTION region_lookup_menu()
               LET selectedIdx = currentIdx
               CALL load_curr_region(selectedIdx)
               EXIT MENU
-          COMMAND "Cancel" "Quit operation"
+          COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
        END MENU
