@@ -80,6 +80,16 @@
         <File filePath="dbs/northwind.sch"/>
       </Library>
     </Group>
+    <Application binaryName="main_categories" dependencies="-1764485507,1342077549" id="-1450945646" label="main_categories">
+      <Configuration id="326131785" label="main_categories"/>
+      <File filePath="hrm/src/categories.per"/>
+      <File filePath="hrm/src/main_categories.4gl"/>
+    </Application>
+    <Application binaryName="main_customers" dependencies="-1764485507,1342077549" id="-277559114" label="main_customers">
+      <Configuration id="1914147351" label="main_customers"/>
+      <File filePath="hrm/src/customers.per"/>
+      <File filePath="hrm/src/main_customers.4gl"/>
+    </Application>
     <Application binaryName="main_empl_terr" dependencies="1342077549,-1764485507" id="-1244529906" label="main_empl_terr">
       <Configuration id="765162483" label="main_empl_terr"/>
       <File filePath="hrm/src/empl_terr.per"/>
@@ -100,24 +110,50 @@
       <File filePath="hrm/src/main_orders.4gl"/>
       <File filePath="hrm/src/orders.per"/>
     </Application>
+    <Application binaryName="main_products" dependencies="-1764485507,1342077549" id="-887432760" label="main_products">
+      <Configuration id="-1539998008" label="main_products"/>
+      <File filePath="hrm/src/main_products.4gl"/>
+      <File filePath="hrm/src/products.per"/>
+    </Application>
     <Application binaryName="main_region" dependencies="1342077549,-1764485507" id="157165365" label="main_region">
       <Configuration id="565233410" label="main_region"/>
       <File filePath="hrm/src/main_region.4gl"/>
       <File filePath="hrm/src/region.per"/>
+    </Application>
+    <Application binaryName="main_shippers" dependencies="-1764485507,1342077549" id="2064185099" label="main_shippers">
+      <Configuration id="-2088590197" label="main_shippers"/>
+      <File filePath="hrm/src/main_shippers.4gl"/>
+      <File filePath="hrm/src/shippers.per"/>
+    </Application>
+    <Application binaryName="main_suppliers" dependencies="-1764485507,1342077549" id="1943732612" label="main_suppliers">
+      <Configuration id="-538254021" label="main_suppliers"/>
+      <File filePath="hrm/src/main_suppliers.4gl"/>
+      <File filePath="hrm/src/suppliers.per"/>
     </Application>
     <Application binaryName="main_territories" dependencies="1342077549,-1764485507" id="-848542995" label="main_territories">
       <Configuration id="1042893489" label="main_territories"/>
       <File filePath="hrm/src/main_territories.4gl"/>
       <File filePath="hrm/src/territories.per"/>
     </Application>
+    <Application binaryName="main_usstates" dependencies="-1764485507,1342077549" id="1245935566" label="main_usstates">
+      <Configuration id="1509101812" label="main_usstates"/>
+      <File filePath="hrm/src/main_usstates.4gl"/>
+      <File filePath="hrm/src/usstates.per"/>
+    </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
+      <File filePath="hrm/src/categories.4gl"/>
+      <File filePath="hrm/src/customers.4gl"/>
       <File filePath="hrm/src/empl_terr.4gl"/>
       <File filePath="hrm/src/employees.4gl"/>
       <File filePath="hrm/src/main_lib.4gl"/>
       <File filePath="hrm/src/order_details.4gl"/>
       <File filePath="hrm/src/orders.4gl"/>
+      <File filePath="hrm/src/products.4gl"/>
       <File filePath="hrm/src/region.4gl"/>
+      <File filePath="hrm/src/shippers.4gl"/>
+      <File filePath="hrm/src/suppliers.4gl"/>
       <File filePath="hrm/src/territories.4gl"/>
+      <File filePath="hrm/src/usstates.4gl"/>
     </Library>
     <Group id="-106839181" label="Tools">
       <Application binaryName="create_pgs_db" id="1819972734" label="create_pgs_db">

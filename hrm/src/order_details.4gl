@@ -119,6 +119,10 @@ FUNCTION submenu_order_details()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Order" "View Order"
+              CALL view_order(curr_order_details.orderid)
+          COMMAND "Product" "View Product"
+              CALL view_product(curr_order_details.productid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

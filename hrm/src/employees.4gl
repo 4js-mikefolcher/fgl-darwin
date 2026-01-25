@@ -111,6 +111,10 @@ FUNCTION submenu_employee()
               END IF
           COMMAND "Territories" "Employee Territories"
               CALL terr_by_empl(currentRec.employeeid)
+          COMMAND "Orders" "View Orders for this Employee"
+              CALL view_orders_for_employee(currentRec.employeeid)
+          COMMAND "ReportsTo" "View Manager"
+              CALL view_employee(currentRec.reportsto)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
@@ -579,3 +583,86 @@ FUNCTION employeeValidation(mode)
    RETURN TRUE, "Okay"
 
 END FUNCTION #employeeValidation
+
+-- =====================================================================
+-- Function: load_employees_ext
+-- Purpose : Load employees using external where clause (for territories)
+-- =====================================================================
+FUNCTION load_employees_ext(where_clause)
+   DEFINE where_clause VARCHAR(500)
+   DEFINE sqlText CHAR(2000)
+
+   CALL init_employees()
+
+   LET sqlText = "SELECT ",
+       "employees.employeeid, employees.lastname, employees.firstname, ",
+       "employees.title, employees.titleofcourtesy, ",
+       "employees.birthdate, employees.hiredate, employees.address, ",
+       "employees.city, employees.region, employees.postalcode, employees.country, ",
+       "employees.homephone, employees.extension, employees.reportsto, ",
+       "RTRIM(e2.firstname) || ' ' || RTRIM(e2.lastname) as fullname, ",
+       "employees.photopath, employees.notes ",
+       "FROM employees ",
+       "LEFT OUTER JOIN employees e2 ON e2.employeeid = employees.reportsto ",
+       "WHERE ", where_clause CLIPPED
+   CALL fillResultList(sqlText)
+
+END FUNCTION #load_employees_ext
+
+-- =====================================================================
+-- Function: get_employees_count
+-- Purpose : Return current employee list count
+-- =====================================================================
+FUNCTION get_employees_count()
+
+   RETURN listCount
+
+END FUNCTION #get_employees_count
+
+-- =====================================================================
+-- Function: submenu_employees_view
+-- Purpose : View-only submenu for employees (no add/modify/delete)
+-- =====================================================================
+FUNCTION submenu_employees_view()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+
+   LET currentIdx = 1
+   WHILE currentIdx > 0 AND currentIdx <= listCount
+
+       CALL fillCurrentRec(currentIdx)
+       CALL displayCurrentRec()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", listCount USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Employees View"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > listCount THEN
+                 LET currentIdx = listCount
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = listCount
+              EXIT MENU
+          COMMAND "Territories" "Employee Territories"
+              CALL terr_by_empl(currentRec.employeeid)
+          COMMAND "Orders" "View Orders for this Employee"
+              CALL view_orders_for_employee(currentRec.employeeid)
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+END FUNCTION #submenu_employees_view

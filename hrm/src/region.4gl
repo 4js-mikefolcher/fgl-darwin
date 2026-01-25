@@ -11,6 +11,46 @@ FUNCTION init_region()
 
 END FUNCTION #init_region
 
+-- =====================================================================
+-- Function: view_region
+-- Purpose : View a specific region record (called from other modules)
+-- =====================================================================
+FUNCTION view_region(reg_id)
+   DEFINE reg_id LIKE region.regionid
+   DEFINE where_clause VARCHAR(255)
+
+   IF reg_id IS NULL OR reg_id < 1 THEN
+      ERROR "Region ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewRegionWindow AT 5,5 WITH FORM "region"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL init_region()
+   LET where_clause = " region.regionid = ", reg_id
+   CALL load_regions(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Region not found"
+      CLOSE WINDOW viewRegionWindow
+      RETURN
+   END IF
+
+   CALL load_curr_region(1)
+   CALL display_curr_region()
+
+   MENU "Region View"
+      COMMAND "Territories" "View Territories in this Region"
+         CALL view_territories_for_region(curr_region.regionid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewRegionWindow
+
+END FUNCTION #view_region
+
 FUNCTION submenu_region()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -70,6 +110,8 @@ FUNCTION submenu_region()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Territories" "View Territories in this Region"
+              CALL view_territories_for_region(curr_region.regionid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

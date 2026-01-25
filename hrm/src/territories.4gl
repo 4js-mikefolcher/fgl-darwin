@@ -15,6 +15,159 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_territory
+-- Purpose : View a specific territory record (called from other modules)
+-- =====================================================================
+FUNCTION view_territory(terr_id)
+   DEFINE terr_id LIKE territories.territoryid
+   DEFINE where_clause VARCHAR(255)
+
+   IF terr_id IS NULL OR LENGTH(terr_id) == 0 THEN
+      ERROR "Territory ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewTerritoryWindow AT 5,5 WITH FORM "territories"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " territories.territoryid = '", terr_id CLIPPED, "'"
+   CALL load_territories(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Territory not found"
+      CLOSE WINDOW viewTerritoryWindow
+      RETURN
+   END IF
+
+   CALL load_curr_territories(1)
+   CALL display_curr_territories()
+
+   MENU "Territory View"
+      COMMAND "Region" "View Region"
+         CALL view_region(curr_territories.regionid)
+      COMMAND "Employees" "View Employees in this Territory"
+         CALL empl_by_terr(curr_territories.territoryid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewTerritoryWindow
+
+END FUNCTION #view_territory
+
+-- =====================================================================
+-- Function: view_territories_for_region
+-- Purpose : View territories for a specific region
+-- =====================================================================
+FUNCTION view_territories_for_region(reg_id)
+   DEFINE reg_id LIKE region.regionid
+   DEFINE where_clause VARCHAR(255)
+
+   IF reg_id IS NULL OR reg_id < 1 THEN
+      ERROR "Region ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewTerritoriesWindow AT 5,5 WITH FORM "territories"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " territories.regionid = ", reg_id
+   CALL load_territories(where_clause)
+
+   IF arr_size == 0 THEN
+      MESSAGE "No territories found for this region"
+      CLOSE WINDOW viewTerritoriesWindow
+      RETURN
+   END IF
+
+   CALL submenu_territories_view()
+
+   CLOSE WINDOW viewTerritoriesWindow
+
+END FUNCTION #view_territories_for_region
+
+-- =====================================================================
+-- Function: empl_by_terr
+-- Purpose : View employees assigned to a territory (via link table)
+-- =====================================================================
+FUNCTION empl_by_terr(terr_id)
+   DEFINE terr_id LIKE territories.territoryid
+   DEFINE where_clause VARCHAR(500)
+
+   IF terr_id IS NULL OR LENGTH(terr_id) == 0 THEN
+      ERROR "Territory ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewEmployeesWindow AT 5,5 WITH FORM "employees"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET where_clause = " employees.employeeid IN (SELECT employeeid FROM employeeterritories WHERE territoryid = '", terr_id CLIPPED, "')"
+   CALL load_employees_ext(where_clause)
+
+   IF get_employees_count() == 0 THEN
+      MESSAGE "No employees found for this territory"
+      CLOSE WINDOW viewEmployeesWindow
+      RETURN
+   END IF
+
+   CALL submenu_employees_view()
+
+   CLOSE WINDOW viewEmployeesWindow
+
+END FUNCTION #empl_by_terr
+
+-- =====================================================================
+-- Function: submenu_territories_view
+-- Purpose : View-only submenu for territories (no add/modify/delete)
+-- =====================================================================
+FUNCTION submenu_territories_view()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+
+   LET currentIdx = 1
+   WHILE currentIdx > 0 AND currentIdx <= arr_size
+
+       CALL load_curr_territories(currentIdx)
+       CALL display_curr_territories()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Territories View"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Region" "View Region"
+              CALL view_region(curr_territories.regionid)
+          COMMAND "Employees" "View Employees in this Territory"
+              CALL empl_by_terr(curr_territories.territoryid)
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+END FUNCTION #submenu_territories_view
+
 FUNCTION submenu_territories()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -73,6 +226,10 @@ FUNCTION submenu_territories()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Region" "View Region"
+              CALL view_region(curr_territories.regionid)
+          COMMAND "Employees" "View Employees in this Territory"
+              CALL empl_by_terr(curr_territories.territoryid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

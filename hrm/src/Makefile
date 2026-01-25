@@ -96,50 +96,59 @@ $(BINDIR)/usstates.42f: usstates.per
 	$(FORMCOMP) $<
 	mv usstates.42f $(BINDIR)/
 
+# Common modules for cross-navigation
+CORE_MODULES = main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl \
+               orders.4gl order_details.4gl customers.4gl shippers.4gl \
+               products.4gl suppliers.4gl categories.4gl
+
+CORE_42M = main_lib.42m employees.42m empl_terr.42m territories.42m region.42m \
+           orders.42m order_details.42m customers.42m shippers.42m \
+           products.42m suppliers.42m categories.42m
+
 # Program compilation rules
-$(BINDIR)/main_employees.42r: main_employees.4gl main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl
+$(BINDIR)/main_employees.42r: main_employees.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_employees.42r $^
-	mv main_employees.42r main_employees.42m main_lib.42m employees.42m empl_terr.42m territories.42m region.42m $(BINDIR)/
+	mv main_employees.42r main_employees.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_empl_terr.42r: main_empl_terr.4gl main_lib.4gl empl_terr.4gl territories.4gl employees.4gl region.4gl
+$(BINDIR)/main_empl_terr.42r: main_empl_terr.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_empl_terr.42r $^
-	mv main_empl_terr.42r main_empl_terr.42m main_lib.42m empl_terr.42m territories.42m employees.42m region.42m $(BINDIR)/
+	mv main_empl_terr.42r main_empl_terr.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_region.42r: main_region.4gl main_lib.4gl region.4gl
+$(BINDIR)/main_region.42r: main_region.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_region.42r $^
-	mv main_region.42r main_region.42m main_lib.42m region.42m $(BINDIR)/
+	mv main_region.42r main_region.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_territories.42r: main_territories.4gl main_lib.4gl territories.4gl region.4gl
+$(BINDIR)/main_territories.42r: main_territories.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_territories.42r $^
-	mv main_territories.42r main_territories.42m main_lib.42m territories.42m region.42m $(BINDIR)/
+	mv main_territories.42r main_territories.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_orders.42r: main_orders.4gl main_lib.4gl orders.4gl employees.4gl order_details.4gl empl_terr.4gl territories.4gl region.4gl
+$(BINDIR)/main_orders.42r: main_orders.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_orders.42r $^
-	mv main_orders.42r main_orders.42m main_lib.42m orders.42m employees.42m order_details.42m empl_terr.42m territories.42m region.42m $(BINDIR)/
+	mv main_orders.42r main_orders.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_order_details.42r: main_order_details.4gl main_lib.4gl order_details.4gl
+$(BINDIR)/main_order_details.42r: main_order_details.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_order_details.42r $^
-	mv main_order_details.42r main_order_details.42m main_lib.42m order_details.42m $(BINDIR)/
+	mv main_order_details.42r main_order_details.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_categories.42r: main_categories.4gl main_lib.4gl categories.4gl
+$(BINDIR)/main_categories.42r: main_categories.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_categories.42r $^
-	mv main_categories.42r main_categories.42m main_lib.42m categories.42m $(BINDIR)/
+	mv main_categories.42r main_categories.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_customers.42r: main_customers.4gl main_lib.4gl customers.4gl
+$(BINDIR)/main_customers.42r: main_customers.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_customers.42r $^
-	mv main_customers.42r main_customers.42m main_lib.42m customers.42m $(BINDIR)/
+	mv main_customers.42r main_customers.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_products.42r: main_products.4gl main_lib.4gl products.4gl
+$(BINDIR)/main_products.42r: main_products.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_products.42r $^
-	mv main_products.42r main_products.42m main_lib.42m products.42m $(BINDIR)/
+	mv main_products.42r main_products.42m $(CORE_42M) $(BINDIR)/
 
 $(BINDIR)/main_shippers.42r: main_shippers.4gl main_lib.4gl shippers.4gl
 	$(SRCCOMP) -o main_shippers.42r $^
 	mv main_shippers.42r main_shippers.42m main_lib.42m shippers.42m $(BINDIR)/
 
-$(BINDIR)/main_suppliers.42r: main_suppliers.4gl main_lib.4gl suppliers.4gl
+$(BINDIR)/main_suppliers.42r: main_suppliers.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_suppliers.42r $^
-	mv main_suppliers.42r main_suppliers.42m main_lib.42m suppliers.42m $(BINDIR)/
+	mv main_suppliers.42r main_suppliers.42m $(CORE_42M) $(BINDIR)/
 
 $(BINDIR)/main_usstates.42r: main_usstates.4gl main_lib.4gl usstates.4gl
 	$(SRCCOMP) -o main_usstates.42r $^

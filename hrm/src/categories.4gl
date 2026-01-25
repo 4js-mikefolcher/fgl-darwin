@@ -15,6 +15,46 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_category
+-- Purpose : View a specific category record (called from other modules)
+-- =====================================================================
+FUNCTION view_category(cat_id)
+   DEFINE cat_id LIKE categories.categoryid
+   DEFINE where_clause VARCHAR(500)
+
+   IF cat_id IS NULL OR cat_id < 1 THEN
+      ERROR "Category ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewCategoryWindow AT 5,5 WITH FORM "categories"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " categories.categoryid = ", cat_id
+   CALL load_categories(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Category not found"
+      CLOSE WINDOW viewCategoryWindow
+      RETURN
+   END IF
+
+   CALL load_curr_categories(1)
+   CALL display_curr_categories()
+
+   MENU "Category View"
+      COMMAND "Products" "View Products in this Category"
+         CALL view_products_for_category(curr_categories.categoryid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewCategoryWindow
+
+END FUNCTION #view_category
+
 FUNCTION submenu_categories()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -74,6 +114,8 @@ FUNCTION submenu_categories()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Products" "View Products in this Category"
+              CALL view_products_for_category(curr_categories.categoryid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

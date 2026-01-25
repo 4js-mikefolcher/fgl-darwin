@@ -33,6 +33,160 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_product
+-- Purpose : View a specific product record (called from other modules)
+-- =====================================================================
+FUNCTION view_product(prod_id)
+   DEFINE prod_id LIKE products.productid
+   DEFINE where_clause VARCHAR(500)
+
+   IF prod_id IS NULL OR prod_id < 1 THEN
+      ERROR "Product ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewProductWindow AT 5,5 WITH FORM "products"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " products.productid = ", prod_id
+   CALL load_products(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Product not found"
+      CLOSE WINDOW viewProductWindow
+      RETURN
+   END IF
+
+   CALL load_curr_products(1)
+   CALL display_curr_products()
+
+   MENU "Product View"
+      COMMAND "Supplier" "View Supplier"
+         CALL view_supplier(curr_products.supplierid)
+      COMMAND "Category" "View Category"
+         CALL view_category(curr_products.categoryid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewProductWindow
+
+END FUNCTION #view_product
+
+-- =====================================================================
+-- Function: view_products_for_supplier
+-- Purpose : View products for a specific supplier
+-- =====================================================================
+FUNCTION view_products_for_supplier(supp_id)
+   DEFINE supp_id LIKE suppliers.supplierid
+   DEFINE where_clause VARCHAR(500)
+
+   IF supp_id IS NULL OR supp_id < 1 THEN
+      ERROR "Supplier ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " p.supplierid = ", supp_id
+   CALL load_products(where_clause)
+
+   IF arr_size == 0 THEN
+      MESSAGE "No products found for this supplier"
+      CLOSE WINDOW viewProductsWindow
+      RETURN
+   END IF
+
+   CALL submenu_products_view()
+
+   CLOSE WINDOW viewProductsWindow
+
+END FUNCTION #view_products_for_supplier
+
+-- =====================================================================
+-- Function: view_products_for_category
+-- Purpose : View products for a specific category
+-- =====================================================================
+FUNCTION view_products_for_category(cat_id)
+   DEFINE cat_id LIKE categories.categoryid
+   DEFINE where_clause VARCHAR(500)
+
+   IF cat_id IS NULL OR cat_id < 1 THEN
+      ERROR "Category ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " p.categoryid = ", cat_id
+   CALL load_products(where_clause)
+
+   IF arr_size == 0 THEN
+      MESSAGE "No products found for this category"
+      CLOSE WINDOW viewProductsWindow
+      RETURN
+   END IF
+
+   CALL submenu_products_view()
+
+   CLOSE WINDOW viewProductsWindow
+
+END FUNCTION #view_products_for_category
+
+-- =====================================================================
+-- Function: submenu_products_view
+-- Purpose : View-only submenu for products (no add/modify/delete)
+-- =====================================================================
+FUNCTION submenu_products_view()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+
+   LET currentIdx = 1
+   WHILE currentIdx > 0 AND currentIdx <= arr_size
+
+       CALL load_curr_products(currentIdx)
+       CALL display_curr_products()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Products View"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Supplier" "View Supplier"
+              CALL view_supplier(curr_products.supplierid)
+          COMMAND "Category" "View Category"
+              CALL view_category(curr_products.categoryid)
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+END FUNCTION #submenu_products_view
+
 FUNCTION submenu_products()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -92,6 +246,10 @@ FUNCTION submenu_products()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Supplier" "View Supplier"
+              CALL view_supplier(curr_products.supplierid)
+          COMMAND "Category" "View Category"
+              CALL view_category(curr_products.categoryid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

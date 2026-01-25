@@ -31,6 +31,46 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_customer
+-- Purpose : View a specific customer record (called from other modules)
+-- =====================================================================
+FUNCTION view_customer(cust_id)
+   DEFINE cust_id LIKE customers.customerid
+   DEFINE where_clause VARCHAR(500)
+
+   IF cust_id IS NULL OR LENGTH(cust_id) == 0 THEN
+      ERROR "Customer ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewCustomerWindow AT 5,5 WITH FORM "customers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " customers.customerid = '", cust_id CLIPPED, "'"
+   CALL load_customers(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Customer not found"
+      CLOSE WINDOW viewCustomerWindow
+      RETURN
+   END IF
+
+   CALL load_curr_customers(1)
+   CALL display_curr_customers()
+
+   MENU "Customer View"
+      COMMAND "Orders" "View Orders for this Customer"
+         CALL view_orders_for_customer(curr_customers.customerid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewCustomerWindow
+
+END FUNCTION #view_customer
+
 FUNCTION submenu_customers()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -90,6 +130,8 @@ FUNCTION submenu_customers()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Orders" "View Orders for this Customer"
+              CALL view_orders_for_customer(curr_customers.customerid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

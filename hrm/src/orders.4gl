@@ -43,6 +43,162 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_order
+-- Purpose : View a specific order record (called from other modules)
+-- =====================================================================
+FUNCTION view_order(order_id)
+   DEFINE order_id LIKE orders.orderid
+   DEFINE where_clause VARCHAR(500)
+
+   IF order_id IS NULL OR order_id < 1 THEN
+      ERROR "Order ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewOrderWindow AT 5,5 WITH FORM "orders"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " orders.orderid = ", order_id
+   CALL load_orders(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Order not found"
+      CLOSE WINDOW viewOrderWindow
+      RETURN
+   END IF
+
+   CALL load_curr_orders(1)
+   CALL display_curr_orders()
+
+   MENU "Order View"
+      COMMAND "Customer" "View Customer"
+         CALL view_customer(curr_orders.customerid)
+      COMMAND "Employee" "View Employee"
+         CALL view_employee(curr_orders.employeeid)
+      COMMAND "Shipper" "View Shipper"
+         CALL view_shipper(curr_orders.shipvia)
+      COMMAND "Details" "View Order Details"
+         CALL view_details_for_order(curr_orders.orderid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewOrderWindow
+
+END FUNCTION #view_order
+
+-- =====================================================================
+-- Function: view_orders_for_customer
+-- Purpose : View orders for a specific customer (called from customers)
+-- =====================================================================
+FUNCTION view_orders_for_customer(cust_id)
+   DEFINE cust_id LIKE customers.customerid
+   DEFINE where_clause VARCHAR(500)
+
+   IF cust_id IS NULL OR LENGTH(cust_id) == 0 THEN
+      ERROR "Customer ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " orders.customerid = '", cust_id CLIPPED, "'"
+   CALL load_orders(where_clause)
+
+   IF arr_size == 0 THEN
+      MESSAGE "No orders found for this customer"
+      CLOSE WINDOW viewOrdersWindow
+      RETURN
+   END IF
+
+   CALL submenu_orders_view()
+
+   CLOSE WINDOW viewOrdersWindow
+
+END FUNCTION #view_orders_for_customer
+
+-- =====================================================================
+-- Function: view_orders_for_employee
+-- Purpose : View orders for a specific employee (called from employees)
+-- =====================================================================
+FUNCTION view_orders_for_employee(empl_id)
+   DEFINE empl_id LIKE employees.employeeid
+   DEFINE where_clause VARCHAR(500)
+
+   IF empl_id IS NULL OR empl_id < 1 THEN
+      ERROR "Employee ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " orders.employeeid = ", empl_id
+   CALL load_orders(where_clause)
+
+   IF arr_size == 0 THEN
+      MESSAGE "No orders found for this employee"
+      CLOSE WINDOW viewOrdersWindow
+      RETURN
+   END IF
+
+   CALL submenu_orders_view()
+
+   CLOSE WINDOW viewOrdersWindow
+
+END FUNCTION #view_orders_for_employee
+
+-- =====================================================================
+-- Function: submenu_orders_view
+-- Purpose : View-only submenu for orders (no add/modify/delete)
+-- =====================================================================
+FUNCTION submenu_orders_view()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+
+   LET currentIdx = 1
+   WHILE currentIdx > 0 AND currentIdx <= arr_size
+
+       CALL load_curr_orders(currentIdx)
+       CALL display_curr_orders()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Orders View"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Details" "View Order Details"
+              CALL view_details_for_order(curr_orders.orderid)
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+END FUNCTION #submenu_orders_view
+
 FUNCTION submenu_orders()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -102,8 +258,12 @@ FUNCTION submenu_orders()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Customer" "View Customer"
+              CALL view_customer(curr_orders.customerid)
           COMMAND "Employee" "View Employee"
               CALL view_employee(curr_orders.employeeid)
+          COMMAND "Shipper" "View Shipper"
+              CALL view_shipper(curr_orders.shipvia)
           COMMAND "Details" "View Order Details"
               CALL view_details_for_order(curr_orders.orderid)
           COMMAND "Exit" "Quit operation"

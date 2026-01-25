@@ -33,6 +33,46 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_supplier
+-- Purpose : View a specific supplier record (called from other modules)
+-- =====================================================================
+FUNCTION view_supplier(supp_id)
+   DEFINE supp_id LIKE suppliers.supplierid
+   DEFINE where_clause VARCHAR(500)
+
+   IF supp_id IS NULL OR supp_id < 1 THEN
+      ERROR "Supplier ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewSupplierWindow AT 5,5 WITH FORM "suppliers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " suppliers.supplierid = ", supp_id
+   CALL load_suppliers(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Supplier not found"
+      CLOSE WINDOW viewSupplierWindow
+      RETURN
+   END IF
+
+   CALL load_curr_suppliers(1)
+   CALL display_curr_suppliers()
+
+   MENU "Supplier View"
+      COMMAND "Products" "View Products from this Supplier"
+         CALL view_products_for_supplier(curr_suppliers.supplierid)
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewSupplierWindow
+
+END FUNCTION #view_supplier
+
 FUNCTION submenu_suppliers()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
@@ -92,6 +132,8 @@ FUNCTION submenu_suppliers()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "Products" "View Products from this Supplier"
+              CALL view_products_for_supplier(curr_suppliers.supplierid)
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU

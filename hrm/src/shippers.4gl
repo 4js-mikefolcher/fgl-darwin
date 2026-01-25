@@ -15,6 +15,44 @@ END RECORD
 DEFINE arr_size INTEGER
 DEFINE arr_max INTEGER
 
+-- =====================================================================
+-- Function: view_shipper
+-- Purpose : View a specific shipper record (called from other modules)
+-- =====================================================================
+FUNCTION view_shipper(ship_id)
+   DEFINE ship_id LIKE shippers.shipperid
+   DEFINE where_clause VARCHAR(500)
+
+   IF ship_id IS NULL OR ship_id < 1 THEN
+      ERROR "Shipper ID is missing or invalid"
+      RETURN
+   END IF
+
+   OPEN WINDOW viewShipperWindow AT 5,5 WITH FORM "shippers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   LET arr_max = 1000
+   LET where_clause = " shippers.shipperid = ", ship_id
+   CALL load_shippers(where_clause)
+
+   IF arr_size == 0 THEN
+      ERROR "Shipper not found"
+      CLOSE WINDOW viewShipperWindow
+      RETURN
+   END IF
+
+   CALL load_curr_shippers(1)
+   CALL display_curr_shippers()
+
+   MENU "Shipper View"
+      COMMAND "Exit" "Quit operation"
+         EXIT MENU
+   END MENU
+
+   CLOSE WINDOW viewShipperWindow
+
+END FUNCTION #view_shipper
+
 FUNCTION submenu_shippers()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
