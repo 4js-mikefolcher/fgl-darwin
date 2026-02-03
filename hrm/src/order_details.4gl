@@ -48,11 +48,9 @@ FUNCTION view_details_for_order(order_id)
 
    END WHILE
 
-    IF arr_size == 0 THEN
-        RETURN
+    IF arr_size > 0 THEN
+      CALL submenu_order_details()
     END IF
-
-    CALL submenu_order_details()
 
     CLOSE WINDOW subWindow
 
@@ -215,6 +213,9 @@ END FUNCTION #clear_order_details
 FUNCTION add_order_details()
     DEFINE order_details_valid SMALLINT
     DEFINE valid_msg CHAR(75)
+    DEFINE selected_order_id LIKE orders.orderid
+    DEFINE selected_product_id LIKE products.productid
+    DEFINE selected_product_name LIKE products.productname
 
     CLEAR FORM
     LET int_flag = FALSE
@@ -230,6 +231,44 @@ FUNCTION add_order_details()
         ON KEY (CONTROL-P)
             LET int_flag = TRUE
             EXIT INPUT
+        ON KEY (CONTROL-T)
+            IF INFIELD(orderid) THEN
+               CALL order_lookup()
+                  RETURNING selected_order_id
+               IF selected_order_id > 0 THEN
+                  LET curr_order_details.orderid = selected_order_id
+               END IF
+            END IF
+            IF INFIELD(productid) THEN
+               CALL product_lookup()
+                  RETURNING selected_product_id, selected_product_name
+               IF selected_product_id > 0 THEN
+                  LET curr_order_details.productid = selected_product_id
+                  LET curr_order_details.productname = selected_product_name
+               END IF
+            END IF
+
+        BEFORE FIELD orderid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD productid
+            MESSAGE "Use Ctrl-T to open lookup window"
+
+        AFTER FIELD orderid
+            CALL validate_orderid_field()
+               RETURNING order_details_valid, valid_msg
+            IF NOT order_details_valid THEN
+               ERROR valid_msg
+               NEXT FIELD orderid
+            END IF
+
+        AFTER FIELD productid
+            CALL validate_productid_field()
+               RETURNING order_details_valid, valid_msg
+            IF NOT order_details_valid THEN
+               ERROR valid_msg
+               NEXT FIELD productid
+            END IF
+
         AFTER INPUT
             CALL validate_order_details("A")
                RETURNING order_details_valid, valid_msg
@@ -454,3 +493,29 @@ FUNCTION validate_order_details(mode)
 
    RETURN TRUE, "Okay"
 END FUNCTION
+
+FUNCTION validate_orderid_field()
+
+   IF curr_order_details.orderid IS NOT NULL THEN
+      SELECT 1 FROM orders WHERE orders.orderid = curr_order_details.orderid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Order ID does not exist in orders table"
+      END IF
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_orderid_field
+
+FUNCTION validate_productid_field()
+   DEFINE product_name LIKE products.productname
+
+   IF curr_order_details.productid IS NOT NULL THEN
+      SELECT productname INTO product_name FROM products WHERE products.productid = curr_order_details.productid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Product ID does not exist in products table"
+      END IF
+      LET curr_order_details.productname = product_name
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_productid_field

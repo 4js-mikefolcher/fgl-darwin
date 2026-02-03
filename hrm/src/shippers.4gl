@@ -364,3 +364,86 @@ FUNCTION validate_shippers(mode)
 
    RETURN TRUE, "Okay"
 END FUNCTION
+
+-- =====================================================================
+-- Function: shipper_lookup
+-- Purpose : Open a lookup window for shipper selection
+-- =====================================================================
+FUNCTION shipper_lookup()
+   DEFINE ship_id LIKE shippers.shipperid
+   DEFINE ship_name LIKE shippers.companyname
+
+   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "shippers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL shipper_lookup_menu()
+      RETURNING ship_id, ship_name
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN ship_id, ship_name
+
+END FUNCTION #shipper_lookup
+
+FUNCTION shipper_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+   DEFINE save_arr_max INTEGER
+
+   LET save_arr_max = arr_max
+   LET arr_max = 1000
+   CALL query_shippers()
+   IF arr_size == 0 THEN
+      LET arr_max = save_arr_max
+      RETURN 0, ""
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+
+       CALL load_curr_shippers(currentIdx)
+       CALL display_curr_shippers()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Shipper Selection"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Select" "Select the current shipper"
+              LET selectedIdx = currentIdx
+              CALL load_curr_shippers(selectedIdx)
+              EXIT MENU
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+   LET arr_max = save_arr_max
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_shippers.shipperid, curr_shippers.companyname
+   END IF
+
+   RETURN 0, ""
+
+END FUNCTION #shipper_lookup_menu

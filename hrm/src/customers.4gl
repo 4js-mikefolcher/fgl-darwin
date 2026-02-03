@@ -402,3 +402,86 @@ FUNCTION validate_customers(mode)
 
    RETURN TRUE, "Okay"
 END FUNCTION
+
+-- =====================================================================
+-- Function: customer_lookup
+-- Purpose : Open a lookup window for customer selection
+-- =====================================================================
+FUNCTION customer_lookup()
+   DEFINE cust_id LIKE customers.customerid
+   DEFINE cust_name LIKE customers.companyname
+
+   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "customers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL customer_lookup_menu()
+      RETURNING cust_id, cust_name
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN cust_id, cust_name
+
+END FUNCTION #customer_lookup
+
+FUNCTION customer_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+   DEFINE save_arr_max INTEGER
+
+   LET save_arr_max = arr_max
+   LET arr_max = 1000
+   CALL query_customers()
+   IF arr_size == 0 THEN
+      LET arr_max = save_arr_max
+      RETURN "", ""
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+
+       CALL load_curr_customers(currentIdx)
+       CALL display_curr_customers()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Customer Selection"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Select" "Select the current customer"
+              LET selectedIdx = currentIdx
+              CALL load_curr_customers(selectedIdx)
+              EXIT MENU
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+   LET arr_max = save_arr_max
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_customers.customerid, curr_customers.companyname
+   END IF
+
+   RETURN "", ""
+
+END FUNCTION #customer_lookup_menu

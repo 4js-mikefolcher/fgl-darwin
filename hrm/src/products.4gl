@@ -265,10 +265,10 @@ FUNCTION query_products()
     CLEAR FORM
     CALL clear_curr_products()
     LET int_flag = FALSE
-    CONSTRUCT where_clause ON products.productid, products.productname, products.supplierid,
-                              products.categoryid, products.quantityperunit, products.unitprice,
-                              products.unitsinstock, products.unitsonorder, products.reorderlevel,
-                              products.discontinued
+    CONSTRUCT where_clause ON p.productid, p.productname, p.supplierid,
+                              p.categoryid, p.quantityperunit, p.unitprice,
+                              p.unitsinstock, p.unitsonorder, p.reorderlevel,
+                              p.discontinued
        FROM s_products.productid, s_products.productname, s_products.supplierid,
             s_products.categoryid, s_products.quantityperunit, s_products.unitprice,
             s_products.unitsinstock, s_products.unitsonorder, s_products.reorderlevel,
@@ -335,6 +335,10 @@ END FUNCTION #clear_products
 FUNCTION add_products()
     DEFINE products_valid SMALLINT
     DEFINE valid_msg CHAR(75)
+    DEFINE selected_supplier_id LIKE suppliers.supplierid
+    DEFINE selected_supplier_name LIKE suppliers.companyname
+    DEFINE selected_category_id LIKE categories.categoryid
+    DEFINE selected_category_name LIKE categories.categoryname
 
     CLEAR FORM
     LET int_flag = FALSE
@@ -346,6 +350,45 @@ FUNCTION add_products()
         ON KEY (CONTROL-P)
             LET int_flag = TRUE
             EXIT INPUT
+        ON KEY (CONTROL-T)
+            IF INFIELD(supplierid) THEN
+               CALL supplier_lookup()
+                  RETURNING selected_supplier_id, selected_supplier_name
+               IF selected_supplier_id > 0 THEN
+                  LET curr_products.supplierid = selected_supplier_id
+                  LET curr_products.suppliername = selected_supplier_name
+               END IF
+            END IF
+            IF INFIELD(categoryid) THEN
+               CALL category_lookup()
+                  RETURNING selected_category_id, selected_category_name
+               IF selected_category_id > 0 THEN
+                  LET curr_products.categoryid = selected_category_id
+                  LET curr_products.categoryname = selected_category_name
+               END IF
+            END IF
+
+        BEFORE FIELD supplierid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD categoryid
+            MESSAGE "Use Ctrl-T to open lookup window"
+
+        AFTER FIELD supplierid
+            CALL validate_supplier_field()
+               RETURNING products_valid, valid_msg
+            IF NOT products_valid THEN
+               ERROR valid_msg
+               NEXT FIELD supplierid
+            END IF
+
+        AFTER FIELD categoryid
+            CALL validate_category_field()
+               RETURNING products_valid, valid_msg
+            IF NOT products_valid THEN
+               ERROR valid_msg
+               NEXT FIELD categoryid
+            END IF
+
         AFTER INPUT
             CALL validate_products("A")
                RETURNING products_valid, valid_msg
@@ -368,6 +411,10 @@ END FUNCTION
 FUNCTION edit_products()
     DEFINE products_valid SMALLINT
     DEFINE valid_msg CHAR(75)
+    DEFINE selected_supplier_id LIKE suppliers.supplierid
+    DEFINE selected_supplier_name LIKE suppliers.companyname
+    DEFINE selected_category_id LIKE categories.categoryid
+    DEFINE selected_category_name LIKE categories.categoryname
 
     LET int_flag = FALSE
     INPUT BY NAME curr_products.productname, curr_products.supplierid, curr_products.categoryid,
@@ -379,6 +426,45 @@ FUNCTION edit_products()
         ON KEY (CONTROL-P)
             LET int_flag = TRUE
             EXIT INPUT
+        ON KEY (CONTROL-T)
+            IF INFIELD(supplierid) THEN
+               CALL supplier_lookup()
+                  RETURNING selected_supplier_id, selected_supplier_name
+               IF selected_supplier_id > 0 THEN
+                  LET curr_products.supplierid = selected_supplier_id
+                  LET curr_products.suppliername = selected_supplier_name
+               END IF
+            END IF
+            IF INFIELD(categoryid) THEN
+               CALL category_lookup()
+                  RETURNING selected_category_id, selected_category_name
+               IF selected_category_id > 0 THEN
+                  LET curr_products.categoryid = selected_category_id
+                  LET curr_products.categoryname = selected_category_name
+               END IF
+            END IF
+
+        BEFORE FIELD supplierid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD categoryid
+            MESSAGE "Use Ctrl-T to open lookup window"
+
+        AFTER FIELD supplierid
+            CALL validate_supplier_field()
+               RETURNING products_valid, valid_msg
+            IF NOT products_valid THEN
+               ERROR valid_msg
+               NEXT FIELD supplierid
+            END IF
+
+        AFTER FIELD categoryid
+            CALL validate_category_field()
+               RETURNING products_valid, valid_msg
+            IF NOT products_valid THEN
+               ERROR valid_msg
+               NEXT FIELD categoryid
+            END IF
+
         AFTER INPUT
             CALL validate_products("C")
                RETURNING products_valid, valid_msg
@@ -553,3 +639,118 @@ FUNCTION validate_products(mode)
 
    RETURN TRUE, "Okay"
 END FUNCTION
+
+FUNCTION validate_supplier_field()
+   DEFINE supplier_name LIKE suppliers.companyname
+
+   IF curr_products.supplierid IS NOT NULL THEN
+      SELECT companyname INTO supplier_name FROM suppliers WHERE suppliers.supplierid = curr_products.supplierid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Supplier ID does not exist in suppliers table"
+      END IF
+      LET curr_products.suppliername = supplier_name
+   ELSE
+      LET curr_products.suppliername = NULL
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_supplier_field
+
+FUNCTION validate_category_field()
+   DEFINE category_name LIKE categories.categoryname
+
+   IF curr_products.categoryid IS NOT NULL THEN
+      SELECT categoryname INTO category_name FROM categories WHERE categories.categoryid = curr_products.categoryid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Category ID does not exist in categories table"
+      END IF
+      LET curr_products.categoryname = category_name
+   ELSE
+      LET curr_products.categoryname = NULL
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_category_field
+
+-- =====================================================================
+-- Function: product_lookup
+-- Purpose : Open a lookup window for product selection
+-- =====================================================================
+FUNCTION product_lookup()
+   DEFINE prod_id LIKE products.productid
+   DEFINE prod_name LIKE products.productname
+
+   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "products"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL product_lookup_menu()
+      RETURNING prod_id, prod_name
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN prod_id, prod_name
+
+END FUNCTION #product_lookup
+
+FUNCTION product_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+   DEFINE save_arr_max INTEGER
+
+   LET save_arr_max = arr_max
+   LET arr_max = 1000
+   CALL query_products()
+   IF arr_size == 0 THEN
+      LET arr_max = save_arr_max
+      RETURN 0, ""
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+
+       CALL load_curr_products(currentIdx)
+       CALL display_curr_products()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Product Selection"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Select" "Select the current product"
+              LET selectedIdx = currentIdx
+              CALL load_curr_products(selectedIdx)
+              EXIT MENU
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+   LET arr_max = save_arr_max
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_products.productid, curr_products.productname
+   END IF
+
+   RETURN 0, ""
+
+END FUNCTION #product_lookup_menu

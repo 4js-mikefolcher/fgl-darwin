@@ -369,6 +369,12 @@ END FUNCTION #clear_orders
 FUNCTION add_orders()
     DEFINE orders_valid SMALLINT
     DEFINE valid_msg CHAR(75)
+    DEFINE selected_customer_id LIKE customers.customerid
+    DEFINE selected_customer_name LIKE customers.companyname
+    DEFINE selected_employee_id LIKE employees.employeeid
+    DEFINE selected_employee_name VARCHAR(32)
+    DEFINE selected_shipper_id LIKE shippers.shipperid
+    DEFINE selected_shipper_name LIKE shippers.companyname
 
     CLEAR FORM
     LET int_flag = FALSE
@@ -380,6 +386,63 @@ FUNCTION add_orders()
         ON KEY (CONTROL-P)
             LET int_flag = TRUE
             EXIT INPUT
+        ON KEY (CONTROL-T)
+            IF INFIELD(customerid) THEN
+               CALL customer_lookup()
+                  RETURNING selected_customer_id, selected_customer_name
+               IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
+                  LET curr_orders.customerid = selected_customer_id
+                  LET curr_orders.customername = selected_customer_name
+               END IF
+            END IF
+            IF INFIELD(employeeid) THEN
+               CALL employee_lookup()
+                  RETURNING selected_employee_id, selected_employee_name
+               IF selected_employee_id > 0 THEN
+                  LET curr_orders.employeeid = selected_employee_id
+                  LET curr_orders.employeename = selected_employee_name
+               END IF
+            END IF
+            IF INFIELD(shipvia) THEN
+               CALL shipper_lookup()
+                  RETURNING selected_shipper_id, selected_shipper_name
+               IF selected_shipper_id > 0 THEN
+                  LET curr_orders.shipvia = selected_shipper_id
+                  LET curr_orders.companyname = selected_shipper_name
+               END IF
+            END IF
+
+        BEFORE FIELD customerid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD employeeid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD shipvia
+            MESSAGE "Use Ctrl-T to open lookup window"
+
+        AFTER FIELD customerid
+            CALL validate_customer_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD customerid
+            END IF
+
+        AFTER FIELD employeeid
+            CALL validate_employee_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD employeeid
+            END IF
+
+        AFTER FIELD shipvia
+            CALL validate_shipvia_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD shipvia
+            END IF
+
         AFTER INPUT
             CALL validate_orders("A")
                RETURNING orders_valid, valid_msg
@@ -407,6 +470,12 @@ END FUNCTION
 FUNCTION edit_orders()
     DEFINE orders_valid SMALLINT
     DEFINE valid_msg CHAR(75)
+    DEFINE selected_customer_id LIKE customers.customerid
+    DEFINE selected_customer_name LIKE customers.companyname
+    DEFINE selected_employee_id LIKE employees.employeeid
+    DEFINE selected_employee_name VARCHAR(32)
+    DEFINE selected_shipper_id LIKE shippers.shipperid
+    DEFINE selected_shipper_name LIKE shippers.companyname
 
     LET int_flag = FALSE
     INPUT BY NAME curr_orders.customerid, curr_orders.employeeid,
@@ -420,6 +489,63 @@ FUNCTION edit_orders()
         ON KEY (CONTROL-P)
             LET int_flag = TRUE
             EXIT INPUT
+        ON KEY (CONTROL-T)
+            IF INFIELD(customerid) THEN
+               CALL customer_lookup()
+                  RETURNING selected_customer_id, selected_customer_name
+               IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
+                  LET curr_orders.customerid = selected_customer_id
+                  LET curr_orders.customername = selected_customer_name
+               END IF
+            END IF
+            IF INFIELD(employeeid) THEN
+               CALL employee_lookup()
+                  RETURNING selected_employee_id, selected_employee_name
+               IF selected_employee_id > 0 THEN
+                  LET curr_orders.employeeid = selected_employee_id
+                  LET curr_orders.employeename = selected_employee_name
+               END IF
+            END IF
+            IF INFIELD(shipvia) THEN
+               CALL shipper_lookup()
+                  RETURNING selected_shipper_id, selected_shipper_name
+               IF selected_shipper_id > 0 THEN
+                  LET curr_orders.shipvia = selected_shipper_id
+                  LET curr_orders.companyname = selected_shipper_name
+               END IF
+            END IF
+
+        BEFORE FIELD customerid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD employeeid
+            MESSAGE "Use Ctrl-T to open lookup window"
+        BEFORE FIELD shipvia
+            MESSAGE "Use Ctrl-T to open lookup window"
+
+        AFTER FIELD customerid
+            CALL validate_customer_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD customerid
+            END IF
+
+        AFTER FIELD employeeid
+            CALL validate_employee_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD employeeid
+            END IF
+
+        AFTER FIELD shipvia
+            CALL validate_shipvia_field()
+               RETURNING orders_valid, valid_msg
+            IF NOT orders_valid THEN
+               ERROR valid_msg
+               NEXT FIELD shipvia
+            END IF
+
         AFTER INPUT
             CALL validate_orders("C")
                RETURNING orders_valid, valid_msg
@@ -561,6 +687,8 @@ FUNCTION validate_orders(mode)
    DEFINE mode CHAR(1)
    DEFINE ordersExists SMALLINT
    DEFINE customer_name LIKE customers.companyname
+   DEFINE validateStatus SMALLINT
+   DEFINE errorMessage CHAR(60)
 
    SELECT 1 INTO ordersExists FROM orders WHERE orders.orderid = curr_orders.orderid
    IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
@@ -576,17 +704,147 @@ FUNCTION validate_orders(mode)
       RETURN FALSE, "Order Date is required"
    END IF
    IF curr_orders.customerid IS NOT NULL AND LENGTH(curr_orders.customerid) > 0 THEN
+      CALL validate_customer_field()
+         RETURNING validateStatus, errorMessage
+      IF NOT validateStatus THEN
+         RETURN validateStatus, errorMessage
+      END IF
+   ELSE
+      RETURN FALSE, "Customer ID is missing"
+   END IF
+   IF curr_orders.employeeid IS NOT NULL THEN
+      CALL validate_employee_field()
+         RETURNING validateStatus, errorMessage
+      IF NOT validateStatus THEN
+         RETURN validateStatus, errorMessage
+      END IF
+   ELSE
+      RETURN FALSE, "Employee ID is missing"
+   END IF
+   RETURN TRUE, "Okay"
+END FUNCTION
+
+FUNCTION validate_employee_field()
+   DEFINE employee_name CHAR(32)
+
+   IF curr_orders.employeeid IS NOT NULL THEN
+      SELECT firstname || " " || lastname INTO employee_name
+         FROM employees WHERE employees.employeeid = curr_orders.employeeid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Employee ID does not exist in employees table"
+      END IF
+      LET curr_orders.employeename = employee_name
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_employee_field
+
+FUNCTION validate_customer_field()
+   DEFINE customer_name LIKE customers.companyname
+
+   IF curr_orders.customerid IS NOT NULL AND LENGTH(curr_orders.customerid) > 0 THEN
       SELECT companyname INTO customer_name FROM customers WHERE customers.customerid = curr_orders.customerid
       IF sqlca.sqlcode == NOTFOUND THEN
          RETURN FALSE, "Customer ID does not exist in customers table"
       END IF
       LET curr_orders.customername = customer_name
    END IF
-   IF curr_orders.employeeid IS NOT NULL THEN
-      SELECT 1 INTO ordersExists FROM employees WHERE employees.employeeid = curr_orders.employeeid
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_customer_field
+
+FUNCTION validate_shipvia_field()
+   DEFINE shipper_name LIKE shippers.companyname
+
+   IF curr_orders.shipvia IS NOT NULL THEN
+      SELECT companyname INTO shipper_name FROM shippers WHERE shippers.shipperid = curr_orders.shipvia
       IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Employee ID does not exist in employees table"
+         RETURN FALSE, "Shipper ID does not exist in shippers table"
       END IF
+      LET curr_orders.companyname = shipper_name
    END IF
    RETURN TRUE, "Okay"
-END FUNCTION
+
+END FUNCTION #validate_shipvia_field
+
+-- =====================================================================
+-- Function: order_lookup
+-- Purpose : Open a lookup window for order selection
+-- =====================================================================
+FUNCTION order_lookup()
+   DEFINE ord_id LIKE orders.orderid
+
+   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "orders"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL order_lookup_menu()
+      RETURNING ord_id
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN ord_id
+
+END FUNCTION #order_lookup
+
+FUNCTION order_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+   DEFINE save_arr_max INTEGER
+
+   LET save_arr_max = arr_max
+   LET arr_max = 1000
+   CALL query_orders()
+   IF arr_size == 0 THEN
+      LET arr_max = save_arr_max
+      RETURN 0
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+
+       CALL load_curr_orders(currentIdx)
+       CALL display_curr_orders()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Order Selection"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Select" "Select the current order"
+              LET selectedIdx = currentIdx
+              CALL load_curr_orders(selectedIdx)
+              EXIT MENU
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+   LET arr_max = save_arr_max
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_orders.orderid
+   END IF
+
+   RETURN 0
+
+END FUNCTION #order_lookup_menu

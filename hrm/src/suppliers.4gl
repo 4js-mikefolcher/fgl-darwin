@@ -406,3 +406,86 @@ FUNCTION validate_suppliers(mode)
 
    RETURN TRUE, "Okay"
 END FUNCTION
+
+-- =====================================================================
+-- Function: supplier_lookup
+-- Purpose : Open a lookup window for supplier selection
+-- =====================================================================
+FUNCTION supplier_lookup()
+   DEFINE supp_id LIKE suppliers.supplierid
+   DEFINE supp_name LIKE suppliers.companyname
+
+   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "suppliers"
+      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+   CALL supplier_lookup_menu()
+      RETURNING supp_id, supp_name
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN supp_id, supp_name
+
+END FUNCTION #supplier_lookup
+
+FUNCTION supplier_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+   DEFINE save_arr_max INTEGER
+
+   LET save_arr_max = arr_max
+   LET arr_max = 1000
+   CALL query_suppliers()
+   IF arr_size == 0 THEN
+      LET arr_max = save_arr_max
+      RETURN 0, ""
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+
+       CALL load_curr_suppliers(currentIdx)
+       CALL display_curr_suppliers()
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       MESSAGE statusMessage
+
+       MENU "Supplier Selection"
+          COMMAND "First" "View first record in result set"
+              LET currentIdx = 1
+              EXIT MENU
+          COMMAND "Previous" "View previous record in result set"
+              LET currentIdx = currentIdx - 1
+              IF currentIdx < 1 THEN
+                 LET currentIdx = 1
+              END IF
+              EXIT MENU
+          COMMAND "Next" "View next record in result set"
+              LET currentIdx = currentIdx + 1
+              IF currentIdx > arr_size THEN
+                 LET currentIdx = arr_size
+              END IF
+              EXIT MENU
+          COMMAND "Last" "View last record in result set"
+              LET currentIdx = arr_size
+              EXIT MENU
+          COMMAND "Select" "Select the current supplier"
+              LET selectedIdx = currentIdx
+              CALL load_curr_suppliers(selectedIdx)
+              EXIT MENU
+          COMMAND "Exit" "Quit operation"
+              LET currentIdx = 0
+              EXIT MENU
+       END MENU
+
+   END WHILE
+
+   LET arr_max = save_arr_max
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_suppliers.supplierid, curr_suppliers.companyname
+   END IF
+
+   RETURN 0, ""
+
+END FUNCTION #supplier_lookup_menu
