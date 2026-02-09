@@ -3,8 +3,8 @@ MAIN
 
     CALL init_pgm()
 
-    OPEN FORM f FROM "shippers"
-    DISPLAY FORM f
+    OPEN WINDOW mainWindow WITH FORM "shippers"
+      ATTRIBUTES(BORDER)
 
     MENU "Shippers Maintenance"
         COMMAND "Query" "Search for Shippers"

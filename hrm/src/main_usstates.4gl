@@ -3,8 +3,8 @@ MAIN
 
     CALL init_pgm()
 
-    OPEN FORM f FROM "usstates"
-    DISPLAY FORM f
+    OPEN WINDOW mainWindow WITH FORM "usstates"
+      ATTRIBUTES(BORDER)
 
     MENU "US States Maintenance"
         COMMAND "Query" "Search for States"

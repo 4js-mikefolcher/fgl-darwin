@@ -3,8 +3,8 @@ MAIN
 
     CALL init_pgm()
 
-    OPEN FORM f FROM "region"
-    DISPLAY FORM f
+    OPEN WINDOW mainWindow WITH FORM "region"
+      ATTRIBUTES(BORDER)
 
     MENU "Region Maintenance"
         COMMAND "Query" "Search for regions"

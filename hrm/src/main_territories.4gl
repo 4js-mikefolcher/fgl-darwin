@@ -1,13 +1,12 @@
 DATABASE northwind
+MAIN
 
-MAIN          
-          
     CALL init_pgm()
-              
-    OPEN FORM f FROM "territories" 
-    DISPLAY FORM f
-                 
-    MENU "Territories Maintenance" 
+
+    OPEN WINDOW mainWindow WITH FORM "territories"
+      ATTRIBUTES(BORDER)
+
+    MENU "Territories Maintenance"
         COMMAND "Query" "Search for territories"
             CALL submenu_territories()
         COMMAND "Add" "Add a new territory"

@@ -3,8 +3,8 @@ MAIN
 
     CALL init_pgm()
 
-    OPEN FORM f FROM "order_details"
-    DISPLAY FORM f
+    OPEN WINDOW mainWindow WITH FORM "order_details"
+      ATTRIBUTES(BORDER)
 
     MENU "Order Details Maintenance"
         COMMAND "Query" "Search for Order Details"

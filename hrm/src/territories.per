@@ -1,12 +1,30 @@
 DATABASE northwind
 
-SCREEN
+SCREEN SIZE 25 BY 80
 {
-┌───────────────────────────── Territories ────────────────────────────┐
-│ Territory ID:   [territoryid        ]                                │
-│ Description:    [territorydescription]                               │
-│ Region ID:      [regionid][regiondescription       ]                 │
-└──────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────── Territories ─────────────────────────┐
+  Territory ID  : [territoryid        ]
+  Description   : [territorydescription]
+  Region ID     : [regionid][regiondescription       ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+└──────────────────────────────────────────────────────────────────┘
 }
 END
 ATTRIBUTES
@@ -16,6 +34,6 @@ regionid = FORMONLY.regionid TYPE SMALLINT, TITLE="Region ID";
 regiondescription = FORMONLY.regiondescription, TITLE="Region Description", NOENTRY;
 END
 INSTRUCTIONS
-SCREEN RECORD s_territories(formonly.territoryid, formonly.territorydescription, 
+SCREEN RECORD s_territories(formonly.territoryid, formonly.territorydescription,
                             formonly.regionid, formonly.regiondescription);
 END

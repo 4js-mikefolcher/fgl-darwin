@@ -1,25 +1,35 @@
 DATABASE northwind
 
-SCREEN
+SCREEN SIZE 25 BY 80
 {
-┌────────────────────────────── Employees ───────────────────────────────┐
-│ Employee ID : [employeeid]   Last Name : [lastname                    ]│
-│ First Name  : [firstname]    Title :     [title                       ]│
-│ Courtesy    : [titleofcourtesy]                                        │
-│ Birth Date  : [birthdate    ] Hire Date : [hiredate    ]               │
-│ Address     : [address                                 ]               │
-│ City        : [city         ] Region : [region         ]               │
-│ Postal Code : [postalcode]    Country: [country        ]               │
-│ Home Phone  : [homephone    ] Ext: [extension]                         │
-│ Reports To  : [reportsto    ] [fullname                ]               │
-│ Photo Path  : [photopath                                              ]│
-│ Notes :                                                                │
-│ [notes                                                                ]│
-└──────────────────────────────────────────────────────────────────────--┘
+┌─────────────────────────── Employees ───────────────────────────┐
+  Employee ID : [employeeid]   Last Name : [lastname              ]
+  First Name  : [firstname ]   Title     : [title                 ]
+  Courtesy    : [titleofcourtesy     ]
+  Birth Date  : [birthdate ] Hire Date : [hiredate  ]
+  Address     : [address                               ]
+  City        : [city         ] Region  : [region         ]
+  Postal Code : [postalcode]    Country : [country        ]
+  Home Phone  : [homephone    ] Ext     : [extension]
+  Reports To  : [reportsto    ] [fullname                ]
+  Photo Path  : [photopath                                        ]
+  Notes :
+  [notes                                                         ]
+
+
+
+
+
+
+
+
+
+
+└──────────────────────────────────────────────────────────────────┘
 }
 
 ATTRIBUTES
-employeeid = formonly.employeeid TYPE  INTEGER;
+employeeid = formonly.employeeid TYPE INTEGER;
 lastname = formonly.lastname;
 firstname = formonly.firstname;
 title = formonly.title;

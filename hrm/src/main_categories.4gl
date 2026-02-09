@@ -3,8 +3,8 @@ MAIN
 
     CALL init_pgm()
 
-    OPEN FORM f FROM "categories"
-    DISPLAY FORM f
+    OPEN WINDOW mainWindow WITH FORM "categories"
+      ATTRIBUTES(BORDER)
 
     MENU "Categories Maintenance"
         COMMAND "Query" "Search for Categories"
