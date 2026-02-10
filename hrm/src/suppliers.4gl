@@ -1,6 +1,9 @@
 DATABASE northwind
 
-DEFINE suppliers_arr ARRAY[1000] OF RECORD
+-- =====================================================================
+-- Record Type Definitions
+-- =====================================================================
+TYPE t_supplier RECORD
    supplierid LIKE suppliers.supplierid,
    companyname LIKE suppliers.companyname,
    contactname LIKE suppliers.contactname,
@@ -15,23 +18,11 @@ DEFINE suppliers_arr ARRAY[1000] OF RECORD
    homepage LIKE suppliers.homepage
 END RECORD
 
-DEFINE curr_suppliers RECORD
-   supplierid LIKE suppliers.supplierid,
-   companyname LIKE suppliers.companyname,
-   contactname LIKE suppliers.contactname,
-   contacttitle LIKE suppliers.contacttitle,
-   address LIKE suppliers.address,
-   city LIKE suppliers.city,
-   region LIKE suppliers.region,
-   postalcode LIKE suppliers.postalcode,
-   country LIKE suppliers.country,
-   phone LIKE suppliers.phone,
-   fax LIKE suppliers.fax,
-   homepage LIKE suppliers.homepage
-END RECORD
-
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+-- =====================================================================
+-- Global Variables
+-- =====================================================================
+DEFINE suppliers_arr DYNAMIC ARRAY OF t_supplier
+DEFINE curr_suppliers t_supplier
 
 -- =====================================================================
 -- Function: view_supplier
@@ -49,11 +40,10 @@ FUNCTION view_supplier(supp_id)
    OPEN WINDOW viewSupplierWindow AT 5,5 WITH FORM "suppliers"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
-   LET arr_max = 1000
    LET where_clause = " suppliers.supplierid = ", supp_id
    CALL load_suppliers(where_clause)
 
-   IF arr_size == 0 THEN
+   IF suppliers_arr.getLength() == 0 THEN
       ERROR "Supplier not found"
       CLOSE WINDOW viewSupplierWindow
       RETURN
@@ -77,18 +67,17 @@ FUNCTION submenu_suppliers()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
 
-   LET arr_max = 1000
    CALL query_suppliers()
-   IF arr_size == 0 THEN
+   IF suppliers_arr.getLength() == 0 THEN
       RETURN
    END IF
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= suppliers_arr.getLength()
 
        CALL load_curr_suppliers(currentIdx)
        CALL display_curr_suppliers()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", suppliers_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Suppliers Management"
@@ -103,18 +92,18 @@ FUNCTION submenu_suppliers()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > suppliers_arr.getLength() THEN
+                 LET currentIdx = suppliers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = suppliers_arr.getLength()
               EXIT MENU
           COMMAND "Add" "Add a new supplier"
               CALL add_suppliers()
               IF int_flag == FALSE THEN
                  CALL refresh_suppliers(currentIdx, "A")
-                 LET currentIdx = arr_size
+                 LET currentIdx = suppliers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Modify" "Edit an existing supplier"
@@ -127,8 +116,8 @@ FUNCTION submenu_suppliers()
               CALL delete_suppliers()
               IF int_flag == FALSE THEN
                  CALL refresh_suppliers(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
+                 IF currentIdx > suppliers_arr.getLength() THEN
+                    LET currentIdx = suppliers_arr.getLength()
                  END IF
               END IF
               EXIT MENU
@@ -169,7 +158,7 @@ FUNCTION query_suppliers()
 
     CALL load_suppliers(where_clause)
 
-    IF arr_size == 0 THEN
+    IF suppliers_arr.getLength() == 0 THEN
         MESSAGE "No suppliers found."
         RETURN
     END IF
@@ -179,7 +168,7 @@ END FUNCTION
 FUNCTION load_suppliers(where_clause)
     DEFINE where_clause VARCHAR(500)
     DEFINE sql_stmt VARCHAR(1024)
-    DEFINE idx INTEGER
+    DEFINE temp_supplier t_supplier
 
     LET sql_stmt = " SELECT supplierid, companyname, contactname, contacttitle,",
                    " address, city, region, postalcode, country, phone, fax, homepage",
@@ -188,25 +177,18 @@ FUNCTION load_suppliers(where_clause)
 
     CALL clear_suppliers()
 
-    LET idx = 0
     PREPARE p_suppliers FROM sql_stmt
     DECLARE c_suppliers CURSOR FOR p_suppliers
-    FOREACH c_suppliers INTO curr_suppliers.*
-        LET idx = idx + 1
-        LET suppliers_arr[idx] = curr_suppliers
+    FOREACH c_suppliers INTO temp_supplier.*
+        CALL suppliers_arr.appendElement()
+        LET suppliers_arr[suppliers_arr.getLength()] = temp_supplier
     END FOREACH
     CALL clear_curr_suppliers()
-    LET arr_size = idx
 
 END FUNCTION
 
 FUNCTION clear_suppliers()
-   DEFINE idx INTEGER
-
-   FOR idx = 1 TO arr_max
-      INITIALIZE suppliers_arr[idx].* TO NULL
-   END FOR
-   LET arr_size = 0
+   CALL suppliers_arr.clear()
 
 END FUNCTION #clear_suppliers
 
@@ -297,7 +279,7 @@ FUNCTION load_curr_suppliers(currIdx)
    DEFINE currIdx INTEGER
 
    CALL clear_curr_suppliers()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
+   IF currIdx > 0 AND currIdx <= suppliers_arr.getLength() THEN
       LET curr_suppliers = suppliers_arr[currIdx]
    END IF
 
@@ -354,34 +336,21 @@ END FUNCTION
 FUNCTION refresh_suppliers(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
    DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
 
    CASE operation
       WHEN "A"
-         LET newIdx = arr_size + 1
-         LET suppliers_arr[newIdx] = curr_suppliers
-         LET arr_size = newIdx
+         CALL suppliers_arr.appendElement()
+         LET suppliers_arr[suppliers_arr.getLength()] = curr_suppliers
       WHEN "C"
          LET suppliers_arr[currIdx] = curr_suppliers
       WHEN "D"
-           LET newIdx = 0
-           LET replaceRec = FALSE
-
-           FOR idx = 1 TO arr_size
-              IF suppliers_arr[idx].supplierid = curr_suppliers.supplierid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF
-              LET newIdx = newIdx + 1
-              LET suppliers_arr[newIdx] = suppliers_arr[idx]
-           END FOR
-
-           IF replaceRec THEN
-              INITIALIZE suppliers_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF
+         FOR idx = 1 TO suppliers_arr.getLength()
+            IF suppliers_arr[idx].supplierid = curr_suppliers.supplierid THEN
+               CALL suppliers_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
    END CASE
 
 END FUNCTION #refresh_suppliers
@@ -431,23 +400,19 @@ FUNCTION supplier_lookup_menu()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
    DEFINE selectedIdx INTEGER
-   DEFINE save_arr_max INTEGER
 
-   LET save_arr_max = arr_max
-   LET arr_max = 1000
    CALL query_suppliers()
-   IF arr_size == 0 THEN
-      LET arr_max = save_arr_max
+   IF suppliers_arr.getLength() == 0 THEN
       RETURN 0, ""
    END IF
 
    LET currentIdx = 1
    LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+   WHILE currentIdx > 0 AND currentIdx <= suppliers_arr.getLength() AND selectedIdx == 0
 
        CALL load_curr_suppliers(currentIdx)
        CALL display_curr_suppliers()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", suppliers_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Supplier Selection"
@@ -462,12 +427,12 @@ FUNCTION supplier_lookup_menu()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > suppliers_arr.getLength() THEN
+                 LET currentIdx = suppliers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = suppliers_arr.getLength()
               EXIT MENU
           COMMAND "Select" "Select the current supplier"
               LET selectedIdx = currentIdx
@@ -479,8 +444,6 @@ FUNCTION supplier_lookup_menu()
        END MENU
 
    END WHILE
-
-   LET arr_max = save_arr_max
 
    IF selectedIdx > 0 THEN
       RETURN curr_suppliers.supplierid, curr_suppliers.companyname

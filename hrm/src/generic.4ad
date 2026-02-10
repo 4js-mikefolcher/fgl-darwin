@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ActionDefaultList>
+  <!-- Navigation Actions -->
+  <ActionDefault name="first"
+    text="First"
+    image="fa-step-backward"
+    comment="View first record in result set" />
+  
+  <ActionDefault name="previous"
+    text="Previous"
+    image="fa-arrow-left"
+    comment="View previous record in result set" />
+  
+  <ActionDefault name="next"
+    text="Next"
+    image="fa-arrow-right"
+    comment="View next record in result set" />
+  
+  <ActionDefault name="last"
+    text="Last"
+    image="fa-step-forward"
+    comment="View last record in result set" />
+  
+  <!-- Data Manipulation Actions -->
+  <ActionDefault name="query"
+    text="Query"
+    image="find"
+    comment="Search for records"
+    acceleratorName="Control-f" />
+  
+  <ActionDefault name="add"
+    text="Add"
+    image="fa-plus"
+    comment="Add a new record"
+    acceleratorName="Control-n" />
+  
+  <ActionDefault name="modify"
+    text="Modify"
+    image="fa-pencil"
+    comment="Edit an existing record"
+    acceleratorName="Control-e" />
+  
+  <ActionDefault name="delete"
+    text="Delete"
+    image="fa-trash"
+    comment="Delete a record"
+    acceleratorName="Delete" />
+  
+  <!-- Related Data Actions -->
+  <ActionDefault name="products"
+    text="Products"
+    image="fa-list"
+    comment="View related products" />
+  
+  <ActionDefault name="orders"
+    text="Orders"
+    image="fa-shopping-cart"
+    comment="View related orders" />
+  
+  <!-- Standard Actions -->
+  <ActionDefault name="accept"
+    text="OK"
+    image="fa-check"
+    acceleratorName="Return" />
+  
+  <ActionDefault name="cancel"
+    text="Cancel"
+    image="fa-ban"
+    acceleratorName="Escape" />
+  
+  <ActionDefault name="exit"
+    text="Exit"
+    image="fa-power-off"
+    comment="Exit the program"
+    acceleratorName="Control-q" />
+</ActionDefaultList>

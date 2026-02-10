@@ -1,6 +1,9 @@
 DATABASE northwind
 
-DEFINE customers_arr ARRAY[1000] OF RECORD
+-- =====================================================================
+-- Record Type Definitions
+-- =====================================================================
+TYPE t_customer RECORD
    customerid LIKE customers.customerid,
    companyname LIKE customers.companyname,
    contactname LIKE customers.contactname,
@@ -14,22 +17,11 @@ DEFINE customers_arr ARRAY[1000] OF RECORD
    fax LIKE customers.fax
 END RECORD
 
-DEFINE curr_customers RECORD
-   customerid LIKE customers.customerid,
-   companyname LIKE customers.companyname,
-   contactname LIKE customers.contactname,
-   contacttitle LIKE customers.contacttitle,
-   address LIKE customers.address,
-   city LIKE customers.city,
-   region LIKE customers.region,
-   postalcode LIKE customers.postalcode,
-   country LIKE customers.country,
-   phone LIKE customers.phone,
-   fax LIKE customers.fax
-END RECORD
-
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+-- =====================================================================
+-- Global Variables
+-- =====================================================================
+DEFINE customers_arr DYNAMIC ARRAY OF t_customer
+DEFINE curr_customers t_customer
 
 -- =====================================================================
 -- Function: view_customer
@@ -47,11 +39,10 @@ FUNCTION view_customer(cust_id)
    OPEN WINDOW viewCustomerWindow AT 5,5 WITH FORM "customers"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
-   LET arr_max = 1000
    LET where_clause = " customers.customerid = '", cust_id CLIPPED, "'"
    CALL load_customers(where_clause)
 
-   IF arr_size == 0 THEN
+   IF customers_arr.getLength() == 0 THEN
       ERROR "Customer not found"
       CLOSE WINDOW viewCustomerWindow
       RETURN
@@ -75,18 +66,17 @@ FUNCTION submenu_customers()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
 
-   LET arr_max = 1000
    CALL query_customers()
-   IF arr_size == 0 THEN
+   IF customers_arr.getLength() == 0 THEN
       RETURN
    END IF
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= customers_arr.getLength()
 
        CALL load_curr_customers(currentIdx)
        CALL display_curr_customers()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", customers_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Customers Management"
@@ -101,18 +91,18 @@ FUNCTION submenu_customers()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > customers_arr.getLength() THEN
+                 LET currentIdx = customers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = customers_arr.getLength()
               EXIT MENU
           COMMAND "Add" "Add a new customer"
               CALL add_customers()
               IF int_flag == FALSE THEN
                  CALL refresh_customers(currentIdx, "A")
-                 LET currentIdx = arr_size
+                 LET currentIdx = customers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Modify" "Edit an existing customer"
@@ -125,8 +115,8 @@ FUNCTION submenu_customers()
               CALL delete_customers()
               IF int_flag == FALSE THEN
                  CALL refresh_customers(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
+                 IF currentIdx > customers_arr.getLength() THEN
+                    LET currentIdx = customers_arr.getLength()
                  END IF
               END IF
               EXIT MENU
@@ -167,7 +157,7 @@ FUNCTION query_customers()
 
     CALL load_customers(where_clause)
 
-    IF arr_size == 0 THEN
+    IF customers_arr.getLength() == 0 THEN
         MESSAGE "No customers found."
         RETURN
     END IF
@@ -177,7 +167,7 @@ END FUNCTION
 FUNCTION load_customers(where_clause)
     DEFINE where_clause VARCHAR(500)
     DEFINE sql_stmt VARCHAR(1024)
-    DEFINE idx INTEGER
+    DEFINE temp_customer t_customer
 
     LET sql_stmt = " SELECT customerid, companyname, contactname, contacttitle,",
                    " address, city, region, postalcode, country, phone, fax",
@@ -186,25 +176,18 @@ FUNCTION load_customers(where_clause)
 
     CALL clear_customers()
 
-    LET idx = 0
     PREPARE p_customers FROM sql_stmt
     DECLARE c_customers CURSOR FOR p_customers
-    FOREACH c_customers INTO curr_customers.*
-        LET idx = idx + 1
-        LET customers_arr[idx] = curr_customers
+    FOREACH c_customers INTO temp_customer.*
+        CALL customers_arr.appendElement()
+        LET customers_arr[customers_arr.getLength()] = temp_customer
     END FOREACH
     CALL clear_curr_customers()
-    LET arr_size = idx
 
 END FUNCTION
 
 FUNCTION clear_customers()
-   DEFINE idx INTEGER
-
-   FOR idx = 1 TO arr_max
-      INITIALIZE customers_arr[idx].* TO NULL
-   END FOR
-   LET arr_size = 0
+   CALL customers_arr.clear()
 
 END FUNCTION #clear_customers
 
@@ -294,7 +277,7 @@ FUNCTION load_curr_customers(currIdx)
    DEFINE currIdx INTEGER
 
    CALL clear_curr_customers()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
+   IF currIdx > 0 AND currIdx <= customers_arr.getLength() THEN
       LET curr_customers = customers_arr[currIdx]
    END IF
 
@@ -350,34 +333,21 @@ END FUNCTION
 FUNCTION refresh_customers(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
    DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
 
    CASE operation
       WHEN "A"
-         LET newIdx = arr_size + 1
-         LET customers_arr[newIdx] = curr_customers
-         LET arr_size = newIdx
+         CALL customers_arr.appendElement()
+         LET customers_arr[customers_arr.getLength()] = curr_customers
       WHEN "C"
          LET customers_arr[currIdx] = curr_customers
       WHEN "D"
-           LET newIdx = 0
-           LET replaceRec = FALSE
-
-           FOR idx = 1 TO arr_size
-              IF customers_arr[idx].customerid = curr_customers.customerid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF
-              LET newIdx = newIdx + 1
-              LET customers_arr[newIdx] = customers_arr[idx]
-           END FOR
-
-           IF replaceRec THEN
-              INITIALIZE customers_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF
+         FOR idx = 1 TO customers_arr.getLength()
+            IF customers_arr[idx].customerid = curr_customers.customerid THEN
+               CALL customers_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
    END CASE
 
 END FUNCTION #refresh_customers
@@ -427,23 +397,19 @@ FUNCTION customer_lookup_menu()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
    DEFINE selectedIdx INTEGER
-   DEFINE save_arr_max INTEGER
 
-   LET save_arr_max = arr_max
-   LET arr_max = 1000
    CALL query_customers()
-   IF arr_size == 0 THEN
-      LET arr_max = save_arr_max
+   IF customers_arr.getLength() == 0 THEN
       RETURN "", ""
    END IF
 
    LET currentIdx = 1
    LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+   WHILE currentIdx > 0 AND currentIdx <= customers_arr.getLength() AND selectedIdx == 0
 
        CALL load_curr_customers(currentIdx)
        CALL display_curr_customers()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", customers_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Customer Selection"
@@ -458,12 +424,12 @@ FUNCTION customer_lookup_menu()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > customers_arr.getLength() THEN
+                 LET currentIdx = customers_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = customers_arr.getLength()
               EXIT MENU
           COMMAND "Select" "Select the current customer"
               LET selectedIdx = currentIdx
@@ -476,12 +442,10 @@ FUNCTION customer_lookup_menu()
 
    END WHILE
 
-   LET arr_max = save_arr_max
-
    IF selectedIdx > 0 THEN
       RETURN curr_customers.customerid, curr_customers.companyname
    END IF
 
    RETURN "", ""
 
-END FUNCTION #customer_lookup_menu
+END FUNCTION

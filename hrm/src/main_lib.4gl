@@ -9,6 +9,9 @@ FUNCTION init_pgm()
 
     LET arr_max = 1000
 
+    -- Load generic stylesheet for all windows
+    CALL ui.Interface.loadStyles("generic.4st")
+
 END FUNCTION
 
 FUNCTION get_arr_max()

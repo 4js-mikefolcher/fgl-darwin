@@ -1,54 +1,62 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌─────────────────────────── Customers ───────────────────────────┐
-  Customer ID   : [customerid          ]
-  Company Name  : [companyname                            ]
-  Contact Name  : [contactname                  ]
-  Contact Title : [contacttitle                 ]
-  Address       : [address                                        ]
-  City          : [city           ]  Region : [region         ]
-  Postal Code   : [postalcode]       Country: [country        ]
-  Phone         : [phone                  ]
-  Fax           : [fax                    ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  ITEM products
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Customers Management")
+  VBOX
+    GROUP (TEXT="Customer Information", STYLE="box")
+      GRID
+      {
+        Customer ID:   [customerid      ]
+        Company Name:  [companyname                  ]
+        Contact Name:  [contactname                 ]
+        Contact Title: [contacttitle                ]
+        Address:       [address                           ]
+        City:          [city           ]  Region: [region         ]
+        Postal Code:   [postalcode]        Country: [country        ]
+        Phone:         [phone                  ]
+        Fax:           [fax                    ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-customerid = formonly.customerid TYPE CHAR;
-companyname = formonly.companyname TYPE VARCHAR;
-contactname = formonly.contactname TYPE VARCHAR;
-contacttitle = formonly.contacttitle TYPE VARCHAR;
-address = formonly.address TYPE VARCHAR;
-city = formonly.city TYPE VARCHAR;
-region = formonly.region TYPE VARCHAR;
-postalcode = formonly.postalcode TYPE VARCHAR;
-country = formonly.country TYPE VARCHAR;
-phone = formonly.phone TYPE VARCHAR;
-fax = formonly.fax TYPE VARCHAR;
-
-END --ATTRIBUTES
+  customerid = formonly.customerid TYPE CHAR;
+  companyname = formonly.companyname TYPE VARCHAR;
+  contactname = formonly.contactname TYPE VARCHAR;
+  contacttitle = formonly.contacttitle TYPE VARCHAR;
+  address = formonly.address TYPE VARCHAR;
+  city = formonly.city TYPE VARCHAR;
+  region = formonly.region TYPE VARCHAR;
+  postalcode = formonly.postalcode TYPE VARCHAR;
+  country = formonly.country TYPE VARCHAR;
+  phone = formonly.phone TYPE VARCHAR;
+  fax = formonly.fax TYPE VARCHAR;
+END
 
 INSTRUCTIONS
+  SCREEN RECORD s_customers(formonly.customerid, formonly.companyname, formonly.contactname,
+                            formonly.contacttitle, formonly.address, formonly.city,
+                            formonly.region, formonly.postalcode, formonly.country,
+                            formonly.phone, formonly.fax);
+END
 
-   SCREEN RECORD s_customers(formonly.customerid, formonly.companyname, formonly.contactname,
-                             formonly.contacttitle, formonly.address, formonly.city,
-                             formonly.region, formonly.postalcode, formonly.country,
-                             formonly.phone, formonly.fax);
 
-END --INSTRUCTIONS

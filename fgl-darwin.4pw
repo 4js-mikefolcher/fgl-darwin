@@ -145,6 +145,8 @@
       <File filePath="hrm/src/customers.4gl"/>
       <File filePath="hrm/src/empl_terr.4gl"/>
       <File filePath="hrm/src/employees.4gl"/>
+      <File filePath="hrm/src/generic.4ad"/>
+      <File filePath="hrm/src/generic.4st"/>
       <File filePath="hrm/src/main_lib.4gl"/>
       <File filePath="hrm/src/order_details.4gl"/>
       <File filePath="hrm/src/orders.4gl"/>

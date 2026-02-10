@@ -1,19 +1,19 @@
 DATABASE northwind
 
-DEFINE categories_arr ARRAY[1000] OF RECORD
+-- =====================================================================
+-- Record Type Definitions
+-- =====================================================================
+TYPE t_category RECORD
    categoryid LIKE categories.categoryid,
    categoryname LIKE categories.categoryname,
    description LIKE categories.description
 END RECORD
 
-DEFINE curr_categories RECORD
-   categoryid LIKE categories.categoryid,
-   categoryname LIKE categories.categoryname,
-   description LIKE categories.description
-END RECORD
-
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+-- =====================================================================
+-- Global Variables
+-- =====================================================================
+DEFINE categories_arr DYNAMIC ARRAY OF t_category
+DEFINE curr_categories t_category
 
 -- =====================================================================
 -- Function: view_category
@@ -31,11 +31,10 @@ FUNCTION view_category(cat_id)
    OPEN WINDOW viewCategoryWindow AT 5,5 WITH FORM "categories"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
-   LET arr_max = 1000
    LET where_clause = " categories.categoryid = ", cat_id
    CALL load_categories(where_clause)
 
-   IF arr_size == 0 THEN
+   IF categories_arr.getLength() == 0 THEN
       ERROR "Category not found"
       CLOSE WINDOW viewCategoryWindow
       RETURN
@@ -59,18 +58,17 @@ FUNCTION submenu_categories()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
 
-   LET arr_max = 1000
    CALL query_categories()
-   IF arr_size == 0 THEN
+   IF categories_arr.getLength() == 0 THEN
       RETURN
    END IF
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= categories_arr.getLength()
 
        CALL load_curr_categories(currentIdx)
        CALL display_curr_categories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", categories_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Categories Management"
@@ -85,18 +83,18 @@ FUNCTION submenu_categories()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > categories_arr.getLength() THEN
+                 LET currentIdx = categories_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = categories_arr.getLength()
               EXIT MENU
           COMMAND "Add" "Add a new category"
               CALL add_categories()
               IF int_flag == FALSE THEN
                  CALL refresh_categories(currentIdx, "A")
-                 LET currentIdx = arr_size
+                 LET currentIdx = categories_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Modify" "Edit an existing category"
@@ -109,8 +107,8 @@ FUNCTION submenu_categories()
               CALL delete_categories()
               IF int_flag == FALSE THEN
                  CALL refresh_categories(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
+                 IF currentIdx > categories_arr.getLength() THEN
+                    LET currentIdx = categories_arr.getLength()
                  END IF
               END IF
               EXIT MENU
@@ -148,7 +146,7 @@ FUNCTION query_categories()
 
     CALL load_categories(where_clause)
 
-    IF arr_size == 0 THEN
+    IF categories_arr.getLength() == 0 THEN
         MESSAGE "No categories found."
         RETURN
     END IF
@@ -158,7 +156,7 @@ END FUNCTION
 FUNCTION load_categories(where_clause)
     DEFINE where_clause VARCHAR(500)
     DEFINE sql_stmt VARCHAR(1024)
-    DEFINE idx INTEGER
+    DEFINE temp_category t_category
 
     LET sql_stmt = " SELECT categoryid, categoryname, description",
                    " FROM categories",
@@ -166,26 +164,18 @@ FUNCTION load_categories(where_clause)
 
     CALL clear_categories()
 
-    LET idx = 0
     PREPARE p_categories FROM sql_stmt
     DECLARE c_categories CURSOR FOR p_categories
-    FOREACH c_categories INTO curr_categories.*
-        LET idx = idx + 1
-        LET categories_arr[idx] = curr_categories
+    FOREACH c_categories INTO temp_category.*
+        CALL categories_arr.appendElement()
+        LET categories_arr[categories_arr.getLength()] = temp_category
     END FOREACH
     CALL clear_curr_categories()
-    LET arr_size = idx
 
 END FUNCTION
 
 FUNCTION clear_categories()
-   DEFINE idx INTEGER
-
-   FOR idx = 1 TO arr_max
-      INITIALIZE categories_arr[idx].* TO NULL
-   END FOR
-   LET arr_size = 0
-
+   CALL categories_arr.clear()
 END FUNCTION #clear_categories
 
 FUNCTION add_categories()
@@ -272,7 +262,7 @@ FUNCTION load_curr_categories(currIdx)
    DEFINE currIdx INTEGER
 
    CALL clear_curr_categories()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
+   IF currIdx > 0 AND currIdx <= categories_arr.getLength() THEN
       LET curr_categories = categories_arr[currIdx]
    END IF
 
@@ -316,34 +306,21 @@ END FUNCTION
 FUNCTION refresh_categories(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
    DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
 
    CASE operation
       WHEN "A"
-         LET newIdx = arr_size + 1
-         LET categories_arr[newIdx] = curr_categories
-         LET arr_size = newIdx
+         CALL categories_arr.appendElement()
+         LET categories_arr[categories_arr.getLength()] = curr_categories
       WHEN "C"
          LET categories_arr[currIdx] = curr_categories
       WHEN "D"
-           LET newIdx = 0
-           LET replaceRec = FALSE
-
-           FOR idx = 1 TO arr_size
-              IF categories_arr[idx].categoryid = curr_categories.categoryid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF
-              LET newIdx = newIdx + 1
-              LET categories_arr[newIdx] = categories_arr[idx]
-           END FOR
-
-           IF replaceRec THEN
-              INITIALIZE categories_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF
+         FOR idx = 1 TO categories_arr.getLength()
+            IF categories_arr[idx].categoryid = curr_categories.categoryid THEN
+               CALL categories_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
    END CASE
 
 END FUNCTION #refresh_categories
@@ -393,23 +370,19 @@ FUNCTION category_lookup_menu()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
    DEFINE selectedIdx INTEGER
-   DEFINE save_arr_max INTEGER
 
-   LET save_arr_max = arr_max
-   LET arr_max = 1000
    CALL query_categories()
-   IF arr_size == 0 THEN
-      LET arr_max = save_arr_max
+   IF categories_arr.getLength() == 0 THEN
       RETURN 0, ""
    END IF
 
    LET currentIdx = 1
    LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+   WHILE currentIdx > 0 AND currentIdx <= categories_arr.getLength() AND selectedIdx == 0
 
        CALL load_curr_categories(currentIdx)
        CALL display_curr_categories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", categories_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Category Selection"
@@ -424,12 +397,12 @@ FUNCTION category_lookup_menu()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > categories_arr.getLength() THEN
+                 LET currentIdx = categories_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = categories_arr.getLength()
               EXIT MENU
           COMMAND "Select" "Select the current category"
               LET selectedIdx = currentIdx
@@ -441,8 +414,6 @@ FUNCTION category_lookup_menu()
        END MENU
 
    END WHILE
-
-   LET arr_max = save_arr_max
 
    IF selectedIdx > 0 THEN
       RETURN curr_categories.categoryid, curr_categories.categoryname
