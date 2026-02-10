@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <StyleList>
+<<<<<<< HEAD
   <Style name="Window">
+=======
+  <Style name="Window.noactions">
+    <StyleAttribute name="windowType" value="normal" />
+>>>>>>> 5f1dfa9 (Initial AI conversion to Genero)
     <StyleAttribute name="actionPanelPosition" value="none" />
     <StyleAttribute name="ringMenuPosition" value="none" />
   </Style>
@@ -29,6 +34,7 @@
     <StyleAttribute name="backgroundColor" value="lightgray" />
     <StyleAttribute name="orientation" value="horizontal" />
   </Style>
+<<<<<<< HEAD
 
   <Style name="Window.modulewindow">
     <StyleAttribute name="windowType" value="modal" />
@@ -58,4 +64,6 @@
      <StyleAttribute name="rowActionTrigger" value="singleClick" />
   </Style>
 
+=======
+>>>>>>> 5f1dfa9 (Initial AI conversion to Genero)
 </StyleList>

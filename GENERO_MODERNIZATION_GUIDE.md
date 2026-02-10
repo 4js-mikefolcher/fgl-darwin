@@ -1586,7 +1586,6 @@ MAIN
     OPEN WINDOW mainWindow WITH FORM "customers"
     -- Action defaults are automatically loaded by form_initializer
     -- Base Window style applies actionPanelPosition=none automatically
-    
     -- rest of program
 END MAIN
 ```
@@ -1996,6 +1995,7 @@ END TOOLBAR
 **In .4st File (Definition):**
 ```xml
 <Style name="Window.modulewindow">
+<Style name="Window.noactions">
 ```
 Uses fully qualified name with `Window.` prefix.
 
@@ -2003,6 +2003,9 @@ Uses fully qualified name with `Window.` prefix.
 ```4gl
 OPEN WINDOW viewCustomerWindow WITH FORM "customers"
   ATTRIBUTES(STYLE="modulewindow")
+
+OPEN WINDOW mainWindow WITH FORM "customers"
+  ATTRIBUTES(BORDER, STYLE="noactions")
 ```
 Uses just the style name part, NOT the qualified name.
 
@@ -2069,7 +2072,6 @@ MAIN
     
     -- Module-specific combo population (if needed)
     CALL populate_supplier_combo()
-    
     -- Module-specific menu
 END MAIN
 ```
