@@ -2294,6 +2294,83 @@ Requires `IMPORT util` at the module level.
 
 **Key Insight:** In the .4pw project file, files used by multiple applications (like report_helper.4gl) should be placed in the Shared Library node, not duplicated in each Application node.
 
+### 8. ON ACTION Replaces ON KEY
+
+**Why Important:**
+- ON KEY uses key codes tied to terminal emulators (CTRL-P, ACCEPT)
+- ON ACTION uses named actions that work with toolbars, buttons, and keyboard
+- Actions map to generic.4ad for consistent icons and accelerators
+
+**Migration Pattern:**
+```4gl
+-- Before (terminal-dependent)
+ON KEY (ACCEPT)
+    ACCEPT INPUT
+ON KEY (CONTROL-P)
+    LET int_flag = TRUE
+    EXIT INPUT
+
+-- After (platform-independent)
+ON ACTION accept
+    ACCEPT INPUT
+ON ACTION cancel
+    LET int_flag = TRUE
+    EXIT INPUT
+```
+
+**Applied In:** CONSTRUCT, INPUT BY NAME across all modules.
+
+### 9. confirm_delete() is a Reusable Pattern
+
+**Why Important:**
+- PROMPT requires terminal-style text input ("Y/N")
+- confirm_delete() uses MENU with STYLE="dialog" for GUI dialog
+- Defined once in main_lib.4gl, used everywhere
+- Returns BOOLEAN for clean conditional logic
+
+**Applied In:** categories, suppliers, shippers, usstates, products, customers modules.
+
+### 10. COMBOBOX Population Strategy
+
+**Key Insight:** Populate comboboxes ONCE when the form opens in MAIN, not in each add/edit function.
+
+**Why:**
+- Combobox items persist for the lifetime of the window
+- Populating on every add/edit is wasteful
+- The main program has the right scope (after OPEN WINDOW, before menu loop)
+
+**Pattern:**
+```4gl
+MAIN
+    -- ... open window, load form ...
+    CALL populate_supplier_combo()
+    CALL populate_category_combo()
+    -- ... start menu loop ...
+END MAIN
+```
+
+### 11. Build System: fgl2p vs fglcomp
+
+**Key Insight:** Individual `fglcomp -r module.4gl` fails when the module calls functions defined in other .4gl files (e.g., `confirm_delete()` from `main_lib.4gl`).
+
+**Solution:** Use `fgl2p` to compile and link multiple modules together:
+```bash
+fgl2p -o main_products.42r main_products.4gl main_lib.4gl products.4gl
+```
+
+**Best Practice:** Always use the Makefile which has proper dependency rules. The root `hrm/Makefile` handles all cross-module linking automatically.
+
+### 12. CHECKBOX Defaults Matter
+
+**Key Insight:** When adding a new record, CHECKBOX fields may display inconsistently if not initialized.
+
+**Solution:** Always set a default value before INPUT:
+```4gl
+LET curr_products.discontinued = 0
+```
+
+This ensures the checkbox appears unchecked for new records.
+
 ---
 
 ## Troubleshooting

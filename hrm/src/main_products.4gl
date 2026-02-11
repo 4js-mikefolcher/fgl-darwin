@@ -1,5 +1,6 @@
 DATABASE northwind
 MAIN
+    DEFINE f ui.Form
 
     CALL init_pgm()
 

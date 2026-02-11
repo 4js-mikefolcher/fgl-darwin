@@ -57,7 +57,6 @@
     image="fa-shopping-cart"
     comment="View related orders" />
   
-<<<<<<< HEAD
   <ActionDefault name="supplier"
     text="Supplier"
     image="fa-truck"
@@ -154,8 +153,6 @@
     image="fa-play"
     comment="Execute the report" />
   
-=======
->>>>>>> 5f1dfa9 (Initial AI conversion to Genero)
   <!-- Standard Actions -->
   <ActionDefault name="accept"
     text="OK"
@@ -167,27 +164,21 @@
     image="fa-ban"
     acceleratorName="Escape" />
   
-<<<<<<< HEAD
   <ActionDefault name="launch"
     text="Launch"
     image="fa-rocket"
     comment="Launch the selected program"
     acceleratorName="Return" />
 
-=======
->>>>>>> 5f1dfa9 (Initial AI conversion to Genero)
   <ActionDefault name="exit"
     text="Exit"
     image="fa-power-off"
     comment="Exit the program"
     acceleratorName="Control-q" />
-<<<<<<< HEAD
 
   <ActionDefault name="to_pdf"
     text="Export to PDF"
     image="fa-pdf"
     comment="Export to PDF"
     acceleratorName="Control-L" />
-=======
->>>>>>> 5f1dfa9 (Initial AI conversion to Genero)
 </ActionDefaultList>
