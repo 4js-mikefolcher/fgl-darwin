@@ -1,10 +1,14 @@
 DATABASE northwind
 MAIN
+    DEFINE f ui.Form
 
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "usstates"
-      ATTRIBUTES(BORDER)
+      ATTRIBUTES(BORDER, STYLE="noactions")
+
+    LET f = ui.Window.getCurrent().getForm()
+    CALL f.loadActionDefaults("generic.4ad")
 
     MENU "US States Maintenance"
         COMMAND "Query" "Search for States"

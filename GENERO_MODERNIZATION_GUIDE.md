@@ -1,7 +1,7 @@
 # Genero Module Modernization with AI Agent
 ## Chat Documentation & Learning Guide
 
-**Date:** February 9, 2026  
+**Date:** February 9-10, 2026  
 **Project:** Northwind Genero Application Modernization  
 **Scope:** Converting legacy terminal-style forms to modern web applications
 
@@ -22,7 +22,7 @@
 
 ## Project Overview
 
-This conversation demonstrates how to use the **Genero AI Agent** to modernize legacy Genero BDL applications. The project involved converting three database modules (categories, suppliers, and customers) from terminal-based UIs to modern web applications.
+This conversation demonstrates how to use the **Genero AI Agent** to modernize legacy Genero BDL applications. The project involved converting six database modules (categories, suppliers, customers, shippers, usstates, and products) from terminal-based UIs to modern web applications.
 
 ### Primary Objectives
 
@@ -32,14 +32,21 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - Add professional toolbars with Font Awesome icons
 - Centralize action definitions and stylesheets for code reuse
 - Eliminate legacy terminal-style form code
+- Replace `ON KEY (ACCEPT)` / `ON KEY (CONTROL-P)` with `ON ACTION accept` / `ON ACTION cancel`
+- Replace `PROMPT`-based delete confirmations with `confirm_delete()` dialog
+- Use COMBOBOX and CHECKBOX form controls where appropriate
 
 ### Key Achievements
 
-- ✅ **3 modules fully modernized** (categories, suppliers, customers)
+- ✅ **6 modules fully modernized** (categories, suppliers, customers, shippers, usstates, products)
 - ✅ **Reusable generic files** created (generic.4ad, generic.4st)
 - ✅ **Dynamic arrays implemented** throughout (replacing static arrays)
 - ✅ **Professional toolbars** with Font Awesome icons added
 - ✅ **Modern form structure** with proper containers and layouts
+- ✅ **ON ACTION pattern** replacing legacy ON KEY throughout
+- ✅ **confirm_delete() dialog** replacing PROMPT-based deletion
+- ✅ **COMBOBOX/CHECKBOX controls** for products module (supplier, category, discontinued)
+- ✅ **15 action defaults** in generic.4ad with Font Awesome icons
 
 ---
 
@@ -118,6 +125,102 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 
 **File Modified:**
 - `generic.4ad` - Added "orders" action with fa-shopping-cart icon
+
+### Phase 7: Shippers Module Conversion
+
+**Objective:** Apply full modernization pattern to shippers module
+
+**Files Modified:**
+- `shippers.4gl` - TYPE t_shipper, DYNAMIC ARRAY, getLength(), ON ACTION, confirm_delete()
+- `shippers.per` - TOOLBAR, LAYOUT/VBOX/GROUP/GRID layout
+- `main_shippers.4gl` - ui.Form, loadActionDefaults, STYLE="noactions"
+
+**Key Points:**
+- Simple 3-field module (shipperid, companyname, phone)
+- Demonstrated pattern applies cleanly to all module sizes
+
+### Phase 8: Delete Confirmation Refactor
+
+**Objective:** Replace PROMPT-based delete confirmations with confirm_delete() dialog
+
+**Files Modified:**
+- `shippers.4gl` - PROMPT → confirm_delete()
+- `categories.4gl` - PROMPT → confirm_delete()
+- `suppliers.4gl` - PROMPT → confirm_delete()
+
+**Key Learning:**
+- `confirm_delete()` lives in `main_lib.4gl` and uses `MENU ... ATTRIBUTES(STYLE="dialog")` for a proper Yes/No dialog
+- Cross-module function references are resolved at link time by `fgl2p`, not during individual `fglcomp -r` compilation
+
+### Phase 9: ON KEY to ON ACTION Migration
+
+**Objective:** Replace legacy `ON KEY (ACCEPT)` and `ON KEY (CONTROL-P)` with modern `ON ACTION accept` and `ON ACTION cancel`
+
+**Files Modified:**
+- `shippers.4gl` - 2 replacements (CONSTRUCT, INPUT)
+- `categories.4gl` - 6 replacements
+- `suppliers.4gl` - 6 replacements
+
+**Pattern:**
+```4gl
+-- OLD
+ON KEY (ACCEPT)
+    ACCEPT INPUT
+ON KEY (CONTROL-P)
+    LET int_flag = TRUE
+    EXIT INPUT
+
+-- NEW
+ON ACTION accept
+    ACCEPT INPUT
+ON ACTION cancel
+    LET int_flag = TRUE
+    EXIT INPUT
+```
+
+### Phase 10: US States Module Conversion
+
+**Objective:** Apply all modernization changes to the usstates module
+
+**Files Modified:**
+- `usstates.4gl` - TYPE t_usstate (4 fields), DYNAMIC ARRAY, ON ACTION, confirm_delete()
+- `usstates.per` - TOOLBAR, LAYOUT/VBOX/GROUP/GRID layout
+- `main_usstates.4gl` - ui.Form, loadActionDefaults, STYLE="noactions"
+
+**Build Insight:**
+- Individual `fglcomp -r usstates.4gl` fails on `confirm_delete()` since it's in `main_lib.4gl`
+- The Makefile correctly builds with `fgl2p -o main_usstates.42r main_usstates.4gl main_lib.4gl usstates.4gl` which links all modules together
+
+### Phase 11: Products Module Conversion
+
+**Objective:** Apply full modernization plus COMBOBOX and CHECKBOX controls
+
+**Files Modified:**
+- `products.4gl` - TYPE t_product (10 fields), DYNAMIC ARRAY, ON ACTION, confirm_delete()
+- `products.per` - TOOLBAR, modern layout, COMBOBOX for supplier/category, CHECKBOX for discontinued
+- `main_products.4gl` - ui.Form, loadActionDefaults, STYLE="noactions", combo population on form open
+
+**Special Features:**
+- Removed `suppliername` and `categoryname` from record (comboboxes display the names)
+- Removed old CTRL-T lookup mechanism (replaced by comboboxes)
+- Removed `validate_supplier_field()` and `validate_category_field()` (combobox handles selection)
+- Simplified SQL in `load_products()` — no longer needs JOIN to suppliers/categories tables
+- Added `populate_supplier_combo()` and `populate_category_combo()` using `ui.ComboBox.forName()`
+- Discontinued field defaults to 0 in add mode
+- Comboboxes populated once when form opens (in `main_products.4gl`), not per add/edit
+
+### Phase 12: Action Defaults Enhancement
+
+**Objective:** Add Supplier and Category action icons to generic.4ad
+
+**File Modified:**
+- `generic.4ad` - Added "supplier" (fa-truck) and "category" (fa-tag) actions
+
+**Total Actions in generic.4ad: 15**
+- Navigation: first, previous, next, last
+- Data Ops: query, add, modify, delete
+- Related: products, orders, supplier, category
+- Standard: accept, cancel, exit
 
 ---
 
@@ -238,6 +341,109 @@ XML format with named styles:
   </Style>
 </StyleList>
 ```
+
+#### 7. COMBOBOX Controls (Dynamic Population)
+
+In the form (.per):
+```per
+COMBOBOX supplierid = formonly.supplierid TYPE SMALLINT;
+```
+
+In the code (.4gl) — populate from database:
+```4gl
+FUNCTION populate_supplier_combo()
+   DEFINE cb ui.ComboBox
+   DEFINE sup_id SMALLINT
+   DEFINE sup_name VARCHAR(40)
+
+   LET cb = ui.ComboBox.forName("supplierid")
+   IF cb IS NULL THEN
+      RETURN
+   END IF
+   CALL cb.clear()
+   DECLARE c_sup_combo CURSOR FOR
+      SELECT supplierid, companyname FROM suppliers ORDER BY companyname
+   FOREACH c_sup_combo INTO sup_id, sup_name
+      CALL cb.addItem(sup_id, sup_name)
+   END FOREACH
+END FUNCTION
+```
+
+**Best Practice:** Populate comboboxes once when the form opens (in MAIN), not per add/edit operation.
+
+#### 8. CHECKBOX Controls
+
+In the form (.per):
+```per
+CHECKBOX discontinued = formonly.discontinued TYPE INTEGER,
+  VALUECHECKED=1, VALUEUNCHECKED=0, TEXT="Discontinued";
+```
+
+**Key:** Set a default value in code when adding records:
+```4gl
+LET curr_products.discontinued = 0
+```
+
+#### 9. ON ACTION Pattern (Replacing ON KEY)
+
+```4gl
+-- OLD (legacy)
+ON KEY (ACCEPT)
+    ACCEPT INPUT
+ON KEY (CONTROL-P)
+    LET int_flag = TRUE
+    EXIT INPUT
+
+-- NEW (modern)
+ON ACTION accept
+    ACCEPT INPUT
+ON ACTION cancel
+    LET int_flag = TRUE
+    EXIT INPUT
+```
+
+Works in CONSTRUCT, INPUT BY NAME, and other dialog statements.
+
+#### 10. confirm_delete() Dialog Pattern
+
+Defined in `main_lib.4gl`:
+```4gl
+FUNCTION confirm_delete()
+   MENU "Confirm Deletion"
+      ATTRIBUTES(COMMENT="Are you sure you want to delete this record?", STYLE="dialog")
+      COMMAND "Yes"
+         RETURN TRUE
+      COMMAND "No"
+         EXIT MENU
+   END MENU
+   RETURN FALSE
+END FUNCTION
+```
+
+Usage (replaces PROMPT):
+```4gl
+-- OLD
+PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
+IF answer != "Y" THEN ...
+
+-- NEW
+IF NOT confirm_delete() THEN
+    ERROR "Record delete canceled"
+    LET int_flag = TRUE
+    RETURN
+END IF
+```
+
+#### 11. Building with fgl2p (Multi-Module Linking)
+
+Individual `fglcomp -r module.4gl` cannot resolve cross-module function references.
+Use `fgl2p` to compile and link multiple modules together:
+
+```bash
+fgl2p -o main_products.42r main_products.4gl main_lib.4gl products.4gl
+```
+
+The Makefile manages this automatically with dependency rules.
 
 ---
 
@@ -564,6 +770,55 @@ END FUNCTION
 - `customers.per` - Modern form with cleaned layout
 - `main_customers.4gl` - Entry point with generic.4ad loading
 
+### 4. Shippers Module
+**Purpose:** Manage shipping companies  
+**Fields:** 3 (shipperid, companyname, phone)  
+**Status:** 100% Complete
+
+**Key Features:**
+- Simplest module (3 fields)
+- Good reference for minimal modernization pattern
+- ON ACTION pattern, confirm_delete(), TOOLBAR, VBOX/GROUP/GRID
+
+**Files:**
+- `shippers.4gl` - Complete CRUD operations
+- `shippers.per` - Modern form with TOOLBAR and VBOX/GROUP/GRID
+- `main_shippers.4gl` - Entry point with generic.4ad loading
+
+### 5. US States Module
+**Purpose:** Manage US state reference data  
+**Fields:** 4 (stateid, statename, stateabbr, stateregion)  
+**Status:** 100% Complete
+
+**Key Features:**
+- Reference/lookup data table
+- 4 fields, straightforward conversion
+- ON ACTION pattern, confirm_delete(), TOOLBAR, VBOX/GROUP/GRID
+
+**Files:**
+- `usstates.4gl` - Complete CRUD operations
+- `usstates.per` - Modern form with TOOLBAR and VBOX/GROUP/GRID
+- `main_usstates.4gl` - Entry point with generic.4ad loading
+
+### 6. Products Module
+**Purpose:** Manage products with supplier/category relationships  
+**Fields:** 10 (productid, productname, supplierid, categoryid, quantityperunit, unitprice, unitsinstock, unitsonorder, reorderlevel, discontinued)  
+**Status:** 100% Complete
+
+**Key Features:**
+- **COMBOBOX** for supplierid (populated from suppliers table) and categoryid (populated from categories table)
+- **CHECKBOX** for discontinued field (VALUECHECKED=1, VALUEUNCHECKED=0)
+- Removed suppliername/categoryname from record (replaced by combobox display)
+- Simplified SQL (no JOINs to suppliers/categories)
+- populate_supplier_combo() and populate_category_combo() functions
+- Combos populated once on form open (not per add/edit)
+- Discontinued defaults to 0 in add_products()
+
+**Files:**
+- `products.4gl` - Complete CRUD with COMBOBOX/CHECKBOX support
+- `products.per` - Modern form with COMBOBOX, CHECKBOX, TOOLBAR, VBOX/GROUP/GRID
+- `main_products.4gl` - Entry point with generic.4ad loading, populates combos on form open
+
 ---
 
 ## Key Learnings
@@ -672,7 +927,7 @@ The qualified name is a namespace/category prefix. When using it, Genero underst
 Navigation: fa-step-backward, fa-arrow-left, fa-arrow-right, fa-step-forward  
 Data Ops: fa-plus (add), fa-pencil (modify), fa-trash (delete)  
 Standard: fa-check (accept), fa-ban (cancel), fa-power-off (exit)  
-Related: fa-list (products), fa-shopping-cart (orders)  
+Related: fa-list (products), fa-shopping-cart (orders), fa-truck (supplier), fa-tag (category)  
 Search: find (built-in)
 
 ### 6. Type Definitions Improve Code Quality
@@ -719,6 +974,83 @@ END MAIN
 - STYLE="noactions" applied to disable action panels
 - loadActionDefaults() loads module-specific actions
 - Separation of concerns: global styles + module actions
+
+### 8. ON ACTION Replaces ON KEY
+
+**Why Important:**
+- ON KEY uses key codes tied to terminal emulators (CTRL-P, ACCEPT)
+- ON ACTION uses named actions that work with toolbars, buttons, and keyboard
+- Actions map to generic.4ad for consistent icons and accelerators
+
+**Migration Pattern:**
+```4gl
+-- Before (terminal-dependent)
+ON KEY (ACCEPT)
+    ACCEPT INPUT
+ON KEY (CONTROL-P)
+    LET int_flag = TRUE
+    EXIT INPUT
+
+-- After (platform-independent)
+ON ACTION accept
+    ACCEPT INPUT
+ON ACTION cancel
+    LET int_flag = TRUE
+    EXIT INPUT
+```
+
+**Applied In:** CONSTRUCT, INPUT BY NAME across all modules.
+
+### 9. confirm_delete() is a Reusable Pattern
+
+**Why Important:**
+- PROMPT requires terminal-style text input ("Y/N")
+- confirm_delete() uses MENU with STYLE="dialog" for GUI dialog
+- Defined once in main_lib.4gl, used everywhere
+- Returns BOOLEAN for clean conditional logic
+
+**Applied In:** categories, suppliers, shippers, usstates, products, customers modules.
+
+### 10. COMBOBOX Population Strategy
+
+**Key Insight:** Populate comboboxes ONCE when the form opens in MAIN, not in each add/edit function.
+
+**Why:**
+- Combobox items persist for the lifetime of the window
+- Populating on every add/edit is wasteful
+- The main program has the right scope (after OPEN WINDOW, before menu loop)
+
+**Pattern:**
+```4gl
+MAIN
+    -- ... open window, load form ...
+    CALL populate_supplier_combo()
+    CALL populate_category_combo()
+    -- ... start menu loop ...
+END MAIN
+```
+
+### 11. Build System: fgl2p vs fglcomp
+
+**Key Insight:** Individual `fglcomp -r module.4gl` fails when the module calls functions defined in other .4gl files (e.g., `confirm_delete()` from `main_lib.4gl`).
+
+**Solution:** Use `fgl2p` to compile and link multiple modules together:
+```bash
+fgl2p -o main_products.42r main_products.4gl main_lib.4gl products.4gl
+```
+
+**Best Practice:** Always use the Makefile which has proper dependency rules. The root `hrm/Makefile` handles all cross-module linking automatically.
+
+### 12. CHECKBOX Defaults Matter
+
+**Key Insight:** When adding a new record, CHECKBOX fields may display inconsistently if not initialized.
+
+**Solution:** Always set a default value before INPUT:
+```4gl
+LET curr_products.discontinued = 0
+```
+
+This ensures the checkbox appears unchecked for new records.
 
 ---
 
@@ -862,7 +1194,7 @@ As you work, the AI learns patterns:
 **generic.4ad** - Centralized action definitions
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
 - Purpose: Shared actions with icons and accelerators
-- Actions: first, previous, next, last, query, add, modify, delete, products, orders, accept, cancel, exit
+- Actions: first, previous, next, last, query, add, modify, delete, products, orders, supplier, category, accept, cancel, exit (15 total)
 
 **generic.4st** - Centralized stylesheets
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
@@ -872,8 +1204,9 @@ As you work, the AI learns patterns:
 ### Modified Files
 
 **main_lib.4gl**
-- Added: `CALL ui.Interface.loadStyles()`
-- Purpose: Initialize global styles
+- Added: `CALL ui.Interface.loadStyles()` in init_pgm()
+- Added: `confirm_delete()` function (MENU with STYLE="dialog")
+- Purpose: Initialize global styles and shared utility functions
 
 **categories.4gl**
 - Converted: All arr_size/arr_max → getLength()
@@ -904,6 +1237,7 @@ As you work, the AI learns patterns:
 - Converted: All arr_size/arr_max → getLength()
 - Added: TYPE t_customer definition
 - Updated: refresh_customers() to use dynamic array methods
+- Updated: ON KEY → ON ACTION, PROMPT → confirm_delete()
 
 **customers.per**
 - Redesigned: Modern layout for 11 fields
@@ -914,19 +1248,60 @@ As you work, the AI learns patterns:
 - Updated: STYLE="noactions" in OPEN WINDOW
 - Added: ui.Form variable definition
 
+**shippers.4gl**
+- Converted: All arr_size/arr_max → getLength()
+- Added: TYPE t_shipper definition
+- Updated: ON ACTION, confirm_delete(), dynamic arrays
+
+**shippers.per**
+- Redesigned: Modern form with TOOLBAR, VBOX/GROUP/GRID
+
+**main_shippers.4gl**
+- Updated: Load generic.4ad, STYLE="noactions"
+
+**usstates.4gl**
+- Converted: All arr_size/arr_max → getLength()
+- Added: TYPE t_usstate definition
+- Updated: ON ACTION, confirm_delete(), dynamic arrays
+
+**usstates.per**
+- Redesigned: Modern form with TOOLBAR, VBOX/GROUP/GRID
+
+**main_usstates.4gl**
+- Updated: Load generic.4ad, STYLE="noactions"
+
+**products.4gl**
+- Converted: All arr_size/arr_max → getLength()
+- Added: TYPE t_product definition (10 fields, no suppliername/categoryname)
+- Added: populate_supplier_combo(), populate_category_combo() functions
+- Removed: validate_supplier_field(), validate_category_field(), CTRL-T lookup logic
+- Simplified: SQL with no JOINs to suppliers/categories
+- Updated: ON ACTION, confirm_delete(), dynamic arrays, discontinued defaults to 0
+
+**products.per**
+- Redesigned: Modern form with TOOLBAR, VBOX/GROUP/GRID
+- Added: COMBOBOX for supplierid and categoryid
+- Added: CHECKBOX for discontinued (VALUECHECKED=1, VALUEUNCHECKED=0)
+
+**main_products.4gl**
+- Updated: Load generic.4ad, STYLE="noactions"
+- Added: Calls populate_supplier_combo() and populate_category_combo() after form opens
+
 ---
 
 ## Conclusion
 
 The Genero AI Agent effectively assisted with a complex modernization project by:
 
-1. **Learning patterns from initial examples** - Once categories module was done, it applied the same pattern to suppliers and customers
+1. **Learning patterns from initial examples** - Once categories module was done, it applied the same pattern to all subsequent modules
 2. **Understanding code structure** - It recognized function relationships and dependencies
-3. **Handling systematic changes** - Dynamic array conversions across multiple files
-4. **Fixing issues intelligently** - Form cleanup, toolbar syntax correction, style reference fixes
+3. **Handling systematic changes** - Dynamic array conversions, ON KEY → ON ACTION migration, PROMPT → confirm_delete() across all modules
+4. **Fixing issues intelligently** - Form cleanup, toolbar syntax correction, style reference fixes, combobox timing, checkbox defaults
 5. **Catching errors** - Compilation checks, verification of changes
+6. **Adding new UI patterns** - COMBOBOX population from database, CHECKBOX with defaults, dialog-style confirmation
+7. **Refactoring shared code** - confirm_delete() extracted to main_lib.4gl, applied everywhere
 
-The result: **Three complete modules modernized** from legacy terminal-style code to modern web-ready applications with **centralized action definitions and stylesheets**, **proper record types**, and **dynamic arrays** throughout.
+The result: **Six complete modules modernized** from legacy terminal-style code to modern web-ready applications with **centralized action definitions (15 actions) and stylesheets**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **COMBOBOX/CHECKBOX controls**, and **shared utility functions** throughout.
 
 ### Key Success Factors
 
@@ -934,20 +1309,24 @@ The result: **Three complete modules modernized** from legacy terminal-style cod
 ✅ Iterative feedback and refinement  
 ✅ Verification through compilation  
 ✅ Attention to systematic patterns  
-✅ Learning from mistakes (toolbar syntax, style references)  
+✅ Learning from mistakes (toolbar syntax, style references, combobox timing)  
 ✅ Testing and incremental progress tracking  
+✅ Shared code extraction (confirm_delete, init_pgm)  
+✅ Advanced controls (COMBOBOX, CHECKBOX) for complex modules  
 
 ### Recommended Next Steps
 
-1. Convert remaining modules using established patterns
+1. Convert remaining modules (orders, order_details, employees, empl_terr, territories, region) using established patterns
 2. Test the modernized application with real data
-3. Add additional modules as needed
-4. Consider extracting more shared code to generic files
-5. Document application architecture for team reference
+3. Consider adding COMBOBOX lookups to other modules where applicable
+4. Explore DISPLAY ARRAY for list views alongside single-record navigation
+5. Add master-detail patterns for orders/order_details
+6. Document application architecture for team reference
 
 ---
 
 **Document Created:** February 9, 2026  
+**Last Updated:** February 10, 2026  
 **Genero Version:** 6.00.02-202512011639  
 **Database:** Northwind  
 **Project Location:** `/Users/mikefolcher/4js-github/fgl-darwin/`

@@ -1,41 +1,42 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌──────────────────────────── Shippers ───────────────────────────┐
-  Shipper ID    : [shipperid ]
-  Company Name  : [companyname                         ]
-  Phone         : [phone                  ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Shippers Management")
+  VBOX
+    GROUP (TEXT="Shipper Information", STYLE="box")
+      GRID
+      {
+        Shipper ID:    [shipperid      ]
+        Company Name:  [companyname                         ]
+        Phone:         [phone                  ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-shipperid = formonly.shipperid TYPE SMALLINT;
-companyname = formonly.companyname TYPE VARCHAR;
-phone = formonly.phone TYPE VARCHAR;
-
-END --ATTRIBUTES
+  shipperid = formonly.shipperid TYPE SMALLINT;
+  companyname = formonly.companyname TYPE VARCHAR;
+  phone = formonly.phone TYPE VARCHAR;
+END
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_shippers(formonly.shipperid, formonly.companyname, formonly.phone);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_shippers(formonly.shipperid, formonly.companyname, formonly.phone);
+END

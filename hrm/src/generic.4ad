@@ -57,6 +57,16 @@
     image="fa-shopping-cart"
     comment="View related orders" />
   
+  <ActionDefault name="supplier"
+    text="Supplier"
+    image="fa-truck"
+    comment="View related supplier" />
+  
+  <ActionDefault name="category"
+    text="Category"
+    image="fa-tag"
+    comment="View related category" />
+  
   <!-- Standard Actions -->
   <ActionDefault name="accept"
     text="OK"

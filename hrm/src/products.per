@@ -1,53 +1,59 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌──────────────────────────── Products ───────────────────────────┐
-  Product ID    : [productid ]
-  Product Name  : [productname                         ]
-  Supplier ID   : [supplierid][suppliername                     ]
-  Category ID   : [categoryid][categoryname    ]
-  Qty Per Unit  : [quantityperunit   ]
-  Unit Price    : [unitprice      ]
-  Units In Stock: [unitsinstock]
-  Units On Order: [unitsonorder]
-  Reorder Level : [reorderlevel]
-  Discontinued  : [discontinued]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Products Management")
+  VBOX
+    GROUP (TEXT="Product Information", STYLE="box")
+      GRID
+      {
+        Product ID:     [productid      ]
+        Product Name:   [productname                              ]
+        Supplier:       [supplierid                               ]
+        Category:       [categoryid                               ]
+        Qty Per Unit:   [quantityperunit          ]
+        Unit Price:     [unitprice         ]
+        Units In Stock: [unitsinstock   ]
+        Units On Order: [unitsonorder   ]
+        Reorder Level:  [reorderlevel   ]
+        Discontinued:   [discontinued   ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-productid = formonly.productid TYPE SMALLINT;
-productname = formonly.productname TYPE VARCHAR;
-supplierid = formonly.supplierid TYPE SMALLINT;
-suppliername = formonly.suppliername TYPE VARCHAR, NOENTRY;
-categoryid = formonly.categoryid TYPE SMALLINT;
-categoryname = formonly.categoryname TYPE VARCHAR, NOENTRY;
-quantityperunit = formonly.quantityperunit TYPE VARCHAR;
-unitprice = formonly.unitprice TYPE FLOAT;
-unitsinstock = formonly.unitsinstock TYPE SMALLINT;
-unitsonorder = formonly.unitsonorder TYPE SMALLINT;
-reorderlevel = formonly.reorderlevel TYPE SMALLINT;
-discontinued = formonly.discontinued TYPE INTEGER;
-
-END --ATTRIBUTES
+  productid = formonly.productid TYPE SMALLINT;
+  productname = formonly.productname TYPE VARCHAR;
+  COMBOBOX supplierid = formonly.supplierid TYPE SMALLINT;
+  COMBOBOX categoryid = formonly.categoryid TYPE SMALLINT;
+  quantityperunit = formonly.quantityperunit TYPE VARCHAR;
+  unitprice = formonly.unitprice TYPE FLOAT;
+  unitsinstock = formonly.unitsinstock TYPE SMALLINT;
+  unitsonorder = formonly.unitsonorder TYPE SMALLINT;
+  reorderlevel = formonly.reorderlevel TYPE SMALLINT;
+  CHECKBOX discontinued = formonly.discontinued TYPE INTEGER, VALUECHECKED=1, VALUEUNCHECKED=0, TEXT="Discontinued";
+END
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_products(formonly.productid, formonly.productname, formonly.supplierid,
-                            formonly.categoryid, formonly.quantityperunit, formonly.unitprice,
-                            formonly.unitsinstock, formonly.unitsonorder, formonly.reorderlevel,
-                            formonly.discontinued);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_products(formonly.productid, formonly.productname, formonly.supplierid,
+                           formonly.categoryid, formonly.quantityperunit, formonly.unitprice,
+                           formonly.unitsinstock, formonly.unitsonorder, formonly.reorderlevel,
+                           formonly.discontinued);
+END

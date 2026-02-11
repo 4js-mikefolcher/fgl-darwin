@@ -22,3 +22,16 @@ FUNCTION get_arr_max()
    RETURN arr_max
 
 END FUNCTION
+
+FUNCTION confirm_delete()
+
+   MENU "Confirm Deletion"
+      ATTRIBUTES(COMMENT="Are you sure you want to delete this record?", STYLE="dialog")
+      COMMAND "Yes"
+         RETURN TRUE
+      COMMAND "No"
+         EXIT MENU
+   END MENU
+   RETURN FALSE
+
+END FUNCTION #confirm_delete

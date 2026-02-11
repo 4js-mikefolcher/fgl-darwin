@@ -1,38 +1,30 @@
 DATABASE northwind
 
-DEFINE usstates_arr ARRAY[1000] OF RECORD
-   stateid LIKE usstates.stateid,
-   statename LIKE usstates.statename,
-   stateabbr LIKE usstates.stateabbr,
-   stateregion LIKE usstates.stateregion
+TYPE t_usstate RECORD
+   stateid SMALLINT,
+   statename VARCHAR(100),
+   stateabbr VARCHAR(2),
+   stateregion VARCHAR(50)
 END RECORD
 
-DEFINE curr_usstates RECORD
-   stateid LIKE usstates.stateid,
-   statename LIKE usstates.statename,
-   stateabbr LIKE usstates.stateabbr,
-   stateregion LIKE usstates.stateregion
-END RECORD
-
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+DEFINE usstates_arr DYNAMIC ARRAY OF t_usstate
+DEFINE curr_usstates t_usstate
 
 FUNCTION submenu_usstates()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
 
-   LET arr_max = 1000
    CALL query_usstates()
-   IF arr_size == 0 THEN
+   IF usstates_arr.getLength() == 0 THEN
       RETURN
    END IF
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= usstates_arr.getLength()
 
        CALL load_curr_usstates(currentIdx)
        CALL display_curr_usstates()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", usstates_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "US States Management"
@@ -47,18 +39,18 @@ FUNCTION submenu_usstates()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > usstates_arr.getLength() THEN
+                 LET currentIdx = usstates_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = usstates_arr.getLength()
               EXIT MENU
           COMMAND "Add" "Add a new state"
               CALL add_usstates()
               IF int_flag == FALSE THEN
                  CALL refresh_usstates(currentIdx, "A")
-                 LET currentIdx = arr_size
+                 LET currentIdx = usstates_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Modify" "Edit an existing state"
@@ -71,8 +63,8 @@ FUNCTION submenu_usstates()
               CALL delete_usstates()
               IF int_flag == FALSE THEN
                  CALL refresh_usstates(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
+                 IF currentIdx > usstates_arr.getLength() THEN
+                    LET currentIdx = usstates_arr.getLength()
                  END IF
               END IF
               EXIT MENU
@@ -93,9 +85,9 @@ FUNCTION query_usstates()
     LET int_flag = FALSE
     CONSTRUCT where_clause ON usstates.stateid, usstates.statename, usstates.stateabbr, usstates.stateregion
        FROM s_usstates.*
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -108,7 +100,7 @@ FUNCTION query_usstates()
 
     CALL load_usstates(where_clause)
 
-    IF arr_size == 0 THEN
+    IF usstates_arr.getLength() == 0 THEN
         MESSAGE "No states found."
         RETURN
     END IF
@@ -118,7 +110,7 @@ END FUNCTION
 FUNCTION load_usstates(where_clause)
     DEFINE where_clause VARCHAR(500)
     DEFINE sql_stmt VARCHAR(1024)
-    DEFINE idx INTEGER
+    DEFINE temp_usstate t_usstate
 
     LET sql_stmt = " SELECT stateid, statename, stateabbr, stateregion",
                    " FROM usstates",
@@ -126,27 +118,21 @@ FUNCTION load_usstates(where_clause)
 
     CALL clear_usstates()
 
-    LET idx = 0
     PREPARE p_usstates FROM sql_stmt
     DECLARE c_usstates CURSOR FOR p_usstates
-    FOREACH c_usstates INTO curr_usstates.*
-        LET idx = idx + 1
-        LET usstates_arr[idx] = curr_usstates
+    FOREACH c_usstates INTO temp_usstate.*
+        CALL usstates_arr.appendElement()
+        LET usstates_arr[usstates_arr.getLength()] = temp_usstate
     END FOREACH
     CALL clear_curr_usstates()
-    LET arr_size = idx
 
 END FUNCTION
 
 FUNCTION clear_usstates()
-   DEFINE idx INTEGER
 
-   FOR idx = 1 TO arr_max
-      INITIALIZE usstates_arr[idx].* TO NULL
-   END FOR
-   LET arr_size = 0
+   CALL usstates_arr.clear()
 
-END FUNCTION #clear_usstates
+END FUNCTION
 
 FUNCTION add_usstates()
     DEFINE usstates_valid SMALLINT
@@ -157,9 +143,9 @@ FUNCTION add_usstates()
     CALL clear_curr_usstates()
     INPUT BY NAME curr_usstates.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -188,9 +174,9 @@ FUNCTION edit_usstates()
     LET int_flag = FALSE
     INPUT BY NAME curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -213,11 +199,9 @@ FUNCTION edit_usstates()
 END FUNCTION
 
 FUNCTION delete_usstates()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "State delete canceled"
         LET int_flag = TRUE
         RETURN
@@ -232,7 +216,7 @@ FUNCTION load_curr_usstates(currIdx)
    DEFINE currIdx INTEGER
 
    CALL clear_curr_usstates()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
+   IF currIdx > 0 AND currIdx <= usstates_arr.getLength() THEN
       LET curr_usstates = usstates_arr[currIdx]
    END IF
 
@@ -277,37 +261,24 @@ END FUNCTION
 FUNCTION refresh_usstates(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
    DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
 
    CASE operation
       WHEN "A"
-         LET newIdx = arr_size + 1
-         LET usstates_arr[newIdx] = curr_usstates
-         LET arr_size = newIdx
+         CALL usstates_arr.appendElement()
+         LET usstates_arr[usstates_arr.getLength()] = curr_usstates
       WHEN "C"
          LET usstates_arr[currIdx] = curr_usstates
       WHEN "D"
-           LET newIdx = 0
-           LET replaceRec = FALSE
-
-           FOR idx = 1 TO arr_size
-              IF usstates_arr[idx].stateid = curr_usstates.stateid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF
-              LET newIdx = newIdx + 1
-              LET usstates_arr[newIdx] = usstates_arr[idx]
-           END FOR
-
-           IF replaceRec THEN
-              INITIALIZE usstates_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF
+         FOR idx = 1 TO usstates_arr.getLength()
+            IF usstates_arr[idx].stateid = curr_usstates.stateid THEN
+               CALL usstates_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
    END CASE
 
-END FUNCTION #refresh_usstates
+END FUNCTION
 
 FUNCTION validate_usstates(mode)
    DEFINE mode CHAR(1)

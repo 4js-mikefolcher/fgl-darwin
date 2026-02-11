@@ -131,9 +131,9 @@ FUNCTION query_categories()
     LET int_flag = FALSE
     CONSTRUCT where_clause ON categories.categoryid, categories.categoryname, categories.description
        FROM s_categories.*
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -187,9 +187,9 @@ FUNCTION add_categories()
     CALL clear_curr_categories()
     INPUT BY NAME curr_categories.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -218,9 +218,9 @@ FUNCTION edit_categories()
     LET int_flag = FALSE
     INPUT BY NAME curr_categories.categoryname, curr_categories.description
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -243,11 +243,9 @@ FUNCTION edit_categories()
 END FUNCTION
 
 FUNCTION delete_categories()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Category delete canceled"
         LET int_flag = TRUE
         RETURN

@@ -1,42 +1,44 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌──────────────────────────── US States ──────────────────────────┐
-  State ID      : [stateid   ]
-  State Name    : [statename                                     ]
-  Abbreviation  : [stateabbr]
-  Region        : [stateregion                          ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="US States Management")
+  VBOX
+    GROUP (TEXT="State Information", STYLE="box")
+      GRID
+      {
+        State ID:      [stateid      ]
+        State Name:    [statename                                     ]
+        Abbreviation:  [stateabbr]
+        Region:        [stateregion                          ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-stateid = formonly.stateid TYPE SMALLINT;
-statename = formonly.statename TYPE VARCHAR;
-stateabbr = formonly.stateabbr TYPE VARCHAR;
-stateregion = formonly.stateregion TYPE VARCHAR;
-
-END --ATTRIBUTES
+  stateid = formonly.stateid TYPE SMALLINT;
+  statename = formonly.statename TYPE VARCHAR;
+  stateabbr = formonly.stateabbr TYPE VARCHAR;
+  stateregion = formonly.stateregion TYPE VARCHAR;
+END
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_usstates(formonly.stateid, formonly.statename, formonly.stateabbr, formonly.stateregion);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_usstates(formonly.stateid, formonly.statename, formonly.stateabbr, formonly.stateregion);
+END

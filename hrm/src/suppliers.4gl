@@ -143,9 +143,9 @@ FUNCTION query_suppliers()
                               suppliers.region, suppliers.postalcode, suppliers.country,
                               suppliers.phone, suppliers.fax, suppliers.homepage
        FROM s_suppliers.*
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -201,9 +201,9 @@ FUNCTION add_suppliers()
     CALL clear_curr_suppliers()
     INPUT BY NAME curr_suppliers.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -235,9 +235,9 @@ FUNCTION edit_suppliers()
                   curr_suppliers.postalcode, curr_suppliers.country, curr_suppliers.phone,
                   curr_suppliers.fax, curr_suppliers.homepage
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -260,11 +260,9 @@ FUNCTION edit_suppliers()
 END FUNCTION
 
 FUNCTION delete_suppliers()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Supplier delete canceled"
         LET int_flag = TRUE
         RETURN
