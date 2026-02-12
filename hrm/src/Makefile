@@ -34,7 +34,8 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/report_viewer.42f
 
 # Program targets
-PROG_TARGETS = $(BINDIR)/main_employees.42r \
+PROG_TARGETS = $(BINDIR)/ifx_menu.42r \
+               $(BINDIR)/main_employees.42r \
                $(BINDIR)/main_empl_terr.42r \
                $(BINDIR)/main_region.42r \
                $(BINDIR)/main_territories.42r \
@@ -144,6 +145,10 @@ RPT_42M = rpt_orders_by_customer.42m rpt_orders_by_employee.42m \
           rpt_orders_by_product.42m rpt_orders_by_daterange.42m
 
 # Program compilation rules
+$(BINDIR)/ifx_menu.42r: ifx_menu.4gl
+	$(SRCCOMP) -o ifx_menu.42r $^
+	mv ifx_menu.42r ifx_menu.42m $(BINDIR)/
+
 $(BINDIR)/main_employees.42r: main_employees.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_employees.42r $^
 	mv main_employees.42r main_employees.42m $(CORE_42M) $(BINDIR)/
@@ -231,10 +236,13 @@ shippers: $(BINDIR)/shippers.42f $(BINDIR)/main_shippers.42r
 suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
 
+ifx_menu: $(BINDIR)/ifx_menu.42r
+
 # Report convenience targets
 rpt_orders_by_customer: $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_orders_by_customer.42r
 rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42r
 rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
 rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
 
-.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange
+.PHONY: all clean rebuild ifx_menu employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange
+
