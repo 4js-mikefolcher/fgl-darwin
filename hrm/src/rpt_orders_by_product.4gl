@@ -119,6 +119,10 @@ END FUNCTION #execute_prod_report
 REPORT rpt_orders_product(r)
    DEFINE r t_rpt_prod_rec
 
+   OUTPUT
+      PAGE LENGTH 66
+      LEFT MARGIN 1
+
    ORDER EXTERNAL BY r.categoryname, r.productname
 
    FORMAT
@@ -129,6 +133,14 @@ REPORT rpt_orders_product(r)
          PRINT COLUMN 1, "Date: ", TODAY USING "mm/dd/yyyy"
          PRINT COLUMN 1, "======================================================================="
          SKIP 1 LINE
+         PRINT COLUMN 1,  "Category",
+               COLUMN 18, "Product",
+               COLUMN 50, "# Orders",
+               COLUMN 62, "Total Qty",
+               COLUMN 76, "Total Amount"
+         PRINT COLUMN 1, "-----------------------------------------------------------------------"
+
+      PAGE HEADER
          PRINT COLUMN 1,  "Category",
                COLUMN 18, "Product",
                COLUMN 50, "# Orders",

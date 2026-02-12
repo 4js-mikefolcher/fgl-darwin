@@ -169,4 +169,10 @@
     image="fa-power-off"
     comment="Exit the program"
     acceleratorName="Control-q" />
+
+  <ActionDefault name="to_pdf"
+    text="Export to PDF"
+    image="fa-pdf"
+    comment="Export to PDF"
+    acceleratorName="Control-L" />
 </ActionDefaultList>

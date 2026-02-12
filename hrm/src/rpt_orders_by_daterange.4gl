@@ -119,6 +119,10 @@ END FUNCTION #execute_daterange_report
 REPORT rpt_orders_daterange(r)
    DEFINE r t_rpt_date_rec
 
+   OUTPUT
+      PAGE LENGTH 66
+      LEFT MARGIN 1
+
    ORDER EXTERNAL BY r.orderdate, r.orderid
 
    FORMAT
@@ -129,6 +133,14 @@ REPORT rpt_orders_daterange(r)
          PRINT COLUMN 1, "Report Date: ", TODAY USING "mm/dd/yyyy"
          PRINT COLUMN 1, "======================================================================="
          SKIP 1 LINE
+         PRINT COLUMN 1,  "Order ID",
+               COLUMN 12, "Order Date",
+               COLUMN 25, "Customer",
+               COLUMN 58, "Total Qty",
+               COLUMN 72, "Order Total"
+         PRINT COLUMN 1, "-----------------------------------------------------------------------"
+
+      PAGE HEADER
          PRINT COLUMN 1,  "Order ID",
                COLUMN 12, "Order Date",
                COLUMN 25, "Customer",

@@ -121,6 +121,10 @@ END FUNCTION #execute_cust_report
 REPORT rpt_orders_customer(r)
    DEFINE r t_rpt_cust_rec
 
+   OUTPUT
+      PAGE LENGTH 66
+      LEFT MARGIN 1
+
    ORDER EXTERNAL BY r.orderid
 
    FORMAT
@@ -131,6 +135,16 @@ REPORT rpt_orders_customer(r)
          PRINT COLUMN 1, "Date: ", TODAY USING "mm/dd/yyyy"
          PRINT COLUMN 1, "==================================================================="
          SKIP 1 LINE
+         PRINT COLUMN 1,  "Order ID",
+               COLUMN 12, "Order Date",
+               COLUMN 25, "Product",
+               COLUMN 52, "Unit Price",
+               COLUMN 65, "Qty",
+               COLUMN 72, "Discount",
+               COLUMN 83, "Line Total"
+         PRINT COLUMN 1, "-------------------------------------------------------------------"
+
+      PAGE HEADER
          PRINT COLUMN 1,  "Order ID",
                COLUMN 12, "Order Date",
                COLUMN 25, "Product",
