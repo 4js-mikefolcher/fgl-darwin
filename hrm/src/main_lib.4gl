@@ -137,6 +137,10 @@ FUNCTION build_program_icons()
     CALL add_program_icon("main_territories",  "fa-map-marker")
     CALL add_program_icon("main_usstates",     "fa-flag")
     CALL add_program_icon("bdl_menu",          "fa-rocket")
+    CALL add_program_icon("main_rpt_orders_by_customer",  "fa-file-text")
+    CALL add_program_icon("main_rpt_orders_by_employee",  "fa-file-text")
+    CALL add_program_icon("main_rpt_orders_by_product",   "fa-file-text")
+    CALL add_program_icon("main_rpt_orders_by_daterange", "fa-file-text")
 
 END FUNCTION #build_program_icons
 

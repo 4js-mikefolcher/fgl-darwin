@@ -153,6 +153,37 @@ FUNCTION build_menu(p_menu)
     LET p_menu[p_menu.getLength()].description      = "Manage US state codes and names"
     LET p_menu[p_menu.getLength()].program_name     = "main_usstates"
 
+    -- Root: Reports (id=6)
+    LET p_menu[p_menu.getLength() + 1].id           = 6
+    LET p_menu[p_menu.getLength()].pid              = NULL
+    LET p_menu[p_menu.getLength()].menu_name        = "Reports"
+    LET p_menu[p_menu.getLength()].description      = "Order reports and analytics"
+    LET p_menu[p_menu.getLength()].program_name     = NULL
+
+    LET p_menu[p_menu.getLength() + 1].id           = 60
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Orders by Customer"
+    LET p_menu[p_menu.getLength()].description      = "Report of orders grouped by customer"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_by_customer"
+
+    LET p_menu[p_menu.getLength() + 1].id           = 61
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Orders by Employee"
+    LET p_menu[p_menu.getLength()].description      = "Report of orders grouped by employee"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_by_employee"
+
+    LET p_menu[p_menu.getLength() + 1].id           = 62
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Orders by Product"
+    LET p_menu[p_menu.getLength()].description      = "Report of orders grouped by product"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_by_product"
+
+    LET p_menu[p_menu.getLength() + 1].id           = 63
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Orders by Date Range"
+    LET p_menu[p_menu.getLength()].description      = "Report of orders filtered by date range"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_by_daterange"
+
 END FUNCTION
 
 ###############################################################################
