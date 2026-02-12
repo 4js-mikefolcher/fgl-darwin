@@ -24,7 +24,6 @@ FUNCTION display_report_file(rpt_file)
    DEFINE ch base.Channel
    DEFINE line STRING
 
-   -- Read the file into the array
    LET lines = file_to_array(rpt_file)
 
    IF lines.getLength() == 0 THEN
