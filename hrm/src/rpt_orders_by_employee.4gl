@@ -30,7 +30,7 @@ FUNCTION run_orders_by_employee()
    LET done = FALSE
 
    OPEN WINDOW rptEmpWindow WITH FORM "rpt_orders_by_employee"
-      ATTRIBUTES(STYLE="modulewindow")
+      ATTRIBUTES(BORDER, STYLE="noactions")
 
    WHILE NOT done
       LET int_flag = FALSE

@@ -114,6 +114,7 @@ FUNCTION generate_temp_filename(prefix, extension)
    RETURN temp_file
 
 END FUNCTION #generate_temp_filename
+<<<<<<< HEAD
 
 -- =====================================================================
 -- Function: build_program_icons
@@ -180,3 +181,5 @@ FUNCTION get_program_icon(pgm_name STRING) RETURNS STRING
     RETURN NULL
 
 END FUNCTION #get_program_icon
+=======
+>>>>>>> 71d5076 (Continue modernizing the application)

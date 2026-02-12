@@ -28,7 +28,7 @@ FUNCTION run_orders_by_product()
    LET done = FALSE
 
    OPEN WINDOW rptProdWindow WITH FORM "rpt_orders_by_product"
-      ATTRIBUTES(STYLE="modulewindow")
+      ATTRIBUTES(BORDER, STYLE="noactions")
 
    WHILE NOT done
       LET int_flag = FALSE

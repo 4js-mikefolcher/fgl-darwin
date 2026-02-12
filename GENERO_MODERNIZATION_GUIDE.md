@@ -2069,7 +2069,6 @@ MAIN
     OPEN WINDOW mainWindow WITH FORM "customers"
     -- Action defaults auto-loaded by form_initializer
     -- Base Window style disables action panels automatically
-    
     -- Module-specific combo population (if needed)
     CALL populate_supplier_combo()
     -- Module-specific menu
@@ -2342,11 +2341,76 @@ ON ACTION cancel
 **Pattern:**
 ```4gl
 MAIN
-    -- ... open window, load form ...
+    CALL init_pgm()  -- Action defaults handled by form_initializer
+    OPEN WINDOW mainWindow WITH FORM "products"
+      ATTRIBUTES(BORDER, STYLE="noactions")
+    
     CALL populate_supplier_combo()
     CALL populate_category_combo()
     -- ... start menu loop ...
 END MAIN
+```
+
+**Static vs Dynamic Combos:**
+- **Dynamic** (from database): `populate_supplier_combo()`, `populate_category_combo()`, `populate_region_combo()`
+- **Static** (fixed values): `populate_courtesy_combo()` — uses hardcoded `cb.addItem()` calls
+
+### 11. Form Initializer Eliminates Boilerplate
+
+**Key Insight:** `ui.Form.setDefaultInitializer()` registers a callback that fires automatically every time any form opens.
+
+**Before (repeated in every main program):**
+```4gl
+DEFINE f ui.Form
+LET f = ui.Window.getCurrent().getForm()
+CALL f.loadActionDefaults("generic.4ad")
+```
+
+**After (registered once in init_pgm):**
+```4gl
+-- In main_lib.4gl
+CALL ui.Form.setDefaultInitializer("form_initializer")
+
+FUNCTION form_initializer(frm ui.Form)
+    CALL frm.loadActionDefaults("generic.4ad")
+END FUNCTION
+```
+
+**Benefits:**
+- Code removed from 9 main programs
+- New modules get action defaults automatically
+- Single point of change for global form initialization
+
+### 12. TABLE Container Syntax
+
+**Key Insight:** TABLE rows use pipe `|` separators between columns, and the row template must be repeated to match the SCREEN RECORD array size.
+
+**Correct:**
+```per
+TABLE
+{
+  [emplid   |fullname            |terrid   ]
+  [emplid   |fullname            |terrid   ]
+  [emplid   |fullname            |terrid   ]
+}
+END
+
+INSTRUCTIONS
+  SCREEN RECORD sa_empl_terr[3](...);
+END
+```
+
+**Wrong (causes -2029 error):**
+```per
+-- Adjacent brackets instead of pipes:
+[emplid   ][fullname            ][terrid   ]
+
+-- Mismatched row count vs SCREEN RECORD size:
+TABLE (HEIGHT=10)
+{  -- only 1 row template
+  [emplid   |fullname            |terrid   ]
+}
+-- with SCREEN RECORD sa_empl_terr[10] → error!
 ```
 
 ### 11. Build System: fgl2p vs fglcomp
@@ -2370,6 +2434,75 @@ LET curr_products.discontinued = 0
 ```
 
 This ensures the checkbox appears unchecked for new records.
+
+### 13. CONSTRUCT BY NAME Does Not Take FROM Clause
+
+**Key Insight:** `CONSTRUCT BY NAME` maps form fields to columns automatically. Do NOT add `FROM s_criteria.*`.
+
+**Wrong:**
+```4gl
+CONSTRUCT BY NAME where_clause FROM s_criteria.* ON customers.customerid
+```
+
+**Correct:**
+```4gl
+CONSTRUCT BY NAME where_clause ON customers.customerid, customers.companyname
+```
+
+### 14. SQL Aliases Break CONSTRUCT WHERE Clauses
+
+**Key Insight:** CONSTRUCT generates WHERE clauses using the exact column names from the ON clause (e.g., `customers.customerid = 'ALFKI'`). If SQL uses aliases (`FROM customers c`), the WHERE clause won't match.
+
+**Solution:** Use full table names in SQL — no aliases:
+```4gl
+-- WRONG (alias mismatch)
+LET sql_stmt = "SELECT c.customerid FROM customers c WHERE ", where_clause
+
+-- CORRECT (full table names match CONSTRUCT output)
+LET sql_stmt = "SELECT customers.customerid FROM customers WHERE ", where_clause
+```
+
+**Note:** `STRING.replace()` does NOT exist in Genero BDL 6.00.02, so you cannot programmatically swap alias names.
+
+### 15. FORMONLY TYPE STRING Is Invalid in .per Files
+
+**Key Insight:** The `.per` form compiler does not accept `TYPE STRING` for FORMONLY attributes. Use SQL-compatible types instead.
+
+**Wrong:**
+```per
+EDIT line_text = FORMONLY.line_text TYPE STRING;
+```
+
+**Correct:**
+```per
+EDIT line_text = FORMONLY.line_text TYPE VARCHAR, SCROLL;
+```
+
+Valid types: CHAR, VARCHAR, INTEGER, SMALLINT, DATE, DATETIME, DECIMAL, FLOAT, etc.
+
+### 16. TABLES Section Must Come After LAYOUT
+
+**Key Insight:** In .per forms, the `TABLES` section must appear AFTER the `LAYOUT` section, not before `TOOLBAR`.
+
+### 17. util.Datetime.format() Is a Static Method
+
+**Key Insight:** `util.Datetime.format(CURRENT, "%Y%m%d_%H%M%S")` is a static method call on the `util.Datetime` class. It does not require an instance.
+
+Requires `IMPORT util` at the module level.
+
+### 18. Custom Styles for Specialized Windows
+
+**Key Insight:** Create named styles in generic.4st for specialized windows rather than using generic built-in styles like "dialog".
+
+**Benefits:**
+- Full control over window behavior (modal, toolbar visibility, action panels)
+- Table-level styling (font family, row highlighting)
+- Reusable across multiple forms
+- Style name on LAYOUT maps to `Window.name`, style on TABLE maps to `Table.name`
+
+### 19. Shared Files Belong in the Shared Library Node
+
+**Key Insight:** In the .4pw project file, files used by multiple applications (like report_helper.4gl) should be placed in the Shared Library node, not duplicated in each Application node.
 
 ---
 

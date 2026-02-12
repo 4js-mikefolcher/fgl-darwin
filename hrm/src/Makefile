@@ -258,7 +258,11 @@ shippers: $(BINDIR)/shippers.42f $(BINDIR)/main_shippers.42r
 suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
 
-ifx_menu: $(BINDIR)/ifx_menu.42r
+# Report convenience targets
+rpt_orders_by_customer: $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_orders_by_customer.42r
+rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42r
+rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
+rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
 
 bdl_menu: $(BINDIR)/bdl_menu.42f $(BINDIR)/bdl_menu.42r
 

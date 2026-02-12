@@ -29,7 +29,7 @@ FUNCTION run_orders_by_daterange()
    LET done = FALSE
 
    OPEN WINDOW rptDateWindow WITH FORM "rpt_orders_by_daterange"
-      ATTRIBUTES(STYLE="modulewindow")
+      ATTRIBUTES(BORDER, STYLE="noactions")
 
    WHILE NOT done
       LET int_flag = FALSE
