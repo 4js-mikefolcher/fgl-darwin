@@ -110,7 +110,7 @@ FUNCTION view_products_for_category(cat_id)
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
-   LET where_clause = " p.categoryid = ", cat_id
+   LET where_clause = " categoryid = ", cat_id
    CALL load_products(where_clause)
 
    IF products_arr.getLength() == 0 THEN

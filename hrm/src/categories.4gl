@@ -185,13 +185,15 @@ FUNCTION add_categories()
     CLEAR FORM
     LET int_flag = FALSE
     CALL clear_curr_categories()
-    INPUT BY NAME curr_categories.*
+    INPUT curr_categories.* WITHOUT DEFAULTS FROM s_categories.*
         ATTRIBUTE(UNBUFFERED)
         ON ACTION accept
             ACCEPT INPUT
         ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
+        AFTER FIELD description
+            DISPLAY SFMT("Description = (%1)", curr_categories.description)
         AFTER INPUT
             CALL validate_categories("A")
                RETURNING categories_valid, valid_msg
@@ -216,8 +218,10 @@ FUNCTION edit_categories()
     DEFINE valid_msg CHAR(75)
 
     LET int_flag = FALSE
-    INPUT BY NAME curr_categories.categoryname, curr_categories.description
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
+    INPUT curr_categories.* WITHOUT DEFAULTS FROM s_categories.*
+        ATTRIBUTE(UNBUFFERED)
+        BEFORE INPUT
+            CALL DIALOG.setFieldActive("s_categories.categoryid", FALSE)
         ON ACTION accept
             ACCEPT INPUT
         ON ACTION cancel

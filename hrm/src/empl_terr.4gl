@@ -1,109 +1,182 @@
 DATABASE northwind
 
-DEFINE empl_terr_arr ARRAY[1000] OF RECORD
+TYPE t_empl_terr RECORD
    employeeid LIKE employees.employeeid,
    fullname VARCHAR(32),
    territoryid LIKE territories.territoryid,
    territorydescription LIKE territories.territorydescription,
    regiondescription LIKE region.regiondescription
 END RECORD
-DEFINE curr_empl_terr RECORD
-   employeeid LIKE employees.employeeid,
-   fullname VARCHAR(32),
-   territoryid LIKE territories.territoryid,
-   territorydescription LIKE territories.territorydescription,
-   regiondescription LIKE region.regiondescription
-END RECORD
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+
+DEFINE empl_terr_arr DYNAMIC ARRAY OF t_empl_terr
 DEFINE contrl_empl_id LIKE employees.employeeid
 
+-- =====================================================================
+-- Function: terr_by_empl
+-- Purpose : Open employee territories in a sub-window for a given employee
+-- =====================================================================
 FUNCTION terr_by_empl(employ_id)
    DEFINE employ_id LIKE employees.employeeid
-   DEFINE valid_status SMALLINT
-   DEFINE valid_msg CHAR(70)
 
-   OPEN WINDOW subw1
-      AT 5,5
-      WITH FORM "empl_terr"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST - 6, ERROR LINE LAST - 5)
+   OPEN WINDOW subw1 AT 5,5 WITH FORM "empl_terr"
 
-   LET curr_empl_terr.employeeid = employ_id
-   CALL validate_empl_id()
-      RETURNING valid_status, valid_msg
-   IF valid_msg THEN
-      LET contrl_empl_id = employ_id
-      CALL submenu_empl_terr()
-      LET contrl_empl_id = 0
-   END IF
+   LET contrl_empl_id = employ_id
+   CALL load_empl_terr_by_id(employ_id)
+   CALL manage_empl_terr()
+   LET contrl_empl_id = 0
 
    CLOSE WINDOW subw1
 
 END FUNCTION #terr_by_empl
 
+-- =====================================================================
+-- Function: submenu_empl_terr
+-- Purpose : Entry point when launched standalone (query first)
+-- =====================================================================
 FUNCTION submenu_empl_terr()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-   DEFINE lineIdx INTEGER
-   DEFINE colIdx INTEGER
 
-   IF contrl_empl_id == 0 THEN
-      CALL query_empl_terr()
-   ELSE
-      CALL load_empl_terr_by_id(contrl_empl_id)
-   END IF
-   IF arr_size == 0 THEN
+   CALL query_empl_terr()
+   IF empl_terr_arr.getLength() == 0 THEN
       RETURN
    END IF
-
-   LET int_flag = FALSE
-   WHILE int_flag == FALSE AND arr_size > 0
-
-      CALL set_count(arr_size)
-      DISPLAY ARRAY empl_terr_arr TO sa_empl_terr.*
-         BEFORE DISPLAY
-            IF contrl_empl_id == 0 THEN
-               LET lineIdx = 17
-               LET colIdx = 1
-            ELSE
-               LET lineIdx = 1
-               LET colIdx = 1
-            END IF
-            DISPLAY "Press Ctrl-P to Cancel, Ctrl-D to Delete, Ctrl-A to Add"
-            AT lineIdx, colIdx
-         BEFORE ROW
-            LET currentIdx = arr_curr()
-            LET curr_empl_terr = empl_terr_arr[currentIdx]
-         ON KEY (ACCEPT)
-            ACCEPT DISPLAY
-         ON KEY (CONTROL-P)
-            LET int_flag = TRUE
-            EXIT DISPLAY
-         ON KEY (CONTROL-D)
-            CALL delete_empl_terr()
-            IF int_flag == FALSE THEN
-               CALL refresh_empl_terr(currentIdx, "D")
-               IF currentIdx > arr_size THEN
-                  LET currentIdx = arr_size
-               END IF
-               MESSAGE "Record Deleted"
-               EXIT DISPLAY
-            END IF
-         ON KEY (CONTROL-A)
-            CALL add_empl_terr()
-            IF int_flag == FALSE THEN
-               CALL refresh_empl_terr(currentIdx, "A")
-               IF currentIdx > arr_size THEN
-                  LET currentIdx = arr_size
-               END IF
-               MESSAGE "Record Added"
-               EXIT DISPLAY
-            END IF       
-      END DISPLAY
-
-   END WHILE
+   CALL manage_empl_terr()
 
 END FUNCTION #submenu_empl_terr
+
+-- =====================================================================
+-- Function: manage_empl_terr
+-- Purpose : INPUT ARRAY with modification triggers for inline editing,
+--           adding, and deleting of employee territory assignments.
+-- =====================================================================
+FUNCTION manage_empl_terr()
+   DEFINE curr_row INTEGER
+   DEFINE selected_employee_id LIKE employees.employeeid
+   DEFINE selected_fullname VARCHAR(32)
+   DEFINE selected_territory_id LIKE territories.territoryid
+   DEFINE selected_territory_desc LIKE territories.territorydescription
+   DEFINE empl_terr_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+
+   LET int_flag = FALSE
+
+   INPUT ARRAY empl_terr_arr WITHOUT DEFAULTS FROM sa_empl_terr.*
+      ATTRIBUTES(UNBUFFERED, INSERT ROW = FALSE, APPEND ROW = FALSE,
+                 DELETE ROW = FALSE, AUTO APPEND = FALSE)
+
+      BEFORE ROW
+         LET curr_row = arr_curr()
+
+      BEFORE FIELD fullname
+         -- fullname is derived; skip to next editable field
+         IF DIALOG.getFieldTouched("employeeid") OR
+            empl_terr_arr[curr_row].employeeid IS NOT NULL THEN
+            NEXT FIELD territoryid
+         ELSE
+            NEXT FIELD employeeid
+         END IF
+
+      BEFORE FIELD territorydescription
+         -- derived field; skip past
+         NEXT FIELD NEXT
+
+      BEFORE FIELD regiondescription
+         -- derived field; skip past
+         NEXT FIELD NEXT
+
+      ON ACTION zoom_employee INFIELD employeeid
+         CALL employee_lookup()
+            RETURNING selected_employee_id, selected_fullname
+         IF selected_employee_id > 0 THEN
+            LET empl_terr_arr[curr_row].employeeid = selected_employee_id
+            LET empl_terr_arr[curr_row].fullname = selected_fullname
+         END IF
+
+      ON ACTION zoom_territory INFIELD territoryid
+         CALL territories_lookup()
+            RETURNING selected_territory_id, selected_territory_desc
+         IF selected_territory_id > 0 THEN
+            LET empl_terr_arr[curr_row].territoryid = selected_territory_id
+            LET empl_terr_arr[curr_row].territorydescription = selected_territory_desc
+         END IF
+
+      AFTER FIELD employeeid
+         IF empl_terr_arr[curr_row].employeeid IS NOT NULL THEN
+            CALL validate_empl_id(empl_terr_arr[curr_row].employeeid)
+               RETURNING empl_terr_valid, valid_msg
+            IF empl_terr_valid THEN
+               LET empl_terr_arr[curr_row].fullname = valid_msg
+            ELSE
+               ERROR valid_msg
+               NEXT FIELD employeeid
+            END IF
+         END IF
+
+      AFTER FIELD territoryid
+         IF empl_terr_arr[curr_row].territoryid IS NOT NULL THEN
+            CALL validate_territory(empl_terr_arr[curr_row].territoryid)
+               RETURNING empl_terr_valid, valid_msg,
+                         empl_terr_arr[curr_row].territorydescription,
+                         empl_terr_arr[curr_row].regiondescription
+            IF NOT empl_terr_valid THEN
+               ERROR valid_msg
+               NEXT FIELD territoryid
+            END IF
+         END IF
+
+      ON ACTION query
+         CALL query_empl_terr()
+
+      ON ACTION add
+         CALL append_new_row(empl_terr_arr)
+
+      ON ACTION delete
+         IF empl_terr_arr.getLength() > 0 AND curr_row > 0 THEN
+            IF confirm_delete() THEN
+               CALL delete_empl_terr_row(empl_terr_arr[curr_row].*)
+               CALL empl_terr_arr.deleteElement(curr_row)
+               MESSAGE "Record Deleted"
+            END IF
+         END IF
+
+      ON ACTION accept
+         CALL save_all_changes(empl_terr_arr)
+         EXIT INPUT
+
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT INPUT
+
+      ON ACTION exit
+         LET int_flag = TRUE
+         EXIT INPUT
+
+   END INPUT
+
+END FUNCTION #manage_empl_terr
+
+-- =====================================================================
+-- Function: append_new_row
+-- Purpose : Append an empty row to the array, pre-filling the employee
+--           id when launched from the employee context.
+-- =====================================================================
+FUNCTION append_new_row(p_arr)
+   DEFINE p_arr DYNAMIC ARRAY OF t_empl_terr
+   DEFINE idx INTEGER
+   DEFINE empl_valid SMALLINT
+   DEFINE empl_msg CHAR(75)
+
+   LET idx = p_arr.getLength() + 1
+   INITIALIZE p_arr[idx].* TO NULL
+   IF contrl_empl_id > 0 THEN
+      LET p_arr[idx].employeeid = contrl_empl_id
+      CALL validate_empl_id(contrl_empl_id)
+         RETURNING empl_valid, empl_msg
+      IF empl_valid THEN
+         LET p_arr[idx].fullname = empl_msg
+      END IF
+   END IF
+
+END FUNCTION #append_new_row
 
 -- =====================================================================
 -- Function: query_empl_terr
@@ -113,40 +186,37 @@ FUNCTION query_empl_terr()
     DEFINE where_clause VARCHAR(255)
 
     CLEAR FORM
-    CALL clear_curr_empl_terr()
     LET int_flag = FALSE
-    CONSTRUCT where_clause ON employeeterritories.employeeid, 
+    CONSTRUCT where_clause ON employeeterritories.employeeid,
                               employees.lastname,
                               employeeterritories.territoryid,
-                              territories.territorydescription, 
+                              territories.territorydescription,
                               region.regiondescription
        FROM sa_empl_terr[1].*
-        ON KEY (ACCEPT)
-            ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
-            LET int_flag = TRUE
-            EXIT CONSTRUCT
+
         BEFORE FIELD fullname
            MESSAGE "Enter search criteria for the employee's last name"
         AFTER FIELD fullname
            MESSAGE ""
+
+        ON ACTION cancel
+            LET int_flag = TRUE
+            EXIT CONSTRUCT
+
     END CONSTRUCT
 
     IF int_flag THEN
-       CALL clear_curr_empl_terr()
-       CALL clear_empl_terr()
+       CALL empl_terr_arr.clear()
        RETURN
     END IF
 
     CALL load_empl_terr(where_clause)
 
-    IF arr_size == 0 THEN
+    IF empl_terr_arr.getLength() == 0 THEN
         MESSAGE "No employee territories found."
-        RETURN
     END IF
 
-END FUNCTION
-
+END FUNCTION #query_empl_terr
 
 -- =====================================================================
 -- Function: load_empl_terr
@@ -155,7 +225,7 @@ END FUNCTION
 FUNCTION load_empl_terr(where_clause)
     DEFINE where_clause VARCHAR(255)
     DEFINE sql_stmt VARCHAR(2000)
-    DEFINE idx INTEGER
+    DEFINE l_rec t_empl_terr
 
     LET sql_stmt = " SELECT employeeterritories.employeeid,",
                    " RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname,",
@@ -167,29 +237,25 @@ FUNCTION load_empl_terr(where_clause)
                    " WHERE ", where_clause,
                    " ORDER BY employeeterritories.employeeid, employeeterritories.territoryid"
 
-    CALL clear_empl_terr()
+    CALL empl_terr_arr.clear()
 
-    LET idx = 0
     PREPARE p1 FROM sql_stmt
     DECLARE c1 CURSOR FOR p1
-    FOREACH c1 INTO curr_empl_terr.*
-        LET idx = idx + 1
-        LET empl_terr_arr[idx] = curr_empl_terr
+    FOREACH c1 INTO l_rec.*
+        CALL empl_terr_arr.appendElement()
+        LET empl_terr_arr[empl_terr_arr.getLength()] = l_rec
     END FOREACH
-    CALL clear_curr_empl_terr()
-    LET arr_size = idx
-    
-END FUNCTION
+
+END FUNCTION #load_empl_terr
 
 -- =====================================================================
 -- Function: load_empl_terr_by_id
--- Purpose : Load employeeterritories by employee id into dynamic array
---           based on WHERE clause
+-- Purpose : Load employeeterritories by employee id
 -- =====================================================================
 FUNCTION load_empl_terr_by_id(empl_id)
     DEFINE empl_id LIKE employees.employeeid
     DEFINE sql_stmt VARCHAR(2000)
-    DEFINE idx INTEGER
+    DEFINE l_rec t_empl_terr
 
     LET sql_stmt = " SELECT employeeterritories.employeeid,",
                    " RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname,",
@@ -201,239 +267,123 @@ FUNCTION load_empl_terr_by_id(empl_id)
                    " WHERE employees.employeeid = ", empl_id,
                    " ORDER BY employeeterritories.employeeid, employeeterritories.territoryid"
 
-    CALL clear_empl_terr()
+    CALL empl_terr_arr.clear()
 
-    LET idx = 0
     PREPARE p2 FROM sql_stmt
     DECLARE c2 CURSOR FOR p2
-    FOREACH c2 INTO curr_empl_terr.*
-        LET idx = idx + 1
-        LET empl_terr_arr[idx] = curr_empl_terr
+    FOREACH c2 INTO l_rec.*
+        CALL empl_terr_arr.appendElement()
+        LET empl_terr_arr[empl_terr_arr.getLength()] = l_rec
     END FOREACH
-    CALL clear_curr_empl_terr()
-    LET arr_size = idx
-    
-END FUNCTION
 
-FUNCTION clear_empl_terr()
-   DEFINE idx INTEGER
+END FUNCTION #load_empl_terr_by_id
 
-   FOR idx = 1 TO arr_max
-      INITIALIZE empl_terr_arr[idx].* TO NULL   
+-- =====================================================================
+-- Function: save_all_changes
+-- Purpose : Delete all existing rows for employees in the array, then
+--           re-insert all current rows. Uses a transaction for safety.
+-- =====================================================================
+FUNCTION save_all_changes(p_arr)
+   DEFINE p_arr DYNAMIC ARRAY OF t_empl_terr
+   DEFINE i INTEGER
+   DEFINE j INTEGER
+   DEFINE empl_ids DYNAMIC ARRAY OF INTEGER
+   DEFINE found SMALLINT
+
+   -- Collect distinct employee ids from the array
+   FOR i = 1 TO p_arr.getLength()
+      IF p_arr[i].employeeid IS NOT NULL AND p_arr[i].territoryid IS NOT NULL THEN
+         LET found = FALSE
+         FOR j = 1 TO empl_ids.getLength()
+            IF empl_ids[j] == p_arr[i].employeeid THEN
+               LET found = TRUE
+               EXIT FOR
+            END IF
+         END FOR
+         IF NOT found THEN
+            CALL empl_ids.appendElement()
+            LET empl_ids[empl_ids.getLength()] = p_arr[i].employeeid
+         END IF
+      END IF
    END FOR
-   LET arr_size = 0
-      
-END FUNCTION #clear_empl_terr
+
+   BEGIN WORK
+
+   -- Delete existing rows for each employee
+   FOR i = 1 TO empl_ids.getLength()
+      DELETE FROM employeeterritories
+         WHERE employeeid = empl_ids[i]
+   END FOR
+
+   -- Re-insert all valid rows
+   FOR i = 1 TO p_arr.getLength()
+      IF p_arr[i].employeeid IS NOT NULL AND p_arr[i].territoryid IS NOT NULL THEN
+         INSERT INTO employeeterritories (employeeid, territoryid)
+            VALUES (p_arr[i].employeeid, p_arr[i].territoryid)
+      END IF
+   END FOR
+
+   COMMIT WORK
+   MESSAGE "Changes saved successfully"
+
+END FUNCTION #save_all_changes
 
 -- =====================================================================
--- Function: add_empl_terr
--- Purpose : Add a new territory record
+-- Function: delete_empl_terr_row
+-- Purpose : Delete a single employee territory row from the database
 -- =====================================================================
-FUNCTION add_empl_terr()
-   DEFINE empl_terr_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
-   DEFINE selected_employee_id LIKE employees.employeeid
-   DEFINE selected_fullname VARCHAR(32)
-   DEFINE selected_territory_id LIKE territories.territoryid
-   DEFINE selected_territory_desc LIKE territories.territorydescription
+FUNCTION delete_empl_terr_row(p_rec)
+   DEFINE p_rec t_empl_terr
 
-   CLEAR FORM
-   LET int_flag = FALSE
-   CALL clear_curr_empl_terr()
-   INPUT curr_empl_terr.* WITHOUT DEFAULTS FROM sa_empl_terr[1].*
-      ATTRIBUTE(UNBUFFERED)
-      ON KEY (ACCEPT)
-         ACCEPT INPUT
-      ON KEY (CONTROL-P)
-         LET int_flag = TRUE
-         EXIT INPUT
-      ON KEY (CONTROL-T)
-         IF INFIELD(employeeid) THEN
-            CALL employee_lookup()
-               RETURNING selected_employee_id, selected_fullname
-            IF selected_employee_id > 0 THEN
-               LET curr_empl_terr.employeeid = selected_employee_id
-               LET curr_empl_terr.fullname = selected_fullname
-            END IF
-         END IF
-         IF INFIELD(territoryid) THEN
-            CALL territories_lookup()
-               RETURNING selected_territory_id, selected_territory_desc
-            IF selected_territory_id > 0 THEN
-               LET curr_empl_terr.territoryid = selected_territory_id
-               LET curr_empl_terr.territorydescription = selected_territory_desc
-            END IF
-         END IF
-
-      BEFORE INPUT
-         IF contrl_empl_id > 0 THEN
-            LET curr_empl_terr.employeeid = contrl_empl_id
-            CALL validate_empl_id()
-               RETURNING empl_terr_valid, valid_msg
-            IF empl_terr_valid THEN
-               NEXT FIELD territoryid
-            END IF            
-         END IF
-
-      BEFORE FIELD territoryid, employeeid
-         MESSAGE "Use Ctrl-T to open lookup window"
-
-      AFTER FIELD employeeid
-         CALL validate_empl_id()
-            RETURNING empl_terr_valid, valid_msg
-            IF NOT empl_terr_valid THEN
-               ERROR valid_msg
-               NEXT FIELD employeeid
-            END IF
-            
-      AFTER INPUT
-         CALL validate_empl_terr("A")
-            RETURNING empl_terr_valid, valid_msg
-         IF NOT empl_terr_valid THEN
-            ERROR valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-    IF int_flag THEN
-       ERROR "Employee Territory add canceled"
-       RETURN
-    END IF
-
-    CALL insert_curr_empl_terr()
-    MESSAGE "Employee Territory record added"
-    
-END FUNCTION
-
--- =====================================================================
--- Function: delete_empl_terr
--- Purpose : Delete an existing territory record
--- =====================================================================
-FUNCTION delete_empl_terr()
-    DEFINE answer CHAR(1)
-
-    LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
-        ERROR "Territory delete canceled"
-        LET int_flag = TRUE
-        RETURN
-    END IF
-
-    CALL delete_curr_empl_terr()
-    MESSAGE "Territory record deleted"
-
-END FUNCTION
-
-FUNCTION load_curr_empl_terr(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_empl_terr()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
-      LET curr_empl_terr = empl_terr_arr[currIdx]
+   IF p_rec.employeeid IS NOT NULL AND p_rec.territoryid IS NOT NULL THEN
+      DELETE FROM employeeterritories
+         WHERE employeeid = p_rec.employeeid
+         AND territoryid = p_rec.territoryid
    END IF
 
-END FUNCTION
+END FUNCTION #delete_empl_terr_row
 
-FUNCTION display_curr_empl_terr()
+-- =====================================================================
+-- Function: validate_territory
+-- Purpose : Validate a territory ID and return its description and region
+-- =====================================================================
+FUNCTION validate_territory(p_territory_id)
+   DEFINE p_territory_id LIKE territories.territoryid
+   DEFINE l_terr_desc LIKE territories.territorydescription
+   DEFINE l_region_desc LIKE region.regiondescription
 
-   DISPLAY BY NAME curr_empl_terr.*
-
-END FUNCTION
-
-FUNCTION clear_curr_empl_terr()
-
-   INITIALIZE curr_empl_terr.* TO NULL
-
-END FUNCTION
-
-FUNCTION insert_curr_empl_terr()
-
-   INSERT INTO employeeterritories (employeeid, territoryid) 
-      VALUES ($curr_empl_terr.employeeid, $curr_empl_terr.territoryid)
-
-END FUNCTION
-
-FUNCTION delete_curr_empl_terr()
-
-   DELETE FROM employeeterritories
-      WHERE territoryid = $curr_empl_terr.territoryid
-      AND employeeid = $curr_empl_terr.employeeid
-
-END FUNCTION
-
-FUNCTION refresh_empl_terr(currIdx, operation)
-   DEFINE currIdx INTEGER
-   DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
-   DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
-
-   CASE operation
-      WHEN "A"
-         LET newIdx = arr_size + 1
-         LET empl_terr_arr[newIdx] = curr_empl_terr
-         LET arr_size = newIdx
-      WHEN "C"
-         LET empl_terr_arr[currIdx] = curr_empl_terr
-      WHEN "D"
-           LET newIdx = 0 
-           LET replaceRec = FALSE
-              
-           FOR idx = 1 TO arr_size
-              IF empl_terr_arr[idx].territoryid = curr_empl_terr.territoryid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF 
-              LET newIdx = newIdx + 1
-              LET empl_terr_arr[newIdx] = empl_terr_arr[idx]
-           END FOR 
-    
-           IF replaceRec THEN
-              INITIALIZE empl_terr_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF 
-   END CASE 
-
-END FUNCTION #refresh_empl_terr
-
-FUNCTION validate_empl_terr(mode)
-   DEFINE mode CHAR(1)
-   DEFINE territorydesc LIKE territories.territorydescription
-   DEFINE regionDesc LIKE region.regiondescription
-   DEFINE messageStr CHAR(70)
-   DEFINE validRec SMALLINT
-
-   SELECT territorydescription INTO territorydesc FROM territories
-      WHERE territories.territoryid = $curr_empl_terr.territoryid
+   SELECT territorydescription INTO l_terr_desc
+      FROM territories
+      WHERE territories.territoryid = p_territory_id
    IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Territory ID is not found"
+      RETURN FALSE, "Territory ID is not found", NULL, NULL
    END IF
-   LET curr_empl_terr.territorydescription = territorydesc
 
-   SELECT regiondescription INTO regionDesc
+   SELECT regiondescription INTO l_region_desc
       FROM region
       INNER JOIN territories ON territories.regionid = region.regionid
-      WHERE territories.territoryid = $curr_empl_terr.territoryid
-   LET curr_empl_terr.regiondescription = regionDesc
-   
-   CALL validate_empl_id()
-      RETURNING validRec, messageStr
+      WHERE territories.territoryid = p_territory_id
 
-   RETURN validRec, messageStr
+   RETURN TRUE, "Okay", l_terr_desc, l_region_desc
 
-END FUNCTION
+END FUNCTION #validate_territory
 
-FUNCTION validate_empl_id()
+-- =====================================================================
+-- Function: validate_empl_id
+-- Purpose : Validate an employee ID and return the full name
+-- =====================================================================
+FUNCTION validate_empl_id(p_employee_id)
+   DEFINE p_employee_id LIKE employees.employeeid
    DEFINE employeeName VARCHAR(30)
 
-   SELECT RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname INTO employeeName
-      FROM employees WHERE employeeid = $curr_empl_terr.employeeid
+   SELECT RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname
+      INTO employeeName
+      FROM employees
+      WHERE employeeid = p_employee_id
    IF sqlca.sqlcode == NOTFOUND THEN
       RETURN FALSE, "Employee ID is not found"
    END IF
-   LET curr_empl_terr.fullname = employeeName
 
-   RETURN TRUE, "Okay"
+   RETURN TRUE, employeeName
 
-END FUNCTION
+END FUNCTION #validate_empl_id
