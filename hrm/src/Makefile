@@ -259,6 +259,7 @@ suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
 
 ifx_menu: $(BINDIR)/ifx_menu.42r
+
 bdl_menu: $(BINDIR)/bdl_menu.42f $(BINDIR)/bdl_menu.42r
 
 # Report convenience targets
