@@ -1,7 +1,7 @@
 # Genero Module Modernization with AI Agent
 ## Chat Documentation & Learning Guide
 
-**Date:** February 9-11, 2026  
+**Date:** February 9-12, 2026  
 **Project:** Northwind Genero Application Modernization  
 **Scope:** Converting legacy terminal-style forms to modern web applications
 
@@ -40,7 +40,7 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 ### Key Achievements
 
 - ✅ **12 modules with modern forms** (all .per files redesigned)
-- ✅ **8 modules fully modernized** (.4gl + .per + main) — categories, suppliers, customers, shippers, usstates, products, territories, region
+- ✅ **9 modules fully modernized** (.4gl + .per + main) — categories, suppliers, customers, shippers, usstates, products, territories, region, empl_terr
 - ✅ **Reusable generic files** created (generic.4ad, generic.4st)
 - ✅ **Dynamic arrays implemented** throughout (replacing static arrays)
 - ✅ **Professional toolbars** with Font Awesome icons added
@@ -49,8 +49,8 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - ✅ **confirm_delete() dialog** replacing PROMPT-based deletion
 - ✅ **COMBOBOX/CHECKBOX controls** for products, territories, employees modules
 - ✅ **BUTTONEDIT with zoom** for employee, territory, customer, product, and order lookups
-- ✅ **TABLE container** for empl_terr list view
-- ✅ **34 action defaults** in generic.4ad with Font Awesome icons
+- ✅ **TABLE container** for empl_terr list view with INPUT ARRAY inline editing
+- ✅ **36 action defaults** in generic.4ad with Font Awesome icons (added launch action)
 - ✅ **Form initializer hook** — `ui.Form.setDefaultInitializer()` auto-loads action defaults
 - ✅ **populate_courtesy_combo()** for employee title of courtesy
 - ✅ **4 report modules** created with CONSTRUCT criteria, text file output, and report viewer
@@ -58,7 +58,10 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - ✅ **report_viewer.per** — modal dialog form with TABLE, monospace font, no row highlighting
 - ✅ **Custom "reportviewer" style** in generic.4st for modal window and table formatting
 - ✅ **"run" action** in generic.4ad for report execution
-- ✅ **35 action defaults** in generic.4ad (added run action)
+- ✅ **Centralized Window style** — base `Window` style in generic.4st with actionPanelPosition=none, ringMenuPosition=none (applies to all windows)
+- ✅ **GUI tree menu** (bdl_menu) with toolbar, Reports category (6 root categories, 16 leaf programs)
+- ✅ **Program icons** — `build_program_icons()` maps 17 programs to Font Awesome icons including bdl_menu and 4 reports
+- ✅ **INPUT ARRAY with modification triggers** — empl_terr fully modernized with inline editing, transactional save, validation
 
 ---
 
@@ -83,12 +86,13 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 **Objective:** Create shared stylesheet and configure global initialization
 
 **Files Created:**
-- `generic.4st` - Stylesheet with `Window.noactions` style to disable action panels
+- `generic.4st` - Stylesheet with base `Window` style to disable action panels (originally `Window.noactions`, later centralized in Phase 27)
 - Updated `main_lib.4gl` - Added `ui.Interface.loadStyles()` call
 
 **Key Learnings:**
-- Style names in .4st files use qualified format: `name="Window.noactions"`
-- OPEN WINDOW statements use bare style name: `STYLE="noactions"`
+- Style names in .4st files use qualified format: `name="Window.stylename"` for named styles, or bare `name="Window"` for base style
+- Named styles (e.g., `Window.reportviewer`) override the base style when applied with `STYLE="reportviewer"`
+- Base `Window` style applies to ALL windows without needing explicit STYLE attribute
 - Initializing styles in main_lib.4gl ensures availability across all modules
 
 ### Phase 3: Action Defaults (Reusable Actions)
@@ -504,6 +508,274 @@ END
 - `report_viewer.per` — Report viewer form
 
 **Key Learning:** Shared library files (used by multiple applications) belong in the Shared library node, not duplicated in each Application node.
+
+### Phase 24: Toolbar for bdl_menu Program
+
+**Objective:** Add a toolbar to the GUI tree menu program with launch and exit actions, and apply the noactions window style.
+
+**Files Modified:**
+- `bdl_menu.per` — Added TOOLBAR with ITEM launch, SEPARATOR, ITEM exit
+- `bdl_menu.4gl` — Added `STYLE="noactions"` to OPEN WINDOW (later removed when centralized)
+
+**Toolbar Definition:**
+```
+TOOLBAR
+  ITEM launch
+  SEPARATOR
+  ITEM exit
+END
+```
+
+**Key Decision:** Used `STYLE="noactions"` to hide the action panel and ring menu since the toolbar provides all needed controls. This was later centralized in Phase 27.
+
+### Phase 25: Launch Action Icon and Centralized Action Defaults
+
+**Objective:** Select a Font Awesome icon for the launch action from `$FGLDIR/lib/image2font.txt`, move ACTION DEFAULTS from bdl_menu.per to generic.4ad, and rename the close action to exit for consistency.
+
+**Files Modified:**
+- `bdl_menu.per` — Removed ACTION DEFAULTS section (now sourced from generic.4ad)
+- `generic.4ad` — Added "launch" ActionDefault with fa-rocket icon and acceleratorName=Return
+
+**Action Definition Added:**
+```xml
+<ActionDefault name="launch"
+  text="Launch"
+  image="fa-rocket"
+  comment="Launch the selected program"
+  acceleratorName="Return" />
+```
+
+**Key Decisions:**
+- Searched `$FGLDIR/lib/image2font.txt` (919 Font Awesome 4.7.0 mappings) for suitable launch icon
+- Selected `fa-rocket` (`FontAwesome.ttf:f135`) as the launch icon
+- Set `acceleratorName="Return"` so Enter key triggers launch (same as TREE DOUBLECLICK)
+- Renamed toolbar ITEM from "close" to "exit" for consistency with the exit ActionDefault in generic.4ad
+
+**Total Actions in generic.4ad: 36**
+
+### Phase 26: Launch Icon as Application Icon
+
+**Objective:** Use the fa-rocket icon as the application/form icon for the bdl_menu program.
+
+**File Modified:**
+- `main_lib.4gl` — Added `bdl_menu` → `fa-rocket` mapping in `build_program_icons()`
+
+**Code Added:**
+```4gl
+CALL add_program_icon("bdl_menu", "fa-rocket")
+```
+
+**Key Learning:** The `form_initializer()` callback already sets window and app icons automatically using `get_program_icon()`. Adding the mapping to `build_program_icons()` is all that's needed — no code changes in bdl_menu.4gl required.
+
+### Phase 27: Centralized Window Style (noactions)
+
+**Objective:** Instead of adding `STYLE="noactions"` to every OPEN WINDOW statement, centralize it by making the base `Window` style in generic.4st apply actionPanelPosition=none and ringMenuPosition=none to all windows.
+
+**Files Modified:**
+- `generic.4st` — Renamed `Window.noactions` to base `Window` style (applies to ALL windows automatically)
+- `bdl_menu.4gl` — Removed explicit `STYLE="noactions"` from OPEN WINDOW (no longer needed)
+
+**generic.4st — Before:**
+```xml
+<Style name="Window.noactions">
+  <StyleAttribute name="actionPanelPosition" value="none" />
+  <StyleAttribute name="ringMenuPosition" value="none" />
+</Style>
+```
+
+**generic.4st — After:**
+```xml
+<Style name="Window">
+  <StyleAttribute name="actionPanelPosition" value="none" />
+  <StyleAttribute name="ringMenuPosition" value="none" />
+</Style>
+```
+
+**Key Learning:**
+- A base `Window` style (without a dot-suffix) applies to ALL windows in the application
+- Named styles like `Window.reportviewer` override the base style when explicitly referenced with `STYLE="reportviewer"`
+- This eliminates the need for `STYLE="noactions"` on every OPEN WINDOW — all 18+ forms with toolbars benefit automatically
+- The `Window.reportviewer` style correctly overrides with its own `actionPanelPosition="bottom"` for report viewer windows
+
+### Phase 28: Reports Added to Menu
+
+**Objective:** Add a Reports category to the bdl_menu tree menu with 4 report programs as children.
+
+**Files Modified:**
+- `bdl_menu.4gl` — Added Reports root category (id=6) with 4 children in `build_menu()`
+- `main_lib.4gl` — Added fa-file-text icon mappings for all 4 report programs in `build_program_icons()`
+
+**Menu Structure Added:**
+```
+Reports (id=6, pid=0)
+├── Orders by Customer    (id=60, pid=6, program=main_rpt_orders_by_customer)
+├── Orders by Employee    (id=61, pid=6, program=main_rpt_orders_by_employee)
+├── Orders by Product     (id=62, pid=6, program=main_rpt_orders_by_product)
+└── Orders by Date Range  (id=63, pid=6, program=main_rpt_orders_by_daterange)
+```
+
+**Icon Mappings Added:**
+```4gl
+CALL add_program_icon("main_rpt_orders_by_customer",  "fa-file-text")
+CALL add_program_icon("main_rpt_orders_by_employee",  "fa-file-text")
+CALL add_program_icon("main_rpt_orders_by_product",   "fa-file-text")
+CALL add_program_icon("main_rpt_orders_by_daterange", "fa-file-text")
+```
+
+**Updated Menu Totals:** 6 root categories, 16 leaf programs (12 data management + 4 reports)
+
+### Phase 29: empl_terr ON KEY to ON ACTION Migration
+
+**Objective:** Replace all legacy ON KEY handlers in empl_terr.4gl with modern ON ACTION handlers, across DISPLAY ARRAY, CONSTRUCT, and INPUT statements.
+
+**File Modified:**
+- `empl_terr.4gl` — Replaced all ON KEY blocks with ON ACTION equivalents
+
+**Migrations Performed:**
+
+**DISPLAY ARRAY (submenu):**
+```4gl
+-- OLD                           -- NEW
+ON KEY (CONTROL-P)               ON ACTION exit
+   EXIT DISPLAY                     EXIT DISPLAY
+ON KEY (CONTROL-D)               ON ACTION delete
+   -- delete logic                  -- delete logic
+ON KEY (CONTROL-A)               ON ACTION add
+   -- add logic                     -- add logic
+                                 ON ACTION query
+                                    -- new: query functionality
+```
+
+**CONSTRUCT:**
+```4gl
+-- OLD                           -- NEW
+ON KEY (ACCEPT)                  ON ACTION accept
+   ACCEPT CONSTRUCT                 ACCEPT CONSTRUCT
+ON KEY (CONTROL-P)               ON ACTION cancel
+   EXIT CONSTRUCT                   EXIT CONSTRUCT
+```
+
+**INPUT:**
+```4gl
+-- OLD                           -- NEW
+ON KEY (ACCEPT)                  ON ACTION accept
+   ACCEPT INPUT                     ACCEPT INPUT
+ON KEY (CONTROL-P)               ON ACTION cancel
+   LET int_flag = TRUE              LET int_flag = TRUE
+   EXIT INPUT                       EXIT INPUT
+ON KEY (CONTROL-T) INFIELD ...   ON ACTION zoom_employee INFIELD ...
+   -- zoom logic                    -- zoom logic
+                                 ON ACTION zoom_territory INFIELD ...
+                                    -- zoom logic
+```
+
+**Additional Changes:**
+- Replaced PROMPT-based delete confirmation with `confirm_delete()`
+- Removed unused variables
+
+### Phase 30: empl_terr Complete Modernization with INPUT ARRAY
+
+**Objective:** Complete rewrite of empl_terr.4gl to use INPUT ARRAY with modification triggers for inline editing, replacing the old DISPLAY ARRAY + separate INPUT add pattern.
+
+**Files Modified:**
+- `empl_terr.4gl` — Complete rewrite with INPUT ARRAY, TYPE, DYNAMIC ARRAY, validation, transactional save
+- `main_empl_terr.4gl` — Simplified to call `submenu_empl_terr()` (replaced old MENU with COMMAND blocks)
+
+**New Architecture:**
+
+**Type Definition:**
+```4gl
+TYPE t_empl_terr RECORD
+   employeeid LIKE employees.employeeid,
+   fullname VARCHAR(32),
+   territoryid LIKE territories.territoryid,
+   territorydescription LIKE territories.territorydescription,
+   regiondescription LIKE region.regiondescription
+END RECORD
+
+DEFINE empl_terr_arr DYNAMIC ARRAY OF t_empl_terr
+DEFINE contrl_empl_id LIKE employees.employeeid
+```
+
+**Entry Points:**
+- `terr_by_empl(employ_id)` — Called from employees module (sub-window, pre-filtered by employee)
+- `submenu_empl_terr()` — Standalone entry (query first via CONSTRUCT, then manage results)
+
+**Core Function — manage_empl_terr():**
+```4gl
+INPUT ARRAY empl_terr_arr WITHOUT DEFAULTS FROM sa_empl_terr.*
+   ATTRIBUTES(UNBUFFERED, INSERT ROW = FALSE, APPEND ROW = FALSE,
+              DELETE ROW = FALSE, AUTO APPEND = FALSE)
+```
+
+**Key INPUT ARRAY Attributes:**
+- `UNBUFFERED` — Display changes reflect immediately in the array
+- `INSERT ROW = FALSE` / `APPEND ROW = FALSE` — Disable built-in row insertion (managed by ON ACTION add)
+- `DELETE ROW = FALSE` — Disable built-in deletion (managed by ON ACTION delete)
+- `AUTO APPEND = FALSE` — Prevent automatic row addition when tabbing past last row
+
+**Modification Triggers:**
+- `BEFORE ROW` — Track current row via `arr_curr()`
+- `BEFORE FIELD fullname/territorydescription/regiondescription` — Skip derived (display-only) columns using `NEXT FIELD` to jump to next editable field
+- `AFTER FIELD employeeid` — Validate employee ID, populate fullname
+- `AFTER FIELD territoryid` — Validate territory ID, populate territorydescription and regiondescription
+- `ON ACTION zoom_employee INFIELD employeeid` — Lookup employee via BUTTONEDIT
+- `ON ACTION zoom_territory INFIELD territoryid` — Lookup territory via BUTTONEDIT
+- `ON ACTION query` — Re-run CONSTRUCT and reload data
+- `ON ACTION add` — Append new row via `append_new_row()`
+- `ON ACTION delete` — Delete current row with `confirm_delete()` confirmation
+- `ON ACTION accept` — Save all changes via `save_all_changes()`, exit INPUT ARRAY
+- `ON ACTION cancel` / `ON ACTION exit` — Discard changes, exit
+
+**New Functions:**
+
+| Function | Purpose |
+|----------|---------|
+| `append_new_row(p_arr)` | Appends empty row to dynamic array, pre-fills employee ID when in single-employee context |
+| `save_all_changes(p_arr)` | Transactional save: BEGIN WORK, DELETE existing, re-INSERT all rows, COMMIT WORK (ROLLBACK on error) |
+| `delete_empl_terr_row(p_rec)` | Deletes single row from database |
+| `validate_territory(p_territory_id)` | Returns BOOLEAN, message, description, region (4 return values) |
+| `validate_empl_id(p_employee_id)` | Returns BOOLEAN, fullname (parameterized, no module-global dependency) |
+
+**Transactional Save Pattern:**
+```4gl
+FUNCTION save_all_changes(p_arr)
+   DEFINE p_arr DYNAMIC ARRAY OF t_empl_terr
+   DEFINE idx INTEGER
+
+   BEGIN WORK
+   TRY
+      -- Delete all existing records for the employee(s) in the array
+      DELETE FROM employeeterritories
+         WHERE employeeid = contrl_empl_id
+
+      -- Re-insert all current rows
+      FOR idx = 1 TO p_arr.getLength()
+         INSERT INTO employeeterritories (employeeid, territoryid)
+            VALUES (p_arr[idx].employeeid, p_arr[idx].territoryid)
+      END FOR
+
+      COMMIT WORK
+   CATCH
+      ROLLBACK WORK
+      ERROR "Save failed: ", SQLCA.SQLERRM
+   END TRY
+END FUNCTION
+```
+
+**Removed Functions/Variables:**
+- `curr_empl_terr` record (no longer needed — array rows edited inline)
+- `arr_size`, `arr_max` (replaced by `.getLength()`)
+- `set_count()` calls (INPUT ARRAY handles display automatically)
+- `refresh_empl_terr()`, `clear_empl_terr()`, `load_curr_empl_terr()`, `display_curr_empl_terr()`
+- `clear_curr_empl_terr()`, `insert_curr_empl_terr()`, `delete_curr_empl_terr()`
+- `add_empl_terr()` (old INPUT-based add function)
+
+**Key Learnings:**
+- **DEFINE placement:** All DEFINE statements MUST be at the top of a function before any executable code. Placing DEFINE inside IF or FOR blocks causes compile error: `"A grammatical error has been found at 'DEFINE' expecting: ACCEPT ALTER BEGIN..."`
+- **Module-private variables:** Variables defined at module scope (DEFINE outside functions) are private to that module. `main_empl_terr.4gl` cannot directly reference `empl_terr_arr` — call `submenu_empl_terr()` instead.
+- **BEFORE FIELD for derived columns:** Use `BEFORE FIELD fieldname` + `NEXT FIELD nextfield` to skip non-editable computed fields in the tab order.
+- **INPUT ARRAY without built-in controls:** Disabling INSERT ROW, APPEND ROW, DELETE ROW, and AUTO APPEND gives full control over row management via ON ACTION handlers.
 
 ---
 
@@ -970,6 +1242,116 @@ fgl2p -o main_products.42r main_products.4gl main_lib.4gl products.4gl
 
 The Makefile manages this automatically with dependency rules.
 
+#### 22. Centralized Base Window Style
+
+Apply actionPanelPosition and ringMenuPosition to ALL windows via a base `Window` style (no dot-suffix):
+
+```xml
+<!-- generic.4st -->
+<Style name="Window">
+  <StyleAttribute name="actionPanelPosition" value="none" />
+  <StyleAttribute name="ringMenuPosition" value="none" />
+</Style>
+```
+
+**Key Points:**
+- A base `Window` style applies to ALL windows automatically — no `STYLE=` attribute needed on OPEN WINDOW
+- Named styles like `Window.reportviewer` override the base style when explicitly applied with `STYLE="reportviewer"`
+- Eliminates repetitive `STYLE="noactions"` on every OPEN WINDOW statement
+
+#### 23. INPUT ARRAY with Modification Triggers
+
+Inline editing pattern using INPUT ARRAY with manual row management:
+
+```4gl
+INPUT ARRAY my_arr WITHOUT DEFAULTS FROM sa_record.*
+   ATTRIBUTES(UNBUFFERED, INSERT ROW = FALSE, APPEND ROW = FALSE,
+              DELETE ROW = FALSE, AUTO APPEND = FALSE)
+
+   BEFORE ROW
+      LET curr_row = arr_curr()
+
+   BEFORE FIELD derived_column
+      NEXT FIELD next_editable_column  -- Skip display-only fields
+
+   AFTER FIELD editable_id_field
+      -- Validate and populate derived fields
+      IF NOT validate_id(my_arr[curr_row].id_field) THEN
+         NEXT FIELD editable_id_field
+      END IF
+      LET my_arr[curr_row].description = looked_up_value
+
+   ON ACTION zoom_xxx INFIELD id_field
+      -- Lookup logic via BUTTONEDIT
+      
+   ON ACTION add
+      CALL append_new_row(my_arr)
+   ON ACTION delete
+      IF confirm_delete() THEN
+         CALL my_arr.deleteElement(curr_row)
+      END IF
+   ON ACTION accept
+      CALL save_all_changes(my_arr)
+      EXIT INPUT
+   ON ACTION cancel
+      EXIT INPUT
+END INPUT
+```
+
+**Key Attributes:**
+- `UNBUFFERED` — Array changes display immediately
+- `INSERT ROW = FALSE` / `APPEND ROW = FALSE` — Custom add via ON ACTION
+- `DELETE ROW = FALSE` — Custom delete via ON ACTION with confirmation
+- `AUTO APPEND = FALSE` — Prevents automatic row creation on tab-through
+- `BEFORE FIELD` + `NEXT FIELD` — Skips derived (display-only) columns in tab order
+
+#### 24. Transactional Save (Delete-Reinsert)
+
+For many-to-many tables like employee-territories, delete all existing and re-insert:
+
+```4gl
+FUNCTION save_all_changes(p_arr)
+   DEFINE p_arr DYNAMIC ARRAY OF t_empl_terr
+   DEFINE idx INTEGER
+
+   BEGIN WORK
+   TRY
+      DELETE FROM employeeterritories
+         WHERE employeeid = contrl_empl_id
+
+      FOR idx = 1 TO p_arr.getLength()
+         INSERT INTO employeeterritories (employeeid, territoryid)
+            VALUES (p_arr[idx].employeeid, p_arr[idx].territoryid)
+      END FOR
+
+      COMMIT WORK
+   CATCH
+      ROLLBACK WORK
+      ERROR "Save failed: ", SQLCA.SQLERRM
+   END TRY
+END FUNCTION
+```
+
+**Key Points:**
+- `BEGIN WORK` / `COMMIT WORK` / `ROLLBACK WORK` for transaction control
+- TRY/CATCH ensures rollback on any error
+- Delete-reinsert is simpler than tracking individual row changes for junction tables
+
+#### 25. Program Icon Mapping
+
+Map program names to Font Awesome icons for automatic window/app icon assignment:
+
+```4gl
+FUNCTION build_program_icons()
+    CALL add_program_icon("main_employees",    "fa-id-card")
+    CALL add_program_icon("main_customers",    "fa-user")
+    CALL add_program_icon("bdl_menu",          "fa-rocket")
+    -- ... more mappings
+END FUNCTION
+```
+
+Icons are automatically applied by `form_initializer()` using `ui.Window.getCurrent().setImage()` and `ui.Interface.setImage()`. Adding a mapping to `build_program_icons()` is all that's needed — no code changes in the program itself.
+
 ---
 
 ## Modernization Patterns
@@ -1393,18 +1775,23 @@ END FUNCTION
 ### 10. Employee Territories Module
 **Purpose:** Manage employee-territory assignments (many-to-many)  
 **Fields:** 5 (employeeid, fullname, territoryid, territorydescription, regiondescription)  
-**Status:** .per modernized (TABLE container), main/4gl still legacy
+**Status:** 100% Complete — fully modernized with INPUT ARRAY inline editing
 
 **Key Features:**
-- **TABLE** container for list view (DISPLAY ARRAY)
+- **INPUT ARRAY with modification triggers** for inline editing (replaces DISPLAY ARRAY + separate INPUT)
+- **TABLE** container for list view with inline editing
 - **BUTTONEDIT** for employeeid (ACTION=zoom_employee) and territoryid (ACTION=zoom_territory)
-- Pipe-separated columns with 5 repeated rows
-- All formonly.* bindings with explicit TYPE declarations
+- **BEFORE FIELD** triggers skip derived columns (fullname, territorydescription, regiondescription)
+- **AFTER FIELD** validation on employeeid and territoryid with auto-population of descriptions
+- **Transactional save** — BEGIN WORK / DELETE / re-INSERT / COMMIT WORK
+- **TYPE t_empl_terr** with DYNAMIC ARRAY
+- **validate_territory()** and **validate_empl_id()** as parameterized validation functions
+- Two entry points: `terr_by_empl()` (from employees) and `submenu_empl_terr()` (standalone)
 
 **Files:**
+- `empl_terr.4gl` - Complete rewrite with INPUT ARRAY, TYPE, DYNAMIC ARRAY, validation, transactional save
 - `empl_terr.per` - Modern form with TABLE, BUTTONEDIT, TOOLBAR
-- `main_empl_terr.4gl` - Still legacy (pending conversion)
-- `empl_terr.4gl` - Still legacy (pending .4gl conversion)
+- `main_empl_terr.4gl` - Simplified to call `submenu_empl_terr()`
 
 ### 11. Orders Module
 **Purpose:** Manage customer orders  
@@ -1943,12 +2330,12 @@ As you work, the AI learns patterns:
 **generic.4ad** - Centralized action definitions
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
 - Purpose: Shared actions with icons and accelerators (auto-loaded via form initializer)
-- **35 Actions:** first, previous, next, last, query, add, modify, delete, products, orders, supplier, category, region, employees, territories, customer, employee, shipper, details, reportsto, order, product, select, zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom, run, accept, cancel, exit
+- **36 Actions:** first, previous, next, last, query, add, modify, delete, products, orders, supplier, category, region, employees, territories, customer, employee, shipper, details, reportsto, order, product, select, zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom, run, accept, cancel, **launch**, exit
 
 **generic.4st** - Centralized stylesheets
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
 - Purpose: Shared styles for consistent UI
-- Includes: Window.noactions, Window.reportviewer, Table.reportviewer styles
+- Includes: **Window** (base style — actionPanelPosition=none, ringMenuPosition=none for all windows), Window.reportviewer, Table.reportviewer, Table.MenuTree styles
 
 **report_helper.4gl** - Report viewer utility library
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
@@ -1970,9 +2357,12 @@ As you work, the AI learns patterns:
 **main_lib.4gl**
 - Added: `CALL ui.Interface.loadStyles()` in init_pgm()
 - Added: `CALL ui.Form.setDefaultInitializer("form_initializer")` in init_pgm()
-- Added: `form_initializer(frm ui.Form)` function — auto-loads generic.4ad for every form
+- Added: `form_initializer(frm ui.Form)` function — auto-loads generic.4ad for every form, sets window/app icons
 - Added: `confirm_delete()` function (MENU with STYLE="dialog")
-- Purpose: Initialize global styles, register form initializer, and shared utility functions
+- Added: `build_program_icons()` — maps 17 programs to Font Awesome icons (including bdl_menu→fa-rocket, 4 reports→fa-file-text)
+- Added: `get_program_icon()`, `add_program_icon()` — icon registry functions
+- Added: `generate_temp_filename()` — creates unique filenames using `util.Datetime.format()`
+- Purpose: Initialize global styles, register form initializer, program icon registry, and shared utility functions
 
 **categories.4gl**
 - Converted: All arr_size/arr_max → getLength()
@@ -2053,6 +2443,33 @@ As you work, the AI learns patterns:
 - Updated: Load generic.4ad, STYLE="noactions"
 - Added: Calls populate_supplier_combo() and populate_category_combo() after form opens
 
+**empl_terr.4gl**
+- Rewritten: Complete modernization from DISPLAY ARRAY + INPUT to INPUT ARRAY with modification triggers
+- Added: TYPE t_empl_terr, DYNAMIC ARRAY, manage_empl_terr(), append_new_row(), save_all_changes()
+- Added: validate_territory() (4 return values), validate_empl_id() (parameterized)
+- Added: BEFORE FIELD triggers to skip derived columns, AFTER FIELD validation
+- Added: Transactional save with BEGIN WORK / COMMIT WORK / ROLLBACK WORK
+- Removed: Static arrays, arr_size/arr_max, set_count, curr_empl_terr record, 8+ legacy functions
+
+**main_empl_terr.4gl**
+- Rewritten: Simplified from MENU with COMMAND blocks to single CALL submenu_empl_terr()
+
+**bdl_menu.per**
+- Added: TOOLBAR with ITEM launch, SEPARATOR, ITEM exit
+- Removed: ACTION DEFAULTS section (now sourced from generic.4ad)
+
+**bdl_menu.4gl**
+- Added: Reports root category (id=6) with 4 children in build_menu()
+- Removed: STYLE="noactions" from OPEN WINDOW (centralized in generic.4st)
+
+**generic.4st**
+- Changed: Renamed `Window.noactions` to base `Window` style (applies to all windows)
+- Effect: All windows get actionPanelPosition=none, ringMenuPosition=none automatically
+
+**generic.4ad**
+- Added: "launch" ActionDefault (fa-rocket, acceleratorName=Return)
+- Total: 36 action defaults
+
 ---
 
 ## Conclusion
@@ -2067,7 +2484,7 @@ The Genero AI Agent effectively assisted with a complex modernization project by
 6. **Adding new UI patterns** - COMBOBOX population from database, CHECKBOX with defaults, dialog-style confirmation
 7. **Refactoring shared code** - confirm_delete() extracted to main_lib.4gl, applied everywhere
 
-The result: **12 modules with modern forms**, **8 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (35 actions) and stylesheets**, **form initializer hook**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, and **shared utility functions** throughout.
+The result: **12 modules with modern forms**, **9 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (36 actions) and stylesheets**, **centralized base Window style**, **form initializer hook with program icon registry**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **INPUT ARRAY with modification triggers**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, **GUI tree menu** with 6 categories and 16 leaf programs, and **shared utility functions** throughout.
 
 ### Key Success Factors
 
@@ -2086,11 +2503,16 @@ The result: **12 modules with modern forms**, **8 fully modernized** from legacy
 ✅ Reusable report viewer (base.Channel + DISPLAY ARRAY in modal dialog)  
 ✅ Custom styles for specialized windows and tables  
 ✅ Genero project file (.4pw) management  
+✅ Centralized base Window style (eliminates per-window STYLE attributes)  
+✅ GUI tree menu with toolbar, reports category, and program icon registry  
+✅ INPUT ARRAY with modification triggers for inline editing (empl_terr)  
+✅ Transactional save pattern with BEGIN WORK / COMMIT WORK / ROLLBACK WORK  
+✅ DEFINE placement discipline (all DEFINEs at function top, never inside IF/FOR)  
 
 ### Recommended Next Steps
 
-1. Convert remaining .4gl modules to modern patterns: region.4gl, employees.4gl, empl_terr.4gl, orders.4gl, order_details.4gl
-2. Convert remaining main programs: main_empl_terr.4gl, main_orders.4gl, main_order_details.4gl
+1. Convert remaining .4gl modules to modern patterns: region.4gl, employees.4gl, orders.4gl, order_details.4gl
+2. Convert remaining main programs: main_orders.4gl, main_order_details.4gl
 3. Implement zoom/lookup window functions: employee_lookup(), territory_lookup(), customer_lookup(), product_lookup(), order_lookup()
 4. Test the modernized application with real data
 5. Add master-detail patterns for orders/order_details
@@ -2100,7 +2522,7 @@ The result: **12 modules with modern forms**, **8 fully modernized** from legacy
 ---
 
 **Document Created:** February 9, 2026  
-**Last Updated:** February 11, 2026  
+**Last Updated:** February 12, 2026  
 **Genero Version:** 6.00.02-202512011639  
 **Database:** Northwind  
 **Project Location:** `/Users/mikefolcher/4js-github/fgl-darwin/`
