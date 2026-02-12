@@ -666,3 +666,21 @@ FUNCTION submenu_employees_view()
    END WHILE
 
 END FUNCTION #submenu_employees_view
+-- =====================================================================
+-- Function: populate_courtesy_combo
+-- Purpose : Populate the title of courtesy combobox with standard values
+-- =====================================================================
+FUNCTION populate_courtesy_combo()
+   DEFINE cb ui.ComboBox
+
+   LET cb = ui.ComboBox.forName("titleofcourtesy")
+   IF cb IS NULL THEN
+      RETURN
+   END IF
+   CALL cb.clear()
+   CALL cb.addItem("Dr.",  "Dr.")
+   CALL cb.addItem("Mr.",  "Mr.")
+   CALL cb.addItem("Mrs.", "Mrs.")
+   CALL cb.addItem("Ms.",  "Ms.")
+
+END FUNCTION #populate_courtesy_combo

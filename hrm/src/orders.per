@@ -1,58 +1,77 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌───────────────────────────── Orders ────────────────────────────┐
-  Order ID       : [orderid   ]
-  Customer ID    : [customerid          ][customername          ]
-  Employee ID    : [employeeid][employeename                    ]
-  Order Date     : [orderdt   ]
-  Required Date  : [reqireddt ]
-  Shipped Date   : [shippeddt ]
-  Ship Via       : [shipvia   ][companyname                     ]
-  Freight        : [freight         ]
-  Ship To        : [shipname                              ]
-  Address        : [shipaddress                                  ]
-  City           : [shipcity        ]
-  Region         : [shipregion      ]
-  Postal Code    : [shippostal]
-  Country        : [shipcountry     ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Order Management")
+  VBOX
+    GROUP (TEXT="Order Information", STYLE="box")
+      GRID
+      {
+        Order ID:       [orderid   ]
+        Customer ID:    [customerid          ][customername          ]
+        Employee ID:    [employeeid][employeename                    ]
+        Order Date:     [orderdt   ]
+        Required Date:  [reqireddt ]
+        Shipped Date:   [shippeddt ]
+        Ship Via:       [shipvia                                     ]
+        Freight:        [freight         ]
+      }
+      END
+    END
+    GROUP (TEXT="Ship To Information", STYLE="box")
+      GRID
+      {
+        Ship To:        [shipname                              ]
+        Address:        [shipaddress                                  ]
+        City:           [shipcity        ]
+        Region:         [shipregion      ]
+        Postal Code:    [shippostal]
+        Country:        [shipcountry     ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-orderid = formonly.orderid TYPE SMALLINT;
-customerid = formonly.customerid TYPE CHAR;
-customername = formonly.customername, NOENTRY;
-employeeid = formonly.employeeid TYPE SMALLINT;
-employeename = formonly.employeename TYPE CHAR, NOENTRY;
-orderdt = formonly.orderdate TYPE DATE;
-reqireddt = formonly.requireddate TYPE DATE;
-shippeddt = formonly.shippeddate TYPE DATE;
-shipvia = formonly.shipvia TYPE SMALLINT;
-companyname = formonly.companyname TYPE CHAR, NOENTRY;
-freight = formonly.freight TYPE FLOAT;
-shipname = formonly.shipname TYPE VARCHAR;
-shipaddress = formonly.shipaddress TYPE VARCHAR;
-shipcity = formonly.shipcity TYPE VARCHAR;
-shipregion = formonly.shipregion TYPE VARCHAR;
-shippostal = formonly.shippostalcode TYPE VARCHAR;
-shipcountry = formonly.shipcountry TYPE VARCHAR;
-
-END --ATTRIBUTES
+  orderid = formonly.orderid TYPE SMALLINT;
+  BUTTONEDIT customerid = formonly.customerid TYPE CHAR, ACTION=zoom_customer;
+  customername = formonly.customername, NOENTRY;
+  BUTTONEDIT employeeid = formonly.employeeid TYPE SMALLINT, ACTION=zoom_employee;
+  employeename = formonly.employeename TYPE CHAR, NOENTRY;
+  DATEEDIT orderdt = formonly.orderdate TYPE DATE;
+  DATEEDIT reqireddt = formonly.requireddate TYPE DATE;
+  DATEEDIT shippeddt = formonly.shippeddate TYPE DATE;
+  COMBOBOX shipvia = formonly.shipvia TYPE SMALLINT;
+  freight = formonly.freight TYPE FLOAT;
+  shipname = formonly.shipname TYPE VARCHAR;
+  shipaddress = formonly.shipaddress TYPE VARCHAR;
+  shipcity = formonly.shipcity TYPE VARCHAR;
+  shipregion = formonly.shipregion TYPE VARCHAR;
+  shippostal = formonly.shippostalcode TYPE VARCHAR;
+  shipcountry = formonly.shipcountry TYPE VARCHAR;
+END
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_orders(formonly.orderid, formonly.customerid, formonly.customername,
-                          formonly.employeeid, formonly.employeename,
-                          formonly.orderdate, formonly.requireddate, formonly.shippeddate,
-                          formonly.shipvia, formonly.companyname, formonly.freight,
-                          formonly.shipname, formonly.shipaddress, formonly.shipcity,
-                          formonly.shipregion, formonly.shippostalcode, formonly.shipcountry);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_orders(formonly.orderid, formonly.customerid,
+    formonly.customername, formonly.employeeid, formonly.employeename,
+    formonly.orderdate, formonly.requireddate, formonly.shippeddate,
+    formonly.shipvia, formonly.freight,
+    formonly.shipname, formonly.shipaddress, formonly.shipcity,
+    formonly.shipregion, formonly.shippostalcode, formonly.shipcountry);
+END

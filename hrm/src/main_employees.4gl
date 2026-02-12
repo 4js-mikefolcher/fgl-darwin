@@ -4,14 +4,16 @@ MAIN
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "employees"
-      ATTRIBUTES(BORDER)
+      ATTRIBUTES(BORDER, STYLE="noactions")
+
+    CALL populate_courtesy_combo()
 
     MENU "Employee Management"
-        COMMAND "Query" "Search for employees"
+        ON ACTION query
             CALL submenu_employee()
-        COMMAND "Add" "Add a new employee"
+        ON ACTION add
             CALL add_employee()
-        COMMAND "Exit" "Quit program"
+        ON ACTION exit
             EXIT MENU
     END MENU
 

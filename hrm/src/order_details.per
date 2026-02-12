@@ -1,45 +1,49 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌────────────────────────── Order Details ────────────────────────┐
-  Order ID    : [orderid   ]
-  Product ID  : [productid ][productname                         ]
-  Unit Price  : [unitprice      ]
-  Quantity    : [quantity  ]
-  Discount    : [discount       ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Order Details")
+  VBOX
+    GROUP (TEXT="Order Detail Information", STYLE="box")
+      GRID
+      {
+        Order ID:     [orderid   ]
+        Product ID:   [productid ][productname                         ]
+        Unit Price:   [unitprice      ]
+        Quantity:     [quantity  ]
+        Discount:     [discount       ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-orderid = formonly.orderid TYPE SMALLINT;
-productid = formonly.productid TYPE SMALLINT;
-productname = formonly.productname TYPE VARCHAR, NOENTRY;
-unitprice = formonly.unitprice TYPE FLOAT;
-quantity = formonly.quantity TYPE SMALLINT;
-discount = formonly.discount TYPE FLOAT;
-
-END --ATTRIBUTES
+  BUTTONEDIT orderid = formonly.orderid TYPE SMALLINT, ACTION=zoom_order;
+  BUTTONEDIT productid = formonly.productid TYPE SMALLINT, ACTION=zoom_product;
+  productname = formonly.productname TYPE VARCHAR, NOENTRY;
+  unitprice = formonly.unitprice TYPE FLOAT;
+  quantity = formonly.quantity TYPE SMALLINT;
+  discount = formonly.discount TYPE FLOAT;
+END
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_order_details(formonly.orderid, formonly.productid,
-                                 formonly.unitprice, formonly.quantity, formonly.discount);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_order_details(formonly.orderid, formonly.productid,
+    formonly.productname, formonly.unitprice,
+    formonly.quantity, formonly.discount);
+END

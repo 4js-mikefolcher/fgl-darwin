@@ -10,7 +10,9 @@ SRCCOMP = fgl2p
 
 # Source files
 FORMS = employees.per empl_terr.per region.per territories.per orders.per order_details.per \
-        categories.per customers.per products.per shippers.per suppliers.per usstates.per
+        categories.per customers.per products.per shippers.per suppliers.per usstates.per \
+        rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
+        rpt_orders_by_daterange.per report_viewer.per
 
 # Compiled form targets
 FORM_TARGETS = $(BINDIR)/employees.42f \
@@ -24,7 +26,12 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/products.42f \
                $(BINDIR)/shippers.42f \
                $(BINDIR)/suppliers.42f \
-               $(BINDIR)/usstates.42f
+               $(BINDIR)/usstates.42f \
+               $(BINDIR)/rpt_orders_by_customer.42f \
+               $(BINDIR)/rpt_orders_by_employee.42f \
+               $(BINDIR)/rpt_orders_by_product.42f \
+               $(BINDIR)/rpt_orders_by_daterange.42f \
+               $(BINDIR)/report_viewer.42f
 
 # Program targets
 PROG_TARGETS = $(BINDIR)/main_employees.42r \
@@ -38,7 +45,11 @@ PROG_TARGETS = $(BINDIR)/main_employees.42r \
                $(BINDIR)/main_products.42r \
                $(BINDIR)/main_shippers.42r \
                $(BINDIR)/main_suppliers.42r \
-               $(BINDIR)/main_usstates.42r
+               $(BINDIR)/main_usstates.42r \
+               $(BINDIR)/main_rpt_orders_by_customer.42r \
+               $(BINDIR)/main_rpt_orders_by_employee.42r \
+               $(BINDIR)/main_rpt_orders_by_product.42r \
+               $(BINDIR)/main_rpt_orders_by_daterange.42r
 
 # Default target - build everything
 all: $(BINDIR) $(FORM_TARGETS) $(PROG_TARGETS)
@@ -96,6 +107,26 @@ $(BINDIR)/usstates.42f: usstates.per
 	$(FORMCOMP) $<
 	mv usstates.42f $(BINDIR)/
 
+$(BINDIR)/rpt_orders_by_customer.42f: rpt_orders_by_customer.per
+	$(FORMCOMP) $<
+	mv rpt_orders_by_customer.42f $(BINDIR)/
+
+$(BINDIR)/rpt_orders_by_employee.42f: rpt_orders_by_employee.per
+	$(FORMCOMP) $<
+	mv rpt_orders_by_employee.42f $(BINDIR)/
+
+$(BINDIR)/rpt_orders_by_product.42f: rpt_orders_by_product.per
+	$(FORMCOMP) $<
+	mv rpt_orders_by_product.42f $(BINDIR)/
+
+$(BINDIR)/rpt_orders_by_daterange.42f: rpt_orders_by_daterange.per
+	$(FORMCOMP) $<
+	mv rpt_orders_by_daterange.42f $(BINDIR)/
+
+$(BINDIR)/report_viewer.42f: report_viewer.per
+	$(FORMCOMP) $<
+	mv report_viewer.42f $(BINDIR)/
+
 # Common modules for cross-navigation
 CORE_MODULES = main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl \
                orders.4gl order_details.4gl customers.4gl shippers.4gl \
@@ -104,6 +135,13 @@ CORE_MODULES = main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4
 CORE_42M = main_lib.42m employees.42m empl_terr.42m territories.42m region.42m \
            orders.42m order_details.42m customers.42m shippers.42m \
            products.42m suppliers.42m categories.42m
+
+# Report modules
+RPT_MODULES = rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
+              rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl
+
+RPT_42M = rpt_orders_by_customer.42m rpt_orders_by_employee.42m \
+          rpt_orders_by_product.42m rpt_orders_by_daterange.42m
 
 # Program compilation rules
 $(BINDIR)/main_employees.42r: main_employees.4gl $(CORE_MODULES)
@@ -154,6 +192,23 @@ $(BINDIR)/main_usstates.42r: main_usstates.4gl main_lib.4gl usstates.4gl
 	$(SRCCOMP) -o main_usstates.42r $^
 	mv main_usstates.42r main_usstates.42m main_lib.42m usstates.42m $(BINDIR)/
 
+# Report program compilation rules
+$(BINDIR)/main_rpt_orders_by_customer.42r: main_rpt_orders_by_customer.4gl main_lib.4gl report_helper.4gl rpt_orders_by_customer.4gl
+	$(SRCCOMP) -o main_rpt_orders_by_customer.42r $^
+	mv main_rpt_orders_by_customer.42r main_rpt_orders_by_customer.42m main_lib.42m report_helper.42m rpt_orders_by_customer.42m $(BINDIR)/
+
+$(BINDIR)/main_rpt_orders_by_employee.42r: main_rpt_orders_by_employee.4gl main_lib.4gl report_helper.4gl rpt_orders_by_employee.4gl
+	$(SRCCOMP) -o main_rpt_orders_by_employee.42r $^
+	mv main_rpt_orders_by_employee.42r main_rpt_orders_by_employee.42m main_lib.42m report_helper.42m rpt_orders_by_employee.42m $(BINDIR)/
+
+$(BINDIR)/main_rpt_orders_by_product.42r: main_rpt_orders_by_product.4gl main_lib.4gl report_helper.4gl rpt_orders_by_product.4gl
+	$(SRCCOMP) -o main_rpt_orders_by_product.42r $^
+	mv main_rpt_orders_by_product.42r main_rpt_orders_by_product.42m main_lib.42m report_helper.42m rpt_orders_by_product.42m $(BINDIR)/
+
+$(BINDIR)/main_rpt_orders_by_daterange.42r: main_rpt_orders_by_daterange.4gl main_lib.4gl report_helper.4gl rpt_orders_by_daterange.4gl
+	$(SRCCOMP) -o main_rpt_orders_by_daterange.42r $^
+	mv main_rpt_orders_by_daterange.42r main_rpt_orders_by_daterange.42m main_lib.42m report_helper.42m rpt_orders_by_daterange.42m $(BINDIR)/
+
 # Clean compiled files
 clean:
 	rm -f *.42f *.42m *.42r
@@ -176,4 +231,10 @@ shippers: $(BINDIR)/shippers.42f $(BINDIR)/main_shippers.42r
 suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
 
-.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates
+# Report convenience targets
+rpt_orders_by_customer: $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_orders_by_customer.42r
+rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42r
+rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
+rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
+
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange

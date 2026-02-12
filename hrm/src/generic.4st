@@ -30,4 +30,16 @@
     <StyleAttribute name="backgroundColor" value="lightgray" />
     <StyleAttribute name="orientation" value="horizontal" />
   </Style>
+
+  <Style name="Window.reportviewer">
+    <StyleAttribute name="windowType" value="modal" />
+    <StyleAttribute name="actionPanelPosition" value="bottom" />
+    <StyleAttribute name="ringMenuPosition" value="bottom" />
+    <StyleAttribute name="toolBarPosition" value="none" />
+  </Style>
+
+  <Style name="Table.reportviewer">
+    <StyleAttribute name="fontFamily" value="monospace" />
+    <StyleAttribute name="highlightCurrentRow" value="no" />
+  </Style>
 </StyleList>

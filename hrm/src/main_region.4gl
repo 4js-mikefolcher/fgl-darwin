@@ -4,14 +4,14 @@ MAIN
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "region"
-      ATTRIBUTES(BORDER)
+      ATTRIBUTES(BORDER, STYLE="noactions")
 
     MENU "Region Maintenance"
-        COMMAND "Query" "Search for regions"
+        ON ACTION query
             CALL submenu_region()
-        COMMAND "Add" "Add a new region"
+        ON ACTION add
             CALL add_region()
-        COMMAND "Exit" "Cancel the program"
+        ON ACTION exit
             EXIT MENU
     END MENU
 

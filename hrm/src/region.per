@@ -1,36 +1,40 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌────────────────────────────── Regions ──────────────────────────┐
-  Region ID     : [regionid]
-  Description   : [regiondescription                             ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
 END
+
+LAYOUT (TEXT="Region Management")
+  VBOX
+    GROUP (TEXT="Region Information", STYLE="box")
+      GRID
+      {
+        Region ID:    [regionid       ]
+        Description:  [regiondescription                         ]
+      }
+      END
+    END
+  END
+END
+
 ATTRIBUTES
-regionid = FORMONLY.regionid TYPE INTEGER, TITLE="Region ID";
-regiondescription = FORMONLY.regiondescription, TITLE="Description";
+  regionid = formonly.regionid TYPE INTEGER;
+  regiondescription = formonly.regiondescription TYPE VARCHAR;
 END
+
 INSTRUCTIONS
-SCREEN RECORD s_region(formonly.regionid, formonly.regiondescription);
+  SCREEN RECORD s_region(formonly.regionid, formonly.regiondescription);
 END

@@ -1,19 +1,13 @@
 DATABASE northwind
 
-DEFINE territories_arr ARRAY[1000] OF RECORD
-   territoryid LIKE territories.territoryid,
-   territorydescription LIKE territories.territorydescription,
-   regionid LIKE territories.regionid,
-   regiondescription LIKE region.regiondescription
+TYPE t_territory RECORD
+   territoryid VARCHAR(20),
+   territorydescription VARCHAR(20),
+   regionid SMALLINT
 END RECORD
-DEFINE curr_territories RECORD
-   territoryid LIKE territories.territoryid,
-   territorydescription LIKE territories.territorydescription,
-   regionid LIKE territories.regionid,
-   regiondescription LIKE region.regiondescription
-END RECORD
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
+
+DEFINE territories_arr DYNAMIC ARRAY OF t_territory
+DEFINE curr_territories t_territory
 
 -- =====================================================================
 -- Function: view_territory
@@ -31,16 +25,16 @@ FUNCTION view_territory(terr_id)
    OPEN WINDOW viewTerritoryWindow AT 5,5 WITH FORM "territories"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
-   LET arr_max = 1000
    LET where_clause = " territories.territoryid = '", terr_id CLIPPED, "'"
    CALL load_territories(where_clause)
 
-   IF arr_size == 0 THEN
+   IF territories_arr.getLength() == 0 THEN
       ERROR "Territory not found"
       CLOSE WINDOW viewTerritoryWindow
       RETURN
    END IF
 
+   CALL populate_region_combo()
    CALL load_curr_territories(1)
    CALL display_curr_territories()
 
@@ -73,16 +67,16 @@ FUNCTION view_territories_for_region(reg_id)
    OPEN WINDOW viewTerritoriesWindow AT 5,5 WITH FORM "territories"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
-   LET arr_max = 1000
    LET where_clause = " territories.regionid = ", reg_id
    CALL load_territories(where_clause)
 
-   IF arr_size == 0 THEN
+   IF territories_arr.getLength() == 0 THEN
       MESSAGE "No territories found for this region"
       CLOSE WINDOW viewTerritoriesWindow
       RETURN
    END IF
 
+   CALL populate_region_combo()
    CALL submenu_territories_view()
 
    CLOSE WINDOW viewTerritoriesWindow
@@ -129,11 +123,11 @@ FUNCTION submenu_territories_view()
    DEFINE statusMessage CHAR(60)
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength()
 
        CALL load_curr_territories(currentIdx)
        CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Territories View"
@@ -148,12 +142,12 @@ FUNCTION submenu_territories_view()
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
+              IF currentIdx > territories_arr.getLength() THEN
+                 LET currentIdx = territories_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = territories_arr.getLength()
               EXIT MENU
           COMMAND "Region" "View Region"
               CALL view_region(curr_territories.regionid)
@@ -173,16 +167,16 @@ FUNCTION submenu_territories()
    DEFINE statusMessage CHAR(60)
 
    CALL query_territories()
-   IF arr_size == 0 THEN
+   IF territories_arr.getLength() == 0 THEN
       RETURN
    END IF
 
    LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength()
 
        CALL load_curr_territories(currentIdx)
        CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Territories Management"
@@ -193,22 +187,22 @@ FUNCTION submenu_territories()
               LET currentIdx = currentIdx - 1
               IF currentIdx < 1 THEN
                  LET currentIdx = 1
-              END IF 
+              END IF
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
-              END IF 
+              IF currentIdx > territories_arr.getLength() THEN
+                 LET currentIdx = territories_arr.getLength()
+              END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = territories_arr.getLength()
               EXIT MENU
           COMMAND "Add" "Add a new territory"
               CALL add_territories()
               IF int_flag == FALSE THEN
                  CALL refresh_territories(currentIdx, "A")
-                 LET currentIdx = arr_size
+                 LET currentIdx = territories_arr.getLength()
               END IF
               EXIT MENU
           COMMAND "Modify" "Edit an existing territory"
@@ -221,8 +215,8 @@ FUNCTION submenu_territories()
               CALL delete_territories()
               IF int_flag == FALSE THEN
                  CALL refresh_territories(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
+                 IF currentIdx > territories_arr.getLength() THEN
+                    LET currentIdx = territories_arr.getLength()
                  END IF
               END IF
               EXIT MENU
@@ -246,6 +240,7 @@ FUNCTION territories_lookup()
    OPEN WINDOW lookupWindow AT 5,5 WITH FORM "territories"
       ATTRIBUTES(BORDER)
 
+   CALL populate_region_combo()
    CALL territories_lookup_menu()
       RETURNING territories_id, territories_desc
 
@@ -261,17 +256,17 @@ FUNCTION territories_lookup_menu()
    DEFINE selectedIdx INTEGER
 
    CALL query_territories()
-   IF arr_size == 0 THEN
+   IF territories_arr.getLength() == 0 THEN
       RETURN "", ""
    END IF
 
    LET currentIdx = 1
    LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= arr_size AND selectedIdx == 0
+   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength() AND selectedIdx == 0
 
        CALL load_curr_territories(currentIdx)
        CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
+       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
        MENU "Territory Select"
@@ -282,16 +277,16 @@ FUNCTION territories_lookup_menu()
               LET currentIdx = currentIdx - 1
               IF currentIdx < 1 THEN
                  LET currentIdx = 1
-              END IF 
+              END IF
               EXIT MENU
           COMMAND "Next" "View next record in result set"
               LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
-              END IF 
+              IF currentIdx > territories_arr.getLength() THEN
+                 LET currentIdx = territories_arr.getLength()
+              END IF
               EXIT MENU
           COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
+              LET currentIdx = territories_arr.getLength()
               EXIT MENU
           COMMAND "Select" "Select a territory"
               LET selectedIdx = currentIdx
@@ -308,7 +303,7 @@ FUNCTION territories_lookup_menu()
    END IF
    RETURN "", ""
 
-END FUNCTION #submenu_territories
+END FUNCTION #territories_lookup_menu
 
 -- =====================================================================
 -- Function: query_territories
@@ -321,11 +316,11 @@ FUNCTION query_territories()
     CALL clear_curr_territories()
     LET int_flag = FALSE
     CONSTRUCT where_clause ON territories.territoryid, territories.territorydescription,
-                              territories.regionid, region.regiondescription
+                              territories.regionid
        FROM s_territories.*
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -338,7 +333,7 @@ FUNCTION query_territories()
 
     CALL load_territories(where_clause)
 
-    IF arr_size == 0 THEN
+    IF territories_arr.getLength() == 0 THEN
         MESSAGE "No territories found."
         RETURN
     END IF
@@ -353,36 +348,28 @@ END FUNCTION
 FUNCTION load_territories(where_clause)
     DEFINE where_clause VARCHAR(255)
     DEFINE sql_stmt VARCHAR(512)
-    DEFINE idx INTEGER
+    DEFINE temp_territory t_territory
 
-    LET sql_stmt = " SELECT territoryid, territorydescription, territories.regionid, region.regiondescription",
+    LET sql_stmt = " SELECT territoryid, territorydescription, regionid",
                    " FROM territories",
-                   " INNER JOIN region on region.regionid = territories.regionid",
-                   " WHERE ", where_clause, " ORDER BY territoryid"
+                   " WHERE ", where_clause CLIPPED, " ORDER BY territoryid"
 
     CALL clear_territories()
 
-    LET idx = 0
-    DISPLAY sql_stmt
-    PREPARE p1 FROM sql_stmt
-    DECLARE c1 CURSOR FOR p1
-    FOREACH c1 INTO curr_territories.*
-        LET idx = idx + 1
-        LET territories_arr[idx] = curr_territories
+    PREPARE p_territories FROM sql_stmt
+    DECLARE c_territories CURSOR FOR p_territories
+    FOREACH c_territories INTO temp_territory.*
+        CALL territories_arr.appendElement()
+        LET territories_arr[territories_arr.getLength()] = temp_territory
     END FOREACH
     CALL clear_curr_territories()
-    LET arr_size = idx
-    
+
 END FUNCTION
 
 FUNCTION clear_territories()
-   DEFINE idx INTEGER
 
-   FOR idx = 1 TO arr_max
-      INITIALIZE territories_arr[idx].* TO NULL   
-   END FOR
-   LET arr_size = 0
-      
+   CALL territories_arr.clear()
+
 END FUNCTION #clear_territories
 
 -- =====================================================================
@@ -392,30 +379,17 @@ END FUNCTION #clear_territories
 FUNCTION add_territories()
     DEFINE territories_valid SMALLINT
     DEFINE valid_msg CHAR(75)
-    DEFINE selected_region_id LIKE territories.regionid
-    DEFINE selected_region_desc LIKE region.regiondescription
 
     CLEAR FORM
     LET int_flag = FALSE
     CALL clear_curr_territories()
     INPUT BY NAME curr_territories.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(regionid) THEN
-               CALL region_lookup()
-                  RETURNING selected_region_id, selected_region_desc
-               IF selected_region_id > 0 THEN
-                  LET curr_territories.regionid = selected_region_id
-                  LET curr_territories.regiondescription = selected_region_desc
-               END IF
-            END IF
-        BEFORE FIELD regionid
-           MESSAGE "Use Cntrl-T to open lookup window"
         AFTER INPUT
             CALL validate_territories("A")
                RETURNING territories_valid, valid_msg
@@ -432,7 +406,7 @@ FUNCTION add_territories()
 
     CALL insert_curr_territories()
     MESSAGE "Territory record added"
-    
+
 END FUNCTION
 
 
@@ -443,28 +417,15 @@ END FUNCTION
 FUNCTION edit_territories()
     DEFINE territories_valid SMALLINT
     DEFINE valid_msg CHAR(75)
-    DEFINE selected_region_id LIKE territories.regionid
-    DEFINE selected_region_desc LIKE region.regiondescription
 
     LET int_flag = FALSE
     INPUT BY NAME curr_territories.territorydescription, curr_territories.regionid
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(regionid) THEN
-               CALL region_lookup()
-                  RETURNING selected_region_id, selected_region_desc
-               IF selected_region_id > 0 THEN
-                  LET curr_territories.regionid = selected_region_id
-                  LET curr_territories.regiondescription = selected_region_desc
-               END IF
-            END IF
-        BEFORE FIELD regionid
-           MESSAGE "Use Cntrl-T to open lookup window"
         AFTER INPUT
             CALL validate_territories("C")
                RETURNING territories_valid, valid_msg
@@ -490,11 +451,9 @@ END FUNCTION
 -- Purpose : Delete an existing territory record
 -- =====================================================================
 FUNCTION delete_territories()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Territory delete canceled"
         LET int_flag = TRUE
         RETURN
@@ -509,7 +468,7 @@ FUNCTION load_curr_territories(currIdx)
    DEFINE currIdx INTEGER
 
    CALL clear_curr_territories()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
+   IF currIdx > 0 AND currIdx <= territories_arr.getLength() THEN
       LET curr_territories = territories_arr[currIdx]
    END IF
 
@@ -553,42 +512,28 @@ END FUNCTION
 FUNCTION refresh_territories(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
    DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
 
    CASE operation
       WHEN "A"
-         LET newIdx = arr_size + 1
-         LET territories_arr[newIdx] = curr_territories
-         LET arr_size = newIdx
+         CALL territories_arr.appendElement()
+         LET territories_arr[territories_arr.getLength()] = curr_territories
       WHEN "C"
          LET territories_arr[currIdx] = curr_territories
       WHEN "D"
-           LET newIdx = 0 
-           LET replaceRec = FALSE
-              
-           FOR idx = 1 TO arr_size
-              IF territories_arr[idx].territoryid = curr_territories.territoryid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF 
-              LET newIdx = newIdx + 1
-              LET territories_arr[newIdx] = territories_arr[idx]
-           END FOR 
-    
-           IF replaceRec THEN
-              INITIALIZE territories_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF 
-   END CASE 
+         FOR idx = 1 TO territories_arr.getLength()
+            IF territories_arr[idx].territoryid = curr_territories.territoryid THEN
+               CALL territories_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
+   END CASE
 
 END FUNCTION #refresh_territories
 
 FUNCTION validate_territories(mode)
    DEFINE mode CHAR(1)
    DEFINE territoriesExists SMALLINT
-   DEFINE region_desc LIKE region.regiondescription
 
    SELECT 1 INTO territoriesExists FROM territories WHERE territories.territoryid = curr_territories.territoryid
    IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
@@ -604,12 +549,29 @@ FUNCTION validate_territories(mode)
       RETURN FALSE, "Territory Description is required"
    END IF
    IF curr_territories.regionid IS NULL THEN
-      RETURN FALSE, "Region ID is required"
+      RETURN FALSE, "Region is required"
    END IF
-   SELECT regiondescription INTO region_desc FROM region WHERE region.regionid = curr_territories.regionid
-   IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Region ID does not exist in region table"
-   END IF
-   LET curr_territories.regiondescription = region_desc
    RETURN TRUE, "Okay"
 END FUNCTION
+
+-- =====================================================================
+-- Function: populate_region_combo
+-- Purpose : Populate the region combobox from the region table
+-- =====================================================================
+FUNCTION populate_region_combo()
+   DEFINE cb ui.ComboBox
+   DEFINE reg_id SMALLINT
+   DEFINE reg_desc VARCHAR(20)
+
+   LET cb = ui.ComboBox.forName("regionid")
+   IF cb IS NULL THEN
+      RETURN
+   END IF
+   CALL cb.clear()
+   DECLARE c_region_combo CURSOR FOR
+      SELECT regionid, regiondescription FROM region ORDER BY regiondescription
+   FOREACH c_region_combo INTO reg_id, reg_desc
+      CALL cb.addItem(reg_id, reg_desc)
+   END FOREACH
+
+END FUNCTION #populate_region_combo

@@ -1,39 +1,43 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌─────────────────────────── Territories ─────────────────────────┐
-  Territory ID  : [territoryid        ]
-  Description   : [territorydescription]
-  Region ID     : [regionid][regiondescription       ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
 END
+
+LAYOUT (TEXT="Territories Management")
+  VBOX
+    GROUP (TEXT="Territory Information", STYLE="box")
+      GRID
+      {
+        Territory ID: [territoryid              ]
+        Description:  [territorydescription      ]
+        Region:       [regionid                              ]
+      }
+      END
+    END
+  END
+END
+
 ATTRIBUTES
-territoryid = FORMONLY.territoryid, TITLE="Territory ID";
-territorydescription = FORMONLY.territorydescription, TITLE="Description";
-regionid = FORMONLY.regionid TYPE SMALLINT, TITLE="Region ID";
-regiondescription = FORMONLY.regiondescription, TITLE="Region Description", NOENTRY;
+  territoryid = formonly.territoryid TYPE VARCHAR;
+  territorydescription = formonly.territorydescription TYPE VARCHAR;
+  COMBOBOX regionid = formonly.regionid TYPE SMALLINT;
 END
+
 INSTRUCTIONS
-SCREEN RECORD s_territories(formonly.territoryid, formonly.territorydescription,
-                            formonly.regionid, formonly.regiondescription);
+  SCREEN RECORD s_territories(formonly.territoryid, formonly.territorydescription,
+                              formonly.regionid);
 END

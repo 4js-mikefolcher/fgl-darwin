@@ -4,7 +4,9 @@ MAIN
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "territories"
-      ATTRIBUTES(BORDER)
+      ATTRIBUTES(BORDER, STYLE="noactions")
+
+    CALL populate_region_combo()
 
     MENU "Territories Maintenance"
         COMMAND "Query" "Search for territories"

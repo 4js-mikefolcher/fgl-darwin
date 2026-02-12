@@ -1,7 +1,7 @@
 # Genero Module Modernization with AI Agent
 ## Chat Documentation & Learning Guide
 
-**Date:** February 9-10, 2026  
+**Date:** February 9-11, 2026  
 **Project:** Northwind Genero Application Modernization  
 **Scope:** Converting legacy terminal-style forms to modern web applications
 
@@ -22,7 +22,7 @@
 
 ## Project Overview
 
-This conversation demonstrates how to use the **Genero AI Agent** to modernize legacy Genero BDL applications. The project involved converting six database modules (categories, suppliers, customers, shippers, usstates, and products) from terminal-based UIs to modern web applications.
+This conversation demonstrates how to use the **Genero AI Agent** to modernize legacy Genero BDL applications. The project involved converting twelve database modules from terminal-based UIs to modern web applications, including creating modern form designs with BUTTONEDIT lookups, COMBOBOX controls, TABLE containers, and a centralized form initializer pattern.
 
 ### Primary Objectives
 
@@ -35,18 +35,30 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - Replace `ON KEY (ACCEPT)` / `ON KEY (CONTROL-P)` with `ON ACTION accept` / `ON ACTION cancel`
 - Replace `PROMPT`-based delete confirmations with `confirm_delete()` dialog
 - Use COMBOBOX and CHECKBOX form controls where appropriate
+- Create report modules with CONSTRUCT-based criteria, text file output, and report viewer
 
 ### Key Achievements
 
-- ✅ **6 modules fully modernized** (categories, suppliers, customers, shippers, usstates, products)
+- ✅ **12 modules with modern forms** (all .per files redesigned)
+- ✅ **8 modules fully modernized** (.4gl + .per + main) — categories, suppliers, customers, shippers, usstates, products, territories, region
 - ✅ **Reusable generic files** created (generic.4ad, generic.4st)
 - ✅ **Dynamic arrays implemented** throughout (replacing static arrays)
 - ✅ **Professional toolbars** with Font Awesome icons added
 - ✅ **Modern form structure** with proper containers and layouts
 - ✅ **ON ACTION pattern** replacing legacy ON KEY throughout
 - ✅ **confirm_delete() dialog** replacing PROMPT-based deletion
-- ✅ **COMBOBOX/CHECKBOX controls** for products module (supplier, category, discontinued)
-- ✅ **15 action defaults** in generic.4ad with Font Awesome icons
+- ✅ **COMBOBOX/CHECKBOX controls** for products, territories, employees modules
+- ✅ **BUTTONEDIT with zoom** for employee, territory, customer, product, and order lookups
+- ✅ **TABLE container** for empl_terr list view
+- ✅ **34 action defaults** in generic.4ad with Font Awesome icons
+- ✅ **Form initializer hook** — `ui.Form.setDefaultInitializer()` auto-loads action defaults
+- ✅ **populate_courtesy_combo()** for employee title of courtesy
+- ✅ **4 report modules** created with CONSTRUCT criteria, text file output, and report viewer
+- ✅ **report_helper.4gl** — reusable report viewer using base.Channel and DISPLAY ARRAY
+- ✅ **report_viewer.per** — modal dialog form with TABLE, monospace font, no row highlighting
+- ✅ **Custom "reportviewer" style** in generic.4st for modal window and table formatting
+- ✅ **"run" action** in generic.4ad for report execution
+- ✅ **35 action defaults** in generic.4ad (added run action)
 
 ---
 
@@ -216,11 +228,282 @@ ON ACTION cancel
 **File Modified:**
 - `generic.4ad` - Added "supplier" (fa-truck) and "category" (fa-tag) actions
 
-**Total Actions in generic.4ad: 15**
+### Phase 13: Territories Module Conversion
+
+**Objective:** Modernize territories module with COMBOBOX for region selection
+
+**Files Modified:**
+- `territories.4gl` - TYPE t_territory, DYNAMIC ARRAY, ON ACTION, confirm_delete(), populate_region_combo()
+- `territories.per` - TOOLBAR, LAYOUT/VBOX/GROUP/GRID, COMBOBOX for regionid
+- `main_territories.4gl` - Loads generic.4ad, calls populate_region_combo()
+
+**Key Features:**
+- COMBOBOX for regionid populated from region table
+- Same pattern as products (combo populated once on form open)
+
+### Phase 14: Batch Form Modernization
+
+**Objective:** Create modern .per files for all remaining modules
+
+**Files Created/Modified:**
+- `region.per` - Simple GRID with regionid/regiondescription
+- `employees.per` - 3 GROUPs (Personal, Contact, Employment), COMBOBOX titleofcourtesy, DATEEDIT for dates, BUTTONEDIT reportsto, TEXTEDIT notes
+- `empl_terr.per` - TABLE container for DISPLAY ARRAY, BUTTONEDIT for employee/territory lookups
+- `orders.per` - BUTTONEDIT customerid/employeeid, COMBOBOX shipvia, DATEEDIT for dates
+- `order_details.per` - BUTTONEDIT orderid/productid, computed fields
+
+**New Form Controls Introduced:**
+- **BUTTONEDIT** with ACTION=zoom_xxx for lookup/zoom windows
+- **DATEEDIT** for date fields (birthdate, hiredate, orderdate, etc.)
+- **TEXTEDIT** with SCROLL for multi-line text (employees.notes)
+- **TABLE** container with pipe-separated columns for list views
+
+### Phase 15: Main Program Modernization
+
+**Objective:** Modernize main_region.4gl and main_employees.4gl
+
+**Files Modified:**
+- `main_region.4gl` - Converted to ON ACTION pattern (query/add/exit)
+- `main_employees.4gl` - Converted to ON ACTION, calls populate_courtesy_combo()
+
+### Phase 16: Action Defaults Audit
+
+**Objective:** Ensure all actions used across the codebase have icons in generic.4ad
+
+**File Modified:**
+- `generic.4ad` - Expanded from 15 to 34 ActionDefault entries
+
+**Actions Added:**
+- Related: region (fa-globe), employees (fa-users), territories (fa-map-marker), customer (fa-user), employee (fa-id-card), shipper (fa-ship), details (fa-list-alt), reportsto (fa-sitemap), order (fa-file-text), product (fa-cube), select (fa-check-circle)
+- Zoom/Lookup: zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom (all use "zoom" image)
+
+**All icon names validated against:** `/Applications/Genero Studio 6.00.02-202512011639.app/Contents/Resources/fgl/lib/image2font.txt` (919 mappings, Font Awesome 4.7.0)
+
+### Phase 17: populate_courtesy_combo() Function
+
+**Objective:** Add missing function for employee title of courtesy COMBOBOX
+
+**File Modified:**
+- `employees.4gl` - Added `populate_courtesy_combo()` with static values: Dr., Mr., Mrs., Ms.
+
+**Pattern:** Unlike other combo functions that query the database, this uses static `cb.addItem()` calls since courtesy titles are a fixed set.
+
+### Phase 18: Form Initializer Hook
+
+**Objective:** Centralize action defaults loading using `ui.Form.setDefaultInitializer()`
+
+
+**Files Modified:**
+- `main_lib.4gl` - Added `form_initializer(frm ui.Form)` function that calls `frm.loadActionDefaults("generic.4ad")`, registered via `ui.Form.setDefaultInitializer("form_initializer")` in `init_pgm()`
+- All 9 `main_*.4gl` files — Removed `DEFINE f ui.Form`, `LET f = ui.Window.getCurrent().getForm()`, and `CALL f.loadActionDefaults("generic.4ad")` boilerplate
+
+**Key Learning:**
+- `ui.Form.setDefaultInitializer("function_name")` registers a callback that runs automatically every time any form opens
+- The callback receives a `ui.Form` parameter — perfect for loading shared resources
+- Eliminates repetitive boilerplate from every main program
+- Register once in `init_pgm()`, applies globally to all windows
+
+**Total Actions in generic.4ad: 35**
 - Navigation: first, previous, next, last
 - Data Ops: query, add, modify, delete
-- Related: products, orders, supplier, category
+- Related: products, orders, supplier, category, region, employees, territories, customer, employee, shipper, details, reportsto, order, product, select
+- Zoom/Lookup: zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom
+- Reports: run
 - Standard: accept, cancel, exit
+
+### Phase 19: Report Modules — CONSTRUCT Criteria with Text File Output
+
+**Objective:** Create 4 report programs that use CONSTRUCT for flexible criteria entry, generate text file reports, and display results in a report viewer dialog.
+
+**Files Created:**
+- `main_rpt_orders_by_customer.4gl` — Main program for Orders By Customer report
+- `main_rpt_orders_by_employee.4gl` — Main program for Orders By Employee report
+- `main_rpt_orders_by_product.4gl` — Main program for Orders By Product report
+- `main_rpt_orders_by_daterange.4gl` — Main program for Orders By Date Range report
+- `rpt_orders_by_customer.4gl` — Report logic with CONSTRUCT, SQL, and OUTPUT TO REPORT
+- `rpt_orders_by_employee.4gl` — Report logic for employee-based orders
+- `rpt_orders_by_product.4gl` — Report logic for product-based orders
+- `rpt_orders_by_daterange.4gl` — Report logic for date range orders
+- `rpt_orders_by_customer.per` — Criteria form with CONSTRUCT fields
+- `rpt_orders_by_employee.per` — Criteria form
+- `rpt_orders_by_product.per` — Criteria form
+- `rpt_orders_by_daterange.per` — Criteria form with DATEEDIT for dates
+
+**Key Design Decisions:**
+- Used CONSTRUCT BY NAME (no FROM clause) for flexible WHERE clause generation
+- SQL uses full table names (no aliases) to match CONSTRUCT output
+- Reports output to text files via REPORT engine with START REPORT TO filename
+- `generate_temp_filename(prefix, extension)` creates unique filenames using `util.Datetime.format(CURRENT, "%Y%m%d_%H%M%S")`
+- ON ACTION run replaces accept for report execution
+- All forms have TABLES section AFTER LAYOUT (required placement)
+- Message shows record count and filename after report runs
+
+**CONSTRUCT BY NAME Pattern:**
+```4gl
+CONSTRUCT BY NAME where_clause ON customers.customerid, customers.companyname
+   ON ACTION run
+      ACCEPT CONSTRUCT
+   ON ACTION exit
+      EXIT CONSTRUCT
+END CONSTRUCT
+```
+
+**Key Learning — CONSTRUCT BY NAME Syntax:**
+- `CONSTRUCT BY NAME where_clause ON table.col1, table.col2` — maps form fields to columns by name
+- Do NOT use `FROM s_criteria.*` — that syntax does not apply to BY NAME variant
+- The ON clause uses full `table.column` names, and CONSTRUCT generates WHERE clauses using those same names
+- SQL must use matching full table names (no aliases) so the WHERE clause works directly
+
+**Key Learning — SQL Alias Mismatch:**
+- CONSTRUCT generates WHERE clauses with full table names: `customers.customerid = 'ALFKI'`
+- If SQL uses aliases (`SELECT ... FROM customers c`), the WHERE fails: `customers.customerid` doesn't match `c.customerid`
+- Solution: Remove all table aliases from SQL, use full table names everywhere
+- Note: `STRING.replace()` method does NOT exist in Genero BDL 6.00.02
+
+**Key Learning — TABLES Section Placement:**
+- The TABLES section in .per forms must come AFTER the LAYOUT section
+- Placing it before TOOLBAR causes compile errors
+
+### Phase 20: Run Action in generic.4ad
+
+**Objective:** Add a "Run Report" action for report execution
+
+**File Modified:**
+- `generic.4ad` — Added "run" action with fa-play icon and text "Run Report"
+
+**Action Definition:**
+```xml
+<ActionDefault name="run"
+  text="Run Report"
+  image="fa-play"
+  comment="Execute the report" />
+```
+
+### Phase 21: Report Helper Library — Text File Viewer
+
+**Objective:** Create a reusable library module that reads a text file and displays its contents in a DISPLAY ARRAY dialog.
+
+**Files Created:**
+- `report_helper.4gl` — Library module with `display_report_file()` function
+- `report_viewer.per` — Modal dialog form with TABLE for displaying report lines
+
+**report_helper.4gl — Key Function:**
+```4gl
+FUNCTION display_report_file(rpt_file)
+   DEFINE rpt_file STRING
+   DEFINE lines DYNAMIC ARRAY OF RECORD
+      line_text STRING
+   END RECORD
+   DEFINE ch base.Channel
+   DEFINE line STRING
+
+   LET ch = base.Channel.create()
+   TRY
+      CALL ch.openFile(rpt_file, "r")
+   CATCH
+      ERROR "Unable to open file: ", rpt_file
+      RETURN
+   END TRY
+
+   WHILE TRUE
+      LET line = ch.readLine()
+      IF ch.isEof() THEN EXIT WHILE END IF
+      CALL lines.appendElement()
+      LET lines[lines.getLength()].line_text = line
+   END WHILE
+   CALL ch.close()
+
+   OPEN WINDOW rptViewerWindow WITH FORM "report_viewer"
+   DISPLAY ARRAY lines TO s_lines.*
+      ON ACTION exit
+         EXIT DISPLAY
+   END DISPLAY
+   CLOSE WINDOW rptViewerWindow
+END FUNCTION
+```
+
+**Key Patterns:**
+- `base.Channel` for file I/O: `create()`, `openFile(path, "r")`, `readLine()`, `isEof()`, `close()`
+- TRY/CATCH for file open error handling
+- Dynamic array of anonymous record for line storage
+- DISPLAY ARRAY with ON ACTION exit for simple viewer
+- Separate OPEN WINDOW / CLOSE WINDOW to isolate the viewer
+
+**Integration:** All 4 report modules call `display_report_file(rpt_file)` after generating the text file, in the ELSE branch (only when records are found).
+
+### Phase 22: Report Viewer Form with Custom Style
+
+**Objective:** Create a modal report viewer form with fixed-width monospace table and no row highlighting.
+
+**report_viewer.per:**
+```per
+TOOLBAR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Report Viewer", STYLE="reportviewer")
+  VBOX
+    TABLE (STYLE="reportviewer", STRETCHCOLUMNS, height=25 LINES, width=80 CHARACTERS)
+    {
+      [line_text                                                                              ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  EDIT line_text = FORMONLY.line_text TYPE VARCHAR, SCROLL;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_lines(line_text);
+END
+```
+
+**generic.4st — Custom Styles Added:**
+```xml
+<Style name="Window.reportviewer">
+  <StyleAttribute name="windowType" value="modal" />
+  <StyleAttribute name="actionPanelPosition" value="bottom" />
+  <StyleAttribute name="ringMenuPosition" value="bottom" />
+  <StyleAttribute name="toolBarPosition" value="none" />
+</Style>
+
+<Style name="Table.reportviewer">
+  <StyleAttribute name="fontFamily" value="monospace" />
+  <StyleAttribute name="highlightCurrentRow" value="no" />
+</Style>
+```
+
+**Key Learnings:**
+- `STYLE="reportviewer"` on LAYOUT maps to `Window.reportviewer` in the stylesheet
+- `STYLE="reportviewer"` on TABLE maps to `Table.reportviewer` in the stylesheet
+- `windowType="modal"` makes the window a modal dialog
+- `highlightCurrentRow="no"` removes current row highlighting from the table
+- `fontFamily="monospace"` ensures report text aligns properly
+- `TYPE STRING` is NOT valid in .per ATTRIBUTES — use `TYPE VARCHAR` or `TYPE CHAR` instead
+- FORMONLY fields without `TYPE CHAR` or `TYPE VARCHAR` cause compile error -6803
+- TABLE without parenthesized attributes compiles; `TABLE (STYLE="name")` also works
+- `STRETCHCOLUMNS` (without `="column"`) stretches all columns
+
+### Phase 23: Project File Updates
+
+**Objective:** Add new report files to the Genero project file (.4pw)
+
+**File Modified:**
+- `fgl-darwin.4pw` — Added entries for all new report files
+
+**Files Added to Report Application Nodes:**
+- `main_rpt_orders_by_customer.4gl`, `rpt_orders_by_customer.4gl`, `rpt_orders_by_customer.per`
+- `main_rpt_orders_by_employee.4gl`, `rpt_orders_by_employee.4gl`, `rpt_orders_by_employee.per`
+- `main_rpt_orders_by_product.4gl`, `rpt_orders_by_product.4gl`, `rpt_orders_by_product.per`
+- `main_rpt_orders_by_daterange.4gl`, `rpt_orders_by_daterange.4gl`, `rpt_orders_by_daterange.per`
+
+**Files Added to Shared Library:**
+- `report_helper.4gl` — Report viewer function
+- `report_viewer.per` — Report viewer form
+
+**Key Learning:** Shared library files (used by multiple applications) belong in the Shared library node, not duplicated in each Application node.
 
 ---
 
@@ -342,7 +625,65 @@ XML format with named styles:
 </StyleList>
 ```
 
-#### 7. COMBOBOX Controls (Dynamic Population)
+#### 7. BUTTONEDIT Controls (Zoom/Lookup)
+
+In the form (.per):
+```per
+BUTTONEDIT reportsto = formonly.reportsto TYPE SMALLINT, ACTION=zoom_employee;
+```
+
+**Key Points:**
+- ACTION=zoom_xxx triggers the corresponding ON ACTION in the dialog
+- Paired with a NOENTRY description field for display:
+```per
+reportsto_name = formonly.reportsto_name TYPE VARCHAR, NOENTRY;
+```
+- The zoom function typically opens a lookup window and returns an ID + description
+
+#### 8. DATEEDIT Controls
+
+In the form (.per):
+```per
+DATEEDIT birthdate = formonly.birthdate TYPE DATE;
+DATEEDIT hiredate = formonly.hiredate TYPE DATE;
+```
+
+Provides a date picker widget instead of plain text entry.
+
+#### 9. TABLE Container (List Views)
+
+For DISPLAY ARRAY / INPUT ARRAY forms:
+```per
+TABLE
+{
+  [col1     |col2                |col3     ]
+  [col1     |col2                |col3     ]
+  [col1     |col2                |col3     ]
+}
+END
+```
+
+**Critical Rules:**
+- Columns separated by pipe `|` characters (NOT adjacent brackets `][`)
+- Row template must be repeated — the count defines visible rows
+- SCREEN RECORD array size must match the number of repeated rows
+- Example: 5 repeated rows → `SCREEN RECORD sa_name[5](...)`
+
+**TABLE with STYLE:**
+```per
+TABLE (STYLE="reportviewer", STRETCHCOLUMNS, height=25 LINES, width=80 CHARACTERS)
+{
+  [line_text                                                                              ]
+}
+END
+```
+
+- `STYLE` applies the matching `Table.stylename` from the stylesheet
+- `STRETCHCOLUMNS` (no value) stretches all columns to fill the width
+- `height=25 LINES` sets the visible row count
+- `width=80 CHARACTERS` sets the table width
+
+#### 10. COMBOBOX Controls (Dynamic Population)
 
 In the form (.per):
 ```per
@@ -371,7 +712,26 @@ END FUNCTION
 
 **Best Practice:** Populate comboboxes once when the form opens (in MAIN), not per add/edit operation.
 
-#### 8. CHECKBOX Controls
+#### 11. COMBOBOX Controls (Static Population)
+
+For fixed value sets (not from database):
+```4gl
+FUNCTION populate_courtesy_combo()
+   DEFINE cb ui.ComboBox
+
+   LET cb = ui.ComboBox.forName("titleofcourtesy")
+   IF cb IS NULL THEN
+      RETURN
+   END IF
+   CALL cb.clear()
+   CALL cb.addItem("Dr.",  "Dr.")
+   CALL cb.addItem("Mr.",  "Mr.")
+   CALL cb.addItem("Mrs.", "Mrs.")
+   CALL cb.addItem("Ms.",  "Ms.")
+END FUNCTION
+```
+
+#### 12. CHECKBOX Controls
 
 In the form (.per):
 ```per
@@ -384,7 +744,26 @@ CHECKBOX discontinued = formonly.discontinued TYPE INTEGER,
 LET curr_products.discontinued = 0
 ```
 
-#### 9. ON ACTION Pattern (Replacing ON KEY)
+#### 13. Form Initializer Hook
+
+Register a callback that runs automatically when any form opens:
+```4gl
+FUNCTION init_pgm()
+    CALL ui.Interface.loadStyles("generic.4st")
+    CALL ui.Form.setDefaultInitializer("form_initializer")
+END FUNCTION
+
+FUNCTION form_initializer(frm ui.Form)
+    CALL frm.loadActionDefaults("generic.4ad")
+END FUNCTION
+```
+
+**Benefits:**
+- Eliminates repetitive `DEFINE f ui.Form` / `LET f = ...getForm()` / `CALL f.loadActionDefaults()` from every main program
+- Any new module automatically gets action defaults just by calling `init_pgm()`
+- Single place to add global form initialization logic
+
+#### 14. ON ACTION Pattern (Replacing ON KEY)
 
 ```4gl
 -- OLD (legacy)
@@ -404,7 +783,153 @@ ON ACTION cancel
 
 Works in CONSTRUCT, INPUT BY NAME, and other dialog statements.
 
-#### 10. confirm_delete() Dialog Pattern
+#### 15. CONSTRUCT BY NAME Pattern (Report Criteria)
+
+Generate flexible WHERE clauses from user input:
+```4gl
+CONSTRUCT BY NAME where_clause ON customers.customerid, customers.companyname
+   ON ACTION run
+      ACCEPT CONSTRUCT
+   ON ACTION exit
+      EXIT CONSTRUCT
+END CONSTRUCT
+
+IF int_flag THEN
+   LET int_flag = FALSE
+   RETURN
+END IF
+```
+
+**Critical Rules:**
+- `BY NAME` maps form fields to columns automatically — do NOT add `FROM s_criteria.*`
+- ON clause uses `table.column` format
+- CONSTRUCT output must match SQL table names (no aliases)
+- Use `ON ACTION run` + `ACCEPT CONSTRUCT` for a "Run Report" button
+
+#### 16. base.Channel File I/O Pattern
+
+Reading a text file line-by-line:
+```4gl
+DEFINE ch base.Channel
+DEFINE line STRING
+
+LET ch = base.Channel.create()
+TRY
+   CALL ch.openFile(filename, "r")
+CATCH
+   ERROR "Unable to open file: ", filename
+   RETURN
+END TRY
+
+WHILE TRUE
+   LET line = ch.readLine()
+   IF ch.isEof() THEN EXIT WHILE END IF
+   -- process line
+END WHILE
+CALL ch.close()
+```
+
+**Key Methods:**
+- `base.Channel.create()` — create a channel instance
+- `ch.openFile(path, mode)` — modes: "r" (read), "w" (write), "a" (append)
+- `ch.readLine()` — read one line (returns STRING)
+- `ch.isEof()` — check for end of file
+- `ch.close()` — close the channel
+- Always wrap `openFile()` in TRY/CATCH for error handling
+
+#### 17. generate_temp_filename() Pattern
+
+Create unique temporary file names:
+```4gl
+FUNCTION generate_temp_filename(prefix, extension)
+   DEFINE prefix STRING
+   DEFINE extension STRING
+   DEFINE ts STRING
+
+   LET ts = util.Datetime.format(CURRENT, "%Y%m%d_%H%M%S")
+   RETURN SFMT("%1_%2.%3", prefix, ts, extension)
+END FUNCTION
+```
+
+**Key Learning:**
+- `util.Datetime.format(CURRENT, pattern)` is a **static method** call
+- `CURRENT` is a built-in that returns the current datetime
+- Pattern uses `%Y`, `%m`, `%d`, `%H`, `%M`, `%S` format specifiers
+- Requires `IMPORT util` at the module level
+
+#### 18. Custom Window/Table Styles
+
+Define custom styles in the stylesheet for specialized windows:
+```xml
+<Style name="Window.reportviewer">
+  <StyleAttribute name="windowType" value="modal" />
+  <StyleAttribute name="actionPanelPosition" value="bottom" />
+  <StyleAttribute name="ringMenuPosition" value="bottom" />
+  <StyleAttribute name="toolBarPosition" value="none" />
+</Style>
+
+<Style name="Table.reportviewer">
+  <StyleAttribute name="fontFamily" value="monospace" />
+  <StyleAttribute name="highlightCurrentRow" value="no" />
+</Style>
+```
+
+**Usage in .per form:**
+```per
+LAYOUT (TEXT="Report Viewer", STYLE="reportviewer")
+  VBOX
+    TABLE (STYLE="reportviewer")
+    ...
+```
+
+**Key Attributes:**
+- `windowType="modal"` — makes window a modal dialog
+- `highlightCurrentRow="no"` — removes row highlighting in tables
+- `fontFamily="monospace"` — ensures text alignment for report output
+- `actionPanelPosition`, `ringMenuPosition`, `toolBarPosition` — control UI element visibility
+
+#### 19. REPORT Engine with Text File Output
+
+Generate text file reports:
+```4gl
+DEFINE rpt_file STRING
+LET rpt_file = generate_temp_filename("orders_by_customer", "txt")
+
+START REPORT rpt_orders_customer TO rpt_file
+
+FOREACH c_cursor INTO rec.*
+   OUTPUT TO REPORT rpt_orders_customer(rec.*)
+   LET count = count + 1
+END FOREACH
+
+FINISH REPORT rpt_orders_customer
+```
+
+**REPORT function structure:**
+```4gl
+REPORT rpt_orders_customer(r)
+   DEFINE r RECORD ... END RECORD
+
+   ORDER EXTERNAL BY r.companyname
+
+   FORMAT
+      PAGE HEADER
+         PRINT "Orders By Customer Report"
+         PRINT COLUMN 1, "Date: ", TODAY USING "mm/dd/yyyy"
+         SKIP 1 LINE
+
+      BEFORE GROUP OF r.companyname
+         PRINT COLUMN 1, "Customer: ", r.companyname CLIPPED
+
+      ON EVERY ROW
+         PRINT COLUMN 3, r.orderid USING "<<<<<", ...  
+
+      PAGE TRAILER
+         PRINT COLUMN 30, "Page ", PAGENO USING "<<<"
+END REPORT
+```
+
+#### 20. confirm_delete() Dialog Pattern
 
 Defined in `main_lib.4gl`:
 ```4gl
@@ -434,7 +959,7 @@ IF NOT confirm_delete() THEN
 END IF
 ```
 
-#### 11. Building with fgl2p (Multi-Module Linking)
+#### 21. Building with fgl2p (Multi-Module Linking)
 
 Individual `fglcomp -r module.4gl` cannot resolve cross-module function references.
 Use `fgl2p` to compile and link multiple modules together:
@@ -571,18 +1096,16 @@ TOOLBAR
   ITEM "exit" "Exit"
 ```
 
-**Step 2: Load generic.4ad in main program**
+**Step 2: Action defaults loaded automatically via form initializer**
+
+Since `init_pgm()` registers a form initializer that calls `frm.loadActionDefaults("generic.4ad")`, no manual loading is needed in main programs:
 ```4gl
 MAIN
-    DEFINE f ui.Form
-    
-    CALL init_pgm()
+    CALL init_pgm()  -- Registers form_initializer + loads styles
     
     OPEN WINDOW mainWindow WITH FORM "customers"
       ATTRIBUTES(BORDER, STYLE="noactions")
-    
-    LET f = ui.Window.getCurrent().getForm()
-    CALL f.loadActionDefaults("generic.4ad")
+    -- Action defaults are automatically loaded by form_initializer
     
     -- rest of program
 END MAIN
@@ -817,7 +1340,99 @@ END FUNCTION
 **Files:**
 - `products.4gl` - Complete CRUD with COMBOBOX/CHECKBOX support
 - `products.per` - Modern form with COMBOBOX, CHECKBOX, TOOLBAR, VBOX/GROUP/GRID
-- `main_products.4gl` - Entry point with generic.4ad loading, populates combos on form open
+- `main_products.4gl` - Entry point, populates combos on form open
+
+### 7. Territories Module
+**Purpose:** Manage territories with region assignment  
+**Fields:** 3 (territoryid, territorydescription, regionid)  
+**Status:** 100% Complete (.4gl + .per + main)
+
+**Key Features:**
+- **COMBOBOX** for regionid (populated from region table)
+- populate_region_combo() function
+- Same combo population pattern as products
+
+**Files:**
+- `territories.4gl` - Complete CRUD with COMBOBOX support
+- `territories.per` - Modern form with COMBOBOX, TOOLBAR, VBOX/GROUP/GRID
+- `main_territories.4gl` - Entry point, populates region combo on form open
+
+### 8. Region Module
+**Purpose:** Manage regions  
+**Fields:** 2 (regionid, regiondescription)  
+**Status:** .per modernized, main_region.4gl modernized (ON ACTION), .4gl still legacy
+
+**Key Features:**
+- Simplest module (2 fields)
+- main_region.4gl uses modern ON ACTION pattern
+
+**Files:**
+- `region.per` - Modern form with TOOLBAR, VBOX/GROUP/GRID
+- `main_region.4gl` - Modernized with ON ACTION
+- `region.4gl` - Still legacy (pending .4gl conversion)
+
+### 9. Employees Module
+**Purpose:** Manage employee records  
+**Fields:** 18 (personal info, contact, employment details)  
+**Status:** .per modernized, main_employees.4gl modernized, .4gl still legacy
+
+**Key Features:**
+- **3 GROUPs** in form: Personal Info, Contact Info, Employment Details
+- **COMBOBOX** for titleofcourtesy (static values: Dr., Mr., Mrs., Ms.)
+- **DATEEDIT** for birthdate and hiredate
+- **BUTTONEDIT** reportsto with ACTION=zoom_employee
+- **TEXTEDIT** for notes field with SCROLL
+- fullname computed field (NOENTRY)
+- populate_courtesy_combo() function in employees.4gl
+
+**Files:**
+- `employees.per` - Modern form with 3 groups, COMBOBOX, DATEEDIT, BUTTONEDIT, TEXTEDIT
+- `main_employees.4gl` - Modernized with ON ACTION, populates courtesy combo
+- `employees.4gl` - Still legacy (pending .4gl conversion), has populate_courtesy_combo()
+
+### 10. Employee Territories Module
+**Purpose:** Manage employee-territory assignments (many-to-many)  
+**Fields:** 5 (employeeid, fullname, territoryid, territorydescription, regiondescription)  
+**Status:** .per modernized (TABLE container), main/4gl still legacy
+
+**Key Features:**
+- **TABLE** container for list view (DISPLAY ARRAY)
+- **BUTTONEDIT** for employeeid (ACTION=zoom_employee) and territoryid (ACTION=zoom_territory)
+- Pipe-separated columns with 5 repeated rows
+- All formonly.* bindings with explicit TYPE declarations
+
+**Files:**
+- `empl_terr.per` - Modern form with TABLE, BUTTONEDIT, TOOLBAR
+- `main_empl_terr.4gl` - Still legacy (pending conversion)
+- `empl_terr.4gl` - Still legacy (pending .4gl conversion)
+
+### 11. Orders Module
+**Purpose:** Manage customer orders  
+**Status:** .per modernized, main/4gl still legacy
+
+**Key Features:**
+- **BUTTONEDIT** for customerid (ACTION=zoom_customer) and employeeid (ACTION=zoom_employee)
+- **COMBOBOX** for shipvia (shipper selection)
+- **DATEEDIT** for orderdate, requireddate, shippeddate
+- customername and employeename as NOENTRY display fields
+
+**Files:**
+- `orders.per` - Modern form with BUTTONEDIT, COMBOBOX, DATEEDIT
+- `main_orders.4gl` - Still legacy (pending conversion)
+- `orders.4gl` - Still legacy (pending .4gl conversion)
+
+### 12. Order Details Module
+**Purpose:** Manage line items within orders  
+**Status:** .per modernized, main/4gl still legacy
+
+**Key Features:**
+- **BUTTONEDIT** for orderid (ACTION=zoom_order) and productid (ACTION=zoom_product)
+- productname as NOENTRY display field
+
+**Files:**
+- `order_details.per` - Modern form with BUTTONEDIT
+- `main_order_details.4gl` - Still legacy (pending conversion)
+- `order_details.4gl` - Still legacy (pending .4gl conversion)
 
 ---
 
@@ -952,28 +1567,28 @@ DEFINE current_entity t_EntityName
 
 ### 7. Main Programs Load Global Configuration
 
-**Pattern Used:**
+**Pattern Used (Current — with Form Initializer):**
 ```4gl
 MAIN
-    DEFINE f ui.Form
-    
-    CALL init_pgm()  -- Global setup (loads styles)
+    CALL init_pgm()  -- Loads styles + registers form_initializer
     
     OPEN WINDOW mainWindow WITH FORM "customers"
       ATTRIBUTES(BORDER, STYLE="noactions")
+    -- Action defaults auto-loaded by form_initializer
     
-    LET f = ui.Window.getCurrent().getForm()
-    CALL f.loadActionDefaults("generic.4ad")  -- Module actions
+    -- Module-specific combo population (if needed)
+    CALL populate_supplier_combo()
     
     -- Module-specific menu
 END MAIN
 ```
 
 **Key Points:**
-- init_pgm() called first (in main_lib.4gl) to load generic.4st
+- `init_pgm()` called first — loads generic.4st AND registers `form_initializer`
+- `form_initializer(frm ui.Form)` automatically calls `frm.loadActionDefaults("generic.4ad")` for every form
+- No need for `DEFINE f ui.Form` / `LET f = ...getForm()` boilerplate
 - STYLE="noactions" applied to disable action panels
-- loadActionDefaults() loads module-specific actions
-- Separation of concerns: global styles + module actions
+- Module-specific initialization (combo population) still done in MAIN after OPEN WINDOW
 
 ### 8. ON ACTION Replaces ON KEY
 
@@ -1023,11 +1638,76 @@ ON ACTION cancel
 **Pattern:**
 ```4gl
 MAIN
-    -- ... open window, load form ...
+    CALL init_pgm()  -- Action defaults handled by form_initializer
+    OPEN WINDOW mainWindow WITH FORM "products"
+      ATTRIBUTES(BORDER, STYLE="noactions")
+    
     CALL populate_supplier_combo()
     CALL populate_category_combo()
     -- ... start menu loop ...
 END MAIN
+```
+
+**Static vs Dynamic Combos:**
+- **Dynamic** (from database): `populate_supplier_combo()`, `populate_category_combo()`, `populate_region_combo()`
+- **Static** (fixed values): `populate_courtesy_combo()` — uses hardcoded `cb.addItem()` calls
+
+### 11. Form Initializer Eliminates Boilerplate
+
+**Key Insight:** `ui.Form.setDefaultInitializer()` registers a callback that fires automatically every time any form opens.
+
+**Before (repeated in every main program):**
+```4gl
+DEFINE f ui.Form
+LET f = ui.Window.getCurrent().getForm()
+CALL f.loadActionDefaults("generic.4ad")
+```
+
+**After (registered once in init_pgm):**
+```4gl
+-- In main_lib.4gl
+CALL ui.Form.setDefaultInitializer("form_initializer")
+
+FUNCTION form_initializer(frm ui.Form)
+    CALL frm.loadActionDefaults("generic.4ad")
+END FUNCTION
+```
+
+**Benefits:**
+- Code removed from 9 main programs
+- New modules get action defaults automatically
+- Single point of change for global form initialization
+
+### 12. TABLE Container Syntax
+
+**Key Insight:** TABLE rows use pipe `|` separators between columns, and the row template must be repeated to match the SCREEN RECORD array size.
+
+**Correct:**
+```per
+TABLE
+{
+  [emplid   |fullname            |terrid   ]
+  [emplid   |fullname            |terrid   ]
+  [emplid   |fullname            |terrid   ]
+}
+END
+
+INSTRUCTIONS
+  SCREEN RECORD sa_empl_terr[3](...);
+END
+```
+
+**Wrong (causes -2029 error):**
+```per
+-- Adjacent brackets instead of pipes:
+[emplid   ][fullname            ][terrid   ]
+
+-- Mismatched row count vs SCREEN RECORD size:
+TABLE (HEIGHT=10)
+{  -- only 1 row template
+  [emplid   |fullname            |terrid   ]
+}
+-- with SCREEN RECORD sa_empl_terr[10] → error!
 ```
 
 ### 11. Build System: fgl2p vs fglcomp
@@ -1051,6 +1731,75 @@ LET curr_products.discontinued = 0
 ```
 
 This ensures the checkbox appears unchecked for new records.
+
+### 13. CONSTRUCT BY NAME Does Not Take FROM Clause
+
+**Key Insight:** `CONSTRUCT BY NAME` maps form fields to columns automatically. Do NOT add `FROM s_criteria.*`.
+
+**Wrong:**
+```4gl
+CONSTRUCT BY NAME where_clause FROM s_criteria.* ON customers.customerid
+```
+
+**Correct:**
+```4gl
+CONSTRUCT BY NAME where_clause ON customers.customerid, customers.companyname
+```
+
+### 14. SQL Aliases Break CONSTRUCT WHERE Clauses
+
+**Key Insight:** CONSTRUCT generates WHERE clauses using the exact column names from the ON clause (e.g., `customers.customerid = 'ALFKI'`). If SQL uses aliases (`FROM customers c`), the WHERE clause won't match.
+
+**Solution:** Use full table names in SQL — no aliases:
+```4gl
+-- WRONG (alias mismatch)
+LET sql_stmt = "SELECT c.customerid FROM customers c WHERE ", where_clause
+
+-- CORRECT (full table names match CONSTRUCT output)
+LET sql_stmt = "SELECT customers.customerid FROM customers WHERE ", where_clause
+```
+
+**Note:** `STRING.replace()` does NOT exist in Genero BDL 6.00.02, so you cannot programmatically swap alias names.
+
+### 15. FORMONLY TYPE STRING Is Invalid in .per Files
+
+**Key Insight:** The `.per` form compiler does not accept `TYPE STRING` for FORMONLY attributes. Use SQL-compatible types instead.
+
+**Wrong:**
+```per
+EDIT line_text = FORMONLY.line_text TYPE STRING;
+```
+
+**Correct:**
+```per
+EDIT line_text = FORMONLY.line_text TYPE VARCHAR, SCROLL;
+```
+
+Valid types: CHAR, VARCHAR, INTEGER, SMALLINT, DATE, DATETIME, DECIMAL, FLOAT, etc.
+
+### 16. TABLES Section Must Come After LAYOUT
+
+**Key Insight:** In .per forms, the `TABLES` section must appear AFTER the `LAYOUT` section, not before `TOOLBAR`.
+
+### 17. util.Datetime.format() Is a Static Method
+
+**Key Insight:** `util.Datetime.format(CURRENT, "%Y%m%d_%H%M%S")` is a static method call on the `util.Datetime` class. It does not require an instance.
+
+Requires `IMPORT util` at the module level.
+
+### 18. Custom Styles for Specialized Windows
+
+**Key Insight:** Create named styles in generic.4st for specialized windows rather than using generic built-in styles like "dialog".
+
+**Benefits:**
+- Full control over window behavior (modal, toolbar visibility, action panels)
+- Table-level styling (font family, row highlighting)
+- Reusable across multiple forms
+- Style name on LAYOUT maps to `Window.name`, style on TABLE maps to `Table.name`
+
+### 19. Shared Files Belong in the Shared Library Node
+
+**Key Insight:** In the .4pw project file, files used by multiple applications (like report_helper.4gl) should be placed in the Shared Library node, not duplicated in each Application node.
 
 ---
 
@@ -1193,20 +1942,37 @@ As you work, the AI learns patterns:
 
 **generic.4ad** - Centralized action definitions
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
-- Purpose: Shared actions with icons and accelerators
-- Actions: first, previous, next, last, query, add, modify, delete, products, orders, supplier, category, accept, cancel, exit (15 total)
+- Purpose: Shared actions with icons and accelerators (auto-loaded via form initializer)
+- **35 Actions:** first, previous, next, last, query, add, modify, delete, products, orders, supplier, category, region, employees, territories, customer, employee, shipper, details, reportsto, order, product, select, zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom, run, accept, cancel, exit
 
 **generic.4st** - Centralized stylesheets
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
 - Purpose: Shared styles for consistent UI
-- Includes: Window.noactions style
+- Includes: Window.noactions, Window.reportviewer, Table.reportviewer styles
+
+**report_helper.4gl** - Report viewer utility library
+- Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
+- Purpose: Read text files and display in DISPLAY ARRAY dialog
+- Function: `display_report_file(rpt_file STRING)` — reads file via base.Channel, displays in modal viewer
+
+**report_viewer.per** - Report viewer form
+- Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
+- Purpose: Modal dialog form for viewing report text output
+- Features: TABLE with monospace font, no row highlighting, STRETCHCOLUMNS, STYLE="reportviewer"
+
+**rpt_orders_by_customer.per** / **rpt_orders_by_employee.per** / **rpt_orders_by_product.per** / **rpt_orders_by_daterange.per** - Report criteria forms
+- Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
+- Purpose: CONSTRUCT criteria entry for each report
+- Features: TOOLBAR with run/exit, database column fields for CONSTRUCT
 
 ### Modified Files
 
 **main_lib.4gl**
 - Added: `CALL ui.Interface.loadStyles()` in init_pgm()
+- Added: `CALL ui.Form.setDefaultInitializer("form_initializer")` in init_pgm()
+- Added: `form_initializer(frm ui.Form)` function — auto-loads generic.4ad for every form
 - Added: `confirm_delete()` function (MENU with STYLE="dialog")
-- Purpose: Initialize global styles and shared utility functions
+- Purpose: Initialize global styles, register form initializer, and shared utility functions
 
 **categories.4gl**
 - Converted: All arr_size/arr_max → getLength()
@@ -1301,7 +2067,7 @@ The Genero AI Agent effectively assisted with a complex modernization project by
 6. **Adding new UI patterns** - COMBOBOX population from database, CHECKBOX with defaults, dialog-style confirmation
 7. **Refactoring shared code** - confirm_delete() extracted to main_lib.4gl, applied everywhere
 
-The result: **Six complete modules modernized** from legacy terminal-style code to modern web-ready applications with **centralized action definitions (15 actions) and stylesheets**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **COMBOBOX/CHECKBOX controls**, and **shared utility functions** throughout.
+The result: **12 modules with modern forms**, **8 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (35 actions) and stylesheets**, **form initializer hook**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, and **shared utility functions** throughout.
 
 ### Key Success Factors
 
@@ -1309,24 +2075,32 @@ The result: **Six complete modules modernized** from legacy terminal-style code 
 ✅ Iterative feedback and refinement  
 ✅ Verification through compilation  
 ✅ Attention to systematic patterns  
-✅ Learning from mistakes (toolbar syntax, style references, combobox timing)  
+✅ Learning from mistakes (toolbar syntax, style references, combobox timing, TABLE pipe syntax)  
 ✅ Testing and incremental progress tracking  
-✅ Shared code extraction (confirm_delete, init_pgm)  
-✅ Advanced controls (COMBOBOX, CHECKBOX) for complex modules  
+✅ Shared code extraction (confirm_delete, init_pgm, form_initializer)  
+✅ Advanced controls (COMBOBOX, CHECKBOX, BUTTONEDIT, DATEEDIT, TEXTEDIT) for complex modules  
+✅ Form initializer hook to eliminate boilerplate  
+✅ Comprehensive action defaults audit with validated icon names  
+✅ CONSTRUCT BY NAME for flexible report criteria  
+✅ REPORT engine with text file output  
+✅ Reusable report viewer (base.Channel + DISPLAY ARRAY in modal dialog)  
+✅ Custom styles for specialized windows and tables  
+✅ Genero project file (.4pw) management  
 
 ### Recommended Next Steps
 
-1. Convert remaining modules (orders, order_details, employees, empl_terr, territories, region) using established patterns
-2. Test the modernized application with real data
-3. Consider adding COMBOBOX lookups to other modules where applicable
-4. Explore DISPLAY ARRAY for list views alongside single-record navigation
+1. Convert remaining .4gl modules to modern patterns: region.4gl, employees.4gl, empl_terr.4gl, orders.4gl, order_details.4gl
+2. Convert remaining main programs: main_empl_terr.4gl, main_orders.4gl, main_order_details.4gl
+3. Implement zoom/lookup window functions: employee_lookup(), territory_lookup(), customer_lookup(), product_lookup(), order_lookup()
+4. Test the modernized application with real data
 5. Add master-detail patterns for orders/order_details
-6. Document application architecture for team reference
+6. Add report export options (CSV, PDF via Genero Report Engine)
+7. Document application architecture for team reference
 
 ---
 
 **Document Created:** February 9, 2026  
-**Last Updated:** February 10, 2026  
+**Last Updated:** February 11, 2026  
 **Genero Version:** 6.00.02-202512011639  
 **Database:** Northwind  
 **Project Location:** `/Users/mikefolcher/4js-github/fgl-darwin/`

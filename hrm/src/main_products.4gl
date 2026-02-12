@@ -1,14 +1,10 @@
 DATABASE northwind
 MAIN
-    DEFINE f ui.Form
 
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "products"
       ATTRIBUTES(BORDER, STYLE="noactions")
-
-    LET f = ui.Window.getCurrent().getForm()
-    CALL f.loadActionDefaults("generic.4ad")
 
     CALL populate_supplier_combo()
     CALL populate_category_combo()

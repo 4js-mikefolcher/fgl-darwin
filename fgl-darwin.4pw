@@ -140,6 +140,30 @@
       <File filePath="hrm/src/main_usstates.4gl"/>
       <File filePath="hrm/src/usstates.per"/>
     </Application>
+    <Application binaryName="main_rpt_orders_by_customer" dependencies="-1764485507,1342077549" id="1134826701" label="main_rpt_orders_by_customer">
+      <Configuration id="1134826702" label="main_rpt_orders_by_customer"/>
+      <File filePath="hrm/src/main_rpt_orders_by_customer.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_customer.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_customer.per"/>
+    </Application>
+    <Application binaryName="main_rpt_orders_by_employee" dependencies="-1764485507,1342077549" id="1134826703" label="main_rpt_orders_by_employee">
+      <Configuration id="1134826704" label="main_rpt_orders_by_employee"/>
+      <File filePath="hrm/src/main_rpt_orders_by_employee.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_employee.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_employee.per"/>
+    </Application>
+    <Application binaryName="main_rpt_orders_by_product" dependencies="-1764485507,1342077549" id="1134826705" label="main_rpt_orders_by_product">
+      <Configuration id="1134826706" label="main_rpt_orders_by_product"/>
+      <File filePath="hrm/src/main_rpt_orders_by_product.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_product.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_product.per"/>
+    </Application>
+    <Application binaryName="main_rpt_orders_by_daterange" dependencies="-1764485507,1342077549" id="1134826707" label="main_rpt_orders_by_daterange">
+      <Configuration id="1134826708" label="main_rpt_orders_by_daterange"/>
+      <File filePath="hrm/src/main_rpt_orders_by_daterange.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_daterange.4gl"/>
+      <File filePath="hrm/src/rpt_orders_by_daterange.per"/>
+    </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
       <File filePath="hrm/src/categories.4gl"/>
       <File filePath="hrm/src/customers.4gl"/>
@@ -156,6 +180,8 @@
       <File filePath="hrm/src/suppliers.4gl"/>
       <File filePath="hrm/src/territories.4gl"/>
       <File filePath="hrm/src/usstates.4gl"/>
+      <File filePath="hrm/src/report_helper.4gl"/>
+      <File filePath="hrm/src/report_viewer.per"/>
     </Library>
     <Group id="-106839181" label="Tools">
       <Application binaryName="create_pgs_db" id="1819972734" label="create_pgs_db">

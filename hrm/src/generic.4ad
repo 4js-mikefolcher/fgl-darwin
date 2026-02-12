@@ -67,6 +67,92 @@
     image="fa-tag"
     comment="View related category" />
   
+  <ActionDefault name="region"
+    text="Region"
+    image="fa-globe"
+    comment="View related region" />
+  
+  <ActionDefault name="employees"
+    text="Employees"
+    image="fa-users"
+    comment="View related employees" />
+  
+  <ActionDefault name="territories"
+    text="Territories"
+    image="fa-map-marker"
+    comment="View related territories" />
+  
+  <ActionDefault name="customer"
+    text="Customer"
+    image="fa-user"
+    comment="View related customer" />
+  
+  <ActionDefault name="employee"
+    text="Employee"
+    image="fa-id-card"
+    comment="View related employee" />
+  
+  <ActionDefault name="shipper"
+    text="Shipper"
+    image="fa-ship"
+    comment="View related shipper" />
+  
+  <ActionDefault name="details"
+    text="Details"
+    image="fa-list-alt"
+    comment="View order details" />
+  
+  <ActionDefault name="reportsto"
+    text="Reports To"
+    image="fa-sitemap"
+    comment="View manager" />
+  
+  <ActionDefault name="order"
+    text="Order"
+    image="fa-file-text"
+    comment="View related order" />
+  
+  <ActionDefault name="product"
+    text="Product"
+    image="fa-cube"
+    comment="View related product" />
+  
+  <ActionDefault name="select"
+    text="Select"
+    image="fa-check-circle"
+    comment="Select the current record" />
+  
+  <!-- Zoom/Lookup Actions -->
+  <ActionDefault name="zoom_employee"
+    image="zoom"
+    comment="Look up employee" />
+  
+  <ActionDefault name="zoom_territory"
+    image="zoom"
+    comment="Look up territory" />
+  
+  <ActionDefault name="zoom_customer"
+    image="zoom"
+    comment="Look up customer" />
+  
+  <ActionDefault name="zoom_product"
+    image="zoom"
+    comment="Look up product" />
+  
+  <ActionDefault name="zoom_order"
+    image="zoom"
+    comment="Look up order" />
+  
+  <ActionDefault name="zoom"
+    image="zoom"
+    comment="Look up record" />
+  
+  <!-- Report Actions -->
+  <ActionDefault name="run"
+    text="Run Report"
+    image="fa-play"
+    comment="Execute the report" />
+  
   <!-- Standard Actions -->
   <ActionDefault name="accept"
     text="OK"

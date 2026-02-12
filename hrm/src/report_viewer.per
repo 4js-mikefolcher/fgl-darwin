@@ -1,0 +1,21 @@
+TOOLBAR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Report Viewer", STYLE="reportviewer")
+  VBOX
+    TABLE (STYLE="reportviewer", STRETCHCOLUMNS, height=25 LINES, width=80 CHARACTERS)
+    {
+      [line_text                                                                              ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  EDIT line_text = FORMONLY.line_text TYPE VARCHAR, SCROLL;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_lines(line_text);
+END
