@@ -169,6 +169,7 @@ The application uses the Northwind database with the following tables:
 
 ### Prerequisites
 - Genero BDL 6.00.02+ (`fgl2p` compiler, `fglform` form compiler)
+- Genero Form Compiler (`fglform`)
 - PostgreSQL or Informix database with Northwind schema
 
 ### Create the Database
