@@ -3,6 +3,12 @@ IMPORT util
 
 DATABASE northwind
 DEFINE arr_max INTEGER
+DEFINE m_program_icons DYNAMIC ARRAY OF RECORD
+    program_name STRING,
+    icon_name    STRING
+END RECORD
+
+DEFINE first_form BOOLEAN = TRUE
 
 FUNCTION init_pgm()
 
@@ -14,6 +20,9 @@ FUNCTION init_pgm()
 
     -- Load generic stylesheet for all windows
     CALL ui.Interface.loadStyles("generic.4st")
+
+    -- Build program-to-icon mapping from action defaults
+    CALL build_program_icons()
 
     -- Register form initializer to auto-load action defaults
     CALL ui.Form.setDefaultInitializer("form_initializer")
@@ -30,8 +39,25 @@ FUNCTION get_arr_max()
 END FUNCTION
 
 FUNCTION form_initializer(frm ui.Form)
+    DEFINE win ui.Window
+    DEFINE pgm_name STRING
+    DEFINE icon STRING
 
     CALL frm.loadActionDefaults("generic.4ad")
+
+    -- Set the window icon based on the running program
+    LET win = ui.Window.getCurrent()
+    IF win IS NOT NULL THEN
+        LET pgm_name = base.Application.getProgramName()
+        LET icon = get_program_icon(pgm_name)
+        IF icon IS NOT NULL AND icon.getLength() > 0 THEN
+            CALL win.setImage(icon)
+            IF first_form THEN
+                 CALL ui.Interface.setImage(icon) -- Also set as default for the application
+                 LET first_form = FALSE
+            END IF
+        END IF
+    END IF
 
 END FUNCTION #form_initializer
 
@@ -87,3 +113,64 @@ FUNCTION generate_temp_filename(prefix, extension)
    RETURN temp_file
 
 END FUNCTION #generate_temp_filename
+
+-- =====================================================================
+-- Function: build_program_icons
+-- Purpose : Populate the module-level m_program_icons array with a
+--           mapping from each program name to its font-awesome icon
+--           as defined in the generic.4ad action defaults file.
+-- =====================================================================
+FUNCTION build_program_icons()
+
+    CALL m_program_icons.clear()
+
+    CALL add_program_icon("main_employees",    "fa-id-card")
+    CALL add_program_icon("main_empl_terr",    "fa-map-marker")
+    CALL add_program_icon("main_customers",    "fa-user")
+    CALL add_program_icon("main_orders",       "fa-shopping-cart")
+    CALL add_program_icon("main_order_details","fa-list-alt")
+    CALL add_program_icon("main_shippers",     "fa-ship")
+    CALL add_program_icon("main_products",     "fa-cube")
+    CALL add_program_icon("main_categories",   "fa-tag")
+    CALL add_program_icon("main_suppliers",    "fa-truck")
+    CALL add_program_icon("main_region",       "fa-globe")
+    CALL add_program_icon("main_territories",  "fa-map-marker")
+    CALL add_program_icon("main_usstates",     "fa-flag")
+    CALL add_program_icon("bdl_menu",          "fa-rocket")
+
+END FUNCTION #build_program_icons
+
+-- =====================================================================
+-- Function: add_program_icon
+-- Purpose : Helper to append one program/icon pair to m_program_icons.
+-- =====================================================================
+FUNCTION add_program_icon(pgm_name STRING, icon_name STRING)
+    DEFINE idx INTEGER
+
+    LET idx = m_program_icons.getLength() + 1
+    LET m_program_icons[idx].program_name = pgm_name
+    LET m_program_icons[idx].icon_name    = icon_name
+
+END FUNCTION #add_program_icon
+
+-- =====================================================================
+-- Function: get_program_icon
+-- Purpose : Look up the font-awesome icon for a given program name.
+-- Returns : The icon name string, or NULL if not found.
+-- =====================================================================
+FUNCTION get_program_icon(pgm_name STRING) RETURNS STRING
+    DEFINE i INTEGER
+    DEFINE base_name STRING
+
+    -- Strip any path prefix to get just the program name
+    LET base_name = os.Path.baseName(pgm_name)
+
+    FOR i = 1 TO m_program_icons.getLength()
+        IF m_program_icons[i].program_name == base_name THEN
+            RETURN m_program_icons[i].icon_name
+        END IF
+    END FOR
+
+    RETURN NULL
+
+END FUNCTION #get_program_icon

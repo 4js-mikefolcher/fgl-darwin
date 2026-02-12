@@ -164,6 +164,12 @@
     image="fa-ban"
     acceleratorName="Escape" />
   
+  <ActionDefault name="launch"
+    text="Launch"
+    image="fa-rocket"
+    comment="Launch the selected program"
+    acceleratorName="Return" />
+
   <ActionDefault name="exit"
     text="Exit"
     image="fa-power-off"

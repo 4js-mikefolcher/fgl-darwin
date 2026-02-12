@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <StyleList>
-  <Style name="Window.noactions">
-    <StyleAttribute name="windowType" value="normal" />
+  <Style name="Window">
     <StyleAttribute name="actionPanelPosition" value="none" />
     <StyleAttribute name="ringMenuPosition" value="none" />
   </Style>
@@ -42,4 +41,15 @@
     <StyleAttribute name="fontFamily" value="monospace" />
     <StyleAttribute name="highlightCurrentRow" value="no" />
   </Style>
+
+  <Style name="Table.MenuTree">
+     <StyleAttribute name="alternateRows" value="no"/>
+     <StyleAttribute name="backgroundColor" value="white" />
+     <StyleAttribute name="rowHover" value="yes" />
+     <StyleAttribute name="highlightCurrentRow" value="no" />
+     <StyleAttribute name="highlightColor" value="#6495ED" />
+     <StyleAttribute name="highlightTextColor" value="black" />
+     <StyleAttribute name="rowActionTrigger" value="singleClick" />
+  </Style>
+
 </StyleList>

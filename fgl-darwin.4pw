@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Project defaultApplication="-1567234892" gstVersion="60003" version="3.7">
+<Project defaultApplication="-1567234894" gstVersion="60003" version="3.7">
   <Settings>
     <DynamicProperties version="4">
       <DynamicProperty editorInfo="alwaysUpdate:true" initialValue="false" isDefaultInherited="false" isHidden="false" label="Firebase-analytics" name="firebase" readOnly="false" type="BOOLEAN"/>
@@ -80,6 +80,11 @@
         <File filePath="dbs/northwind.sch"/>
       </Library>
     </Group>
+    <Application binaryName="bdl_menu" dependencies="-1764485507" id="-1567234893" label="bdl_menu">
+      <Configuration id="-1567234894" label="bdl_menu"/>
+      <File filePath="hrm/src/bdl_menu.4gl"/>
+      <File filePath="hrm/src/bdl_menu.per"/>
+    </Application>
     <Application binaryName="ifx_menu" id="-1567234891" label="ifx_menu">
       <Configuration id="-1567234892" label="ifx_menu"/>
       <File filePath="hrm/src/ifx_menu.4gl"/>

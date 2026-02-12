@@ -32,6 +32,8 @@ FUNCTION view_product(prod_id)
    OPEN WINDOW viewProductWindow AT 5,5 WITH FORM "products"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
    LET where_clause = " products.productid = ", prod_id
    CALL load_products(where_clause)
 
@@ -73,6 +75,8 @@ FUNCTION view_products_for_supplier(supp_id)
    OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
    LET where_clause = " p.supplierid = ", supp_id
    CALL load_products(where_clause)
 
@@ -104,6 +108,8 @@ FUNCTION view_products_for_category(cat_id)
    OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
    LET where_clause = " p.categoryid = ", cat_id
    CALL load_products(where_clause)
 
@@ -539,6 +545,8 @@ FUNCTION product_lookup()
    OPEN WINDOW lookupWindow AT 5,5 WITH FORM "products"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
    CALL product_lookup_menu()
       RETURNING prod_id, prod_name
 

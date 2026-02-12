@@ -131,6 +131,7 @@ FUNCTION employee_lookup()
    OPEN WINDOW lookupWindow AT 5,5 WITH FORM "employees"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_courtesy_combo()
    CALL employee_lookup_menu()
       RETURNING employee_id, employee_name
 
@@ -211,6 +212,7 @@ FUNCTION view_employee(empl_id)
    OPEN WINDOW viewWindow AT 5,5 WITH FORM "employees"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_courtesy_combo()
    LET sqlText = "SELECT ",
        "employees.employeeid, employees.lastname, employees.firstname, ",
        "employees.title, employees.titleofcourtesy, ",

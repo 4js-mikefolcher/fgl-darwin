@@ -10,7 +10,6 @@ DEFINE orders_arr ARRAY[1000] OF RECORD
    requireddate LIKE orders.requireddate,
    shippeddate LIKE orders.shippeddate,
    shipvia LIKE orders.shipvia,
-   companyname LIKE shippers.companyname,
    freight LIKE orders.freight,
    shipname LIKE orders.shipname,
    shipaddress LIKE orders.shipaddress,
@@ -30,7 +29,6 @@ DEFINE curr_orders RECORD
    requireddate LIKE orders.requireddate,
    shippeddate LIKE orders.shippeddate,
    shipvia LIKE orders.shipvia,
-   companyname LIKE shippers.companyname,
    freight LIKE orders.freight,
    shipname LIKE orders.shipname,
    shipaddress LIKE orders.shipaddress,
@@ -59,6 +57,7 @@ FUNCTION view_order(order_id)
    OPEN WINDOW viewOrderWindow AT 5,5 WITH FORM "orders"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_shipvia_combo()
    LET arr_max = 1000
    LET where_clause = " orders.orderid = ", order_id
    CALL load_orders(where_clause)
@@ -105,6 +104,7 @@ FUNCTION view_orders_for_customer(cust_id)
    OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_shipvia_combo()
    LET arr_max = 1000
    LET where_clause = " orders.customerid = '", cust_id CLIPPED, "'"
    CALL load_orders(where_clause)
@@ -137,6 +137,7 @@ FUNCTION view_orders_for_employee(empl_id)
    OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_shipvia_combo()
    LET arr_max = 1000
    LET where_clause = " orders.employeeid = ", empl_id
    CALL load_orders(where_clause)
@@ -330,12 +331,11 @@ FUNCTION load_orders(where_clause)
     LET sql_stmt = " SELECT orders.orderid, orders.customerid, customers.companyname,",
                    " orders.employeeid, RTRIM(e.firstname) || ' ' || RTRIM(e.lastname) as employeename, ",
                    " orders.orderdate, orders.requireddate, orders.shippeddate,",
-                   " orders.shipvia, s.companyname, orders.freight, orders.shipname, orders.shipaddress,",
+                   " orders.shipvia, orders.freight, orders.shipname, orders.shipaddress,",
                    " orders.shipcity, orders.shipregion, orders.shippostalcode, orders.shipcountry",
                    " FROM orders",
                    " LEFT OUTER JOIN customers ON customers.customerid = orders.customerid",
                    " LEFT OUTER JOIN employees e ON e.employeeid = orders.employeeid",
-                   " LEFT OUTER JOIN shippers s ON s.shipperid = orders.shipvia",
                    " WHERE ", where_clause CLIPPED, " ORDER BY orders.orderid"
 
     CALL clear_orders()
@@ -408,7 +408,6 @@ FUNCTION add_orders()
                   RETURNING selected_shipper_id, selected_shipper_name
                IF selected_shipper_id > 0 THEN
                   LET curr_orders.shipvia = selected_shipper_id
-                  LET curr_orders.companyname = selected_shipper_name
                END IF
             END IF
 
@@ -511,7 +510,6 @@ FUNCTION edit_orders()
                   RETURNING selected_shipper_id, selected_shipper_name
                IF selected_shipper_id > 0 THEN
                   LET curr_orders.shipvia = selected_shipper_id
-                  LET curr_orders.companyname = selected_shipper_name
                END IF
             END IF
 
@@ -754,18 +752,38 @@ FUNCTION validate_customer_field()
 END FUNCTION #validate_customer_field
 
 FUNCTION validate_shipvia_field()
-   DEFINE shipper_name LIKE shippers.companyname
 
    IF curr_orders.shipvia IS NOT NULL THEN
-      SELECT companyname INTO shipper_name FROM shippers WHERE shippers.shipperid = curr_orders.shipvia
+      SELECT shipperid FROM shippers WHERE shippers.shipperid = curr_orders.shipvia
       IF sqlca.sqlcode == NOTFOUND THEN
          RETURN FALSE, "Shipper ID does not exist in shippers table"
       END IF
-      LET curr_orders.companyname = shipper_name
    END IF
    RETURN TRUE, "Okay"
 
 END FUNCTION #validate_shipvia_field
+
+-- =====================================================================
+-- Function: populate_shipvia_combo
+-- Purpose : Populate the shipvia combobox from the shippers table
+-- =====================================================================
+FUNCTION populate_shipvia_combo()
+   DEFINE cb ui.ComboBox
+   DEFINE ship_id LIKE shippers.shipperid
+   DEFINE ship_name LIKE shippers.companyname
+
+   LET cb = ui.ComboBox.forName("shipvia")
+   IF cb IS NULL THEN
+      RETURN
+   END IF
+   CALL cb.clear()
+   DECLARE c_shipvia CURSOR FOR
+      SELECT shipperid, companyname FROM shippers ORDER BY companyname
+   FOREACH c_shipvia INTO ship_id, ship_name
+      CALL cb.addItem(ship_id, ship_name)
+   END FOREACH
+
+END FUNCTION #populate_shipvia_combo
 
 -- =====================================================================
 -- Function: order_lookup
@@ -777,6 +795,7 @@ FUNCTION order_lookup()
    OPEN WINDOW lookupWindow AT 5,5 WITH FORM "orders"
       ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
 
+   CALL populate_shipvia_combo()
    CALL order_lookup_menu()
       RETURNING ord_id
 
