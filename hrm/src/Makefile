@@ -12,7 +12,7 @@ SRCCOMP = fgl2p
 FORMS = employees.per empl_terr.per region.per territories.per orders.per order_details.per \
         categories.per customers.per products.per shippers.per suppliers.per usstates.per \
         rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
-        rpt_orders_by_daterange.per report_viewer.per bdl_menu.per
+        rpt_orders_by_daterange.per rpt_orders_generic.per report_viewer.per bdl_menu.per
 
 # Compiled form targets
 FORM_TARGETS = $(BINDIR)/employees.42f \
@@ -31,6 +31,7 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/rpt_orders_by_employee.42f \
                $(BINDIR)/rpt_orders_by_product.42f \
                $(BINDIR)/rpt_orders_by_daterange.42f \
+               $(BINDIR)/rpt_orders_generic.42f \
                $(BINDIR)/report_viewer.42f \
                $(BINDIR)/bdl_menu.42f
 
@@ -52,7 +53,8 @@ PROG_TARGETS = $(BINDIR)/bdl_menu.42r \
                $(BINDIR)/main_rpt_orders_by_customer.42r \
                $(BINDIR)/main_rpt_orders_by_employee.42r \
                $(BINDIR)/main_rpt_orders_by_product.42r \
-               $(BINDIR)/main_rpt_orders_by_daterange.42r
+               $(BINDIR)/main_rpt_orders_by_daterange.42r \
+               $(BINDIR)/main_rpt_orders_generic.42r
 
 # Default target - build everything
 all: $(BINDIR) $(FORM_TARGETS) $(PROG_TARGETS)
@@ -126,6 +128,10 @@ $(BINDIR)/rpt_orders_by_daterange.42f: rpt_orders_by_daterange.per
 	$(FORMCOMP) $<
 	mv rpt_orders_by_daterange.42f $(BINDIR)/
 
+$(BINDIR)/rpt_orders_generic.42f: rpt_orders_generic.per
+	$(FORMCOMP) $<
+	mv rpt_orders_generic.42f $(BINDIR)/
+
 $(BINDIR)/report_viewer.42f: report_viewer.per
 	$(FORMCOMP) $<
 	mv report_viewer.42f $(BINDIR)/
@@ -145,10 +151,12 @@ CORE_42M = main_lib.42m employees.42m empl_terr.42m territories.42m region.42m \
 
 # Report modules
 RPT_MODULES = rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
-              rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl
+              rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl \
+              rpt_orders_generic.4gl
 
 RPT_42M = rpt_orders_by_customer.42m rpt_orders_by_employee.42m \
-          rpt_orders_by_product.42m rpt_orders_by_daterange.42m
+          rpt_orders_by_product.42m rpt_orders_by_daterange.42m \
+          rpt_orders_generic.42m
 
 # Program compilation rules
 $(BINDIR)/bdl_menu.42r: bdl_menu.4gl main_lib.4gl
@@ -224,6 +232,10 @@ $(BINDIR)/main_rpt_orders_by_daterange.42r: main_rpt_orders_by_daterange.4gl mai
 	$(SRCCOMP) -o main_rpt_orders_by_daterange.42r $^
 	mv main_rpt_orders_by_daterange.42r main_rpt_orders_by_daterange.42m main_lib.42m report_helper.42m rpt_orders_by_daterange.42m $(BINDIR)/
 
+$(BINDIR)/main_rpt_orders_generic.42r: main_rpt_orders_generic.4gl main_lib.4gl report_helper.4gl rpt_orders_generic.4gl
+	$(SRCCOMP) -o main_rpt_orders_generic.42r $^
+	mv main_rpt_orders_generic.42r main_rpt_orders_generic.42m main_lib.42m report_helper.42m rpt_orders_generic.42m $(BINDIR)/
+
 # Clean compiled files
 clean:
 	rm -f *.42f *.42m *.42r
@@ -254,5 +266,6 @@ rpt_orders_by_customer: $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_
 rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42r
 rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
 rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
+rpt_orders_generic: $(BINDIR)/rpt_orders_generic.42f $(BINDIR)/main_rpt_orders_generic.42r
 
-.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange ifx_menu bdl_menu
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic ifx_menu bdl_menu

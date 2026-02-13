@@ -184,6 +184,12 @@ FUNCTION build_menu(p_menu)
     LET p_menu[p_menu.getLength()].description      = "Report of orders filtered by date range"
     LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_by_daterange"
 
+    LET p_menu[p_menu.getLength() + 1].id           = 64
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Generic Orders (XML)"
+    LET p_menu[p_menu.getLength()].description      = "Generic order report with XML output"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_generic"
+
 END FUNCTION
 
 ###############################################################################

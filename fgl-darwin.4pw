@@ -173,6 +173,12 @@
       <File filePath="hrm/src/rpt_orders_by_daterange.4gl"/>
       <File filePath="hrm/src/rpt_orders_by_daterange.per"/>
     </Application>
+    <Application binaryName="main_rpt_orders_generic" dependencies="-1764485507,1342077549" id="1134826709" label="main_rpt_orders_generic">
+      <Configuration id="1134826710" label="main_rpt_orders_generic"/>
+      <File filePath="hrm/src/main_rpt_orders_generic.4gl"/>
+      <File filePath="hrm/src/rpt_orders_generic.4gl"/>
+      <File filePath="hrm/src/rpt_orders_generic.per"/>
+    </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
       <File filePath="hrm/src/categories.4gl"/>
       <File filePath="hrm/src/customers.4gl"/>

@@ -1,0 +1,87 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM run
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Generic Order Report - XML Output")
+  VBOX
+    GROUP (TEXT="Order Criteria", STYLE="box")
+      GRID
+      {
+        Order ID:       [orderid      ]  Order Date:    [orderdate    ]
+        Required Date:  [requireddate ]  Shipped Date:  [shippeddate  ]
+        Freight:        [freight      ]  Ship Via:      [shipvia      ]
+        Ship Name:      [shipname                                     ]
+        Ship City:      [shipcity        ]  Ship Region:   [shipregion      ]
+        Ship Country:   [shipcountry     ]  Ship Postal:   [shippostalcode  ]
+      }
+      END
+    END
+    GROUP (TEXT="Customer Criteria", STYLE="box")
+      GRID
+      {
+        Customer ID:    [customerid              ]
+        Company Name:   [companyname                              ]
+        Contact Name:   [contactname                       ]
+      }
+      END
+    END
+    GROUP (TEXT="Employee Criteria", STYLE="box")
+      GRID
+      {
+        Employee ID:    [employeeid   ]
+        Last Name:      [lastname              ]  First Name:  [firstname      ]
+      }
+      END
+    END
+    GROUP (TEXT="Product Criteria", STYLE="box")
+      GRID
+      {
+        Product ID:     [productid    ]
+        Product Name:   [productname                              ]
+      }
+      END
+    END
+  END
+END
+
+
+TABLES
+  orders, customers, employees, products, order_details
+END
+
+ATTRIBUTES
+  EDIT orderid        = orders.orderid;
+  EDIT orderdate      = orders.orderdate;
+  EDIT requireddate   = orders.requireddate;
+  EDIT shippeddate    = orders.shippeddate;
+  EDIT freight        = orders.freight;
+  EDIT shipvia        = orders.shipvia;
+  EDIT shipname       = orders.shipname;
+  EDIT shipcity       = orders.shipcity;
+  EDIT shipregion     = orders.shipregion;
+  EDIT shipcountry    = orders.shipcountry;
+  EDIT shippostalcode = orders.shippostalcode;
+  EDIT customerid     = customers.customerid;
+  EDIT companyname    = customers.companyname;
+  EDIT contactname    = customers.contactname;
+  EDIT employeeid     = employees.employeeid;
+  EDIT lastname       = employees.lastname;
+  EDIT firstname      = employees.firstname;
+  EDIT productid      = order_details.productid;
+  EDIT productname    = products.productname;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_criteria(
+    orders.orderid, orders.orderdate, orders.requireddate, orders.shippeddate,
+    orders.freight, orders.shipvia, orders.shipname, orders.shipcity,
+    orders.shipregion, orders.shipcountry, orders.shippostalcode,
+    customers.customerid, customers.companyname, customers.contactname,
+    employees.employeeid, employees.lastname, employees.firstname,
+    order_details.productid, products.productname
+  );
+END
