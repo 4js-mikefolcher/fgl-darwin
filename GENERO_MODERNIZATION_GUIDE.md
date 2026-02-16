@@ -1,7 +1,7 @@
 # Genero Module Modernization with AI Agent
 ## Chat Documentation & Learning Guide
 
-**Date:** February 9-12, 2026  
+**Date:** February 9-16, 2026  
 **Project:** Northwind Genero Application Modernization  
 **Scope:** Converting legacy terminal-style forms to modern web applications
 
@@ -62,6 +62,7 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - ✅ **GUI tree menu** (bdl_menu) with toolbar, Reports category (6 root categories, 16 leaf programs)
 - ✅ **Program icons** — `build_program_icons()` maps 17 programs to Font Awesome icons including bdl_menu and 4 reports
 - ✅ **INPUT ARRAY with modification triggers** — empl_terr fully modernized with inline editing, transactional save, validation
+- ✅ **Module window style** — `Window.modulewindow` in generic.4st for all secondary windows (32 OPEN WINDOW statements across 17 modules)
 
 ---
 
@@ -777,6 +778,76 @@ END FUNCTION
 - **BEFORE FIELD for derived columns:** Use `BEFORE FIELD fieldname` + `NEXT FIELD nextfield` to skip non-editable computed fields in the tab order.
 - **INPUT ARRAY without built-in controls:** Disabling INSERT ROW, APPEND ROW, DELETE ROW, and AUTO APPEND gives full control over row management via ON ACTION handlers.
 
+### Phase 31: Module Window Style for Secondary Windows
+
+**Objective:** Define a dedicated `Window.modulewindow` style in generic.4st for all secondary (non-main) windows, and update every OPEN WINDOW statement in non-main_* modules to use `STYLE="modulewindow"`. This removes legacy `AT row,col` positioning, `BORDER`, `MESSAGE LINE LAST`, `ERROR LINE LAST` attributes, and the old `STYLE="noactions"` references from module windows.
+
+**Files Modified:**
+- `generic.4st` — Added `Window.modulewindow` style (windowType=modal, actionPanelPosition=none, ringMenuPosition=none)
+- 17 non-main_* .4gl files — Updated all 32 OPEN WINDOW statements to use `STYLE="modulewindow"`
+
+**generic.4st — New Style Added:**
+```xml
+<Style name="Window.modulewindow">
+  <StyleAttribute name="windowType" value="modal" />
+  <StyleAttribute name="actionPanelPosition" value="none" />
+  <StyleAttribute name="ringMenuPosition" value="none" />
+</Style>
+```
+
+**OPEN WINDOW — Before (various patterns):**
+```4gl
+-- Pattern 1: Legacy positioning with terminal attributes
+OPEN WINDOW viewCustomerWindow AT 5,5 WITH FORM "customers"
+   ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+
+-- Pattern 2: No attributes at all
+OPEN WINDOW subw1 AT 5,5 WITH FORM "empl_terr"
+
+-- Pattern 3: Old noactions style
+OPEN WINDOW rptCustWindow WITH FORM "rpt_orders_by_customer"
+   ATTRIBUTES(BORDER, STYLE="noactions")
+```
+
+**OPEN WINDOW — After (unified pattern):**
+```4gl
+OPEN WINDOW viewCustomerWindow WITH FORM "customers"
+   ATTRIBUTES(STYLE="modulewindow")
+```
+
+**Files Updated (32 OPEN WINDOW statements across 17 files):**
+
+| File | Windows Updated |
+|------|----------------|
+| categories.4gl | 2 |
+| customers.4gl | 2 |
+| empl_terr.4gl | 1 |
+| employees.4gl | 2 |
+| order_details.4gl | 1 |
+| orders.4gl | 4 |
+| products.4gl | 4 |
+| region.4gl | 2 |
+| report_helper.4gl | 1 |
+| rpt_orders_by_customer.4gl | 1 |
+| rpt_orders_by_daterange.4gl | 1 |
+| rpt_orders_by_employee.4gl | 1 |
+| rpt_orders_by_product.4gl | 1 |
+| rpt_orders_generic.4gl | 1 |
+| shippers.4gl | 2 |
+| suppliers.4gl | 2 |
+| territories.4gl | 4 |
+
+**Excluded Files (main programs, not secondary windows):**
+- `bdl_menu.4gl` — Main menu entry point
+- `ifx_menu.4gl` — Legacy text-based menu entry point
+
+**Key Learnings:**
+- **Module windows vs main windows:** Secondary windows opened by non-main modules benefit from a dedicated style to control their appearance consistently
+- **AT row,col is legacy:** The `AT row,col` positioning is a terminal-era pattern; removing it lets the GDC/GBC position windows automatically
+- **BORDER, MESSAGE LINE LAST, ERROR LINE LAST are legacy:** These terminal-style attributes are not needed in modern GUI applications
+- **Named styles override base styles:** `Window.modulewindow` overrides the base `Window` style when explicitly applied with `STYLE="modulewindow"`
+- **Style consolidation:** The 4 report criteria modules (rpt_orders_by_*) previously used `STYLE="noactions"` — now unified under `STYLE="modulewindow"`
+
 ---
 
 ## Technical Foundation
@@ -1259,7 +1330,34 @@ Apply actionPanelPosition and ringMenuPosition to ALL windows via a base `Window
 - Named styles like `Window.reportviewer` override the base style when explicitly applied with `STYLE="reportviewer"`
 - Eliminates repetitive `STYLE="noactions"` on every OPEN WINDOW statement
 
-#### 23. INPUT ARRAY with Modification Triggers
+#### 23. Module Window Style for Secondary Windows
+
+Define a dedicated style for secondary (non-main) module windows that controls window type, action panels, and toolbar visibility:
+
+```xml
+<!-- generic.4st -->
+<Style name="Window.modulewindow">
+  <StyleAttribute name="windowType" value="modal" />
+  <StyleAttribute name="actionPanelPosition" value="none" />
+  <StyleAttribute name="ringMenuPosition" value="none" />
+</Style>
+```
+
+Apply it in non-main_* modules:
+```4gl
+-- All secondary module windows use the modulewindow style
+OPEN WINDOW viewCustomerWindow WITH FORM "customers"
+   ATTRIBUTES(STYLE="modulewindow")
+```
+
+**Key Points:**
+- Removes legacy `AT row,col` positioning (terminal-era, not needed in GUI)
+- Removes legacy `BORDER`, `MESSAGE LINE LAST`, `ERROR LINE LAST` attributes
+- `windowType="modal"` makes secondary windows modal dialogs
+- Named style `Window.modulewindow` overrides the base `Window` style when applied
+- Consistent behavior across all 32 secondary windows in 17 modules
+
+#### 24. INPUT ARRAY with Modification Triggers
 
 Inline editing pattern using INPUT ARRAY with manual row management:
 
@@ -1305,7 +1403,7 @@ END INPUT
 - `AUTO APPEND = FALSE` — Prevents automatic row creation on tab-through
 - `BEFORE FIELD` + `NEXT FIELD` — Skips derived (display-only) columns in tab order
 
-#### 24. Transactional Save (Delete-Reinsert)
+#### 25. Transactional Save (Delete-Reinsert)
 
 For many-to-many tables like employee-territories, delete all existing and re-insert:
 
@@ -1337,7 +1435,7 @@ END FUNCTION
 - TRY/CATCH ensures rollback on any error
 - Delete-reinsert is simpler than tracking individual row changes for junction tables
 
-#### 25. Program Icon Mapping
+#### 26. Program Icon Mapping
 
 Map program names to Font Awesome icons for automatic window/app icon assignment:
 
@@ -1486,8 +1584,8 @@ MAIN
     CALL init_pgm()  -- Registers form_initializer + loads styles
     
     OPEN WINDOW mainWindow WITH FORM "customers"
-      ATTRIBUTES(BORDER, STYLE="noactions")
     -- Action defaults are automatically loaded by form_initializer
+    -- Base Window style applies actionPanelPosition=none automatically
     
     -- rest of program
 END MAIN
@@ -1897,19 +1995,25 @@ END TOOLBAR
 
 **In .4st File (Definition):**
 ```xml
-<Style name="Window.noactions">
+<Style name="Window.modulewindow">
 ```
 Uses fully qualified name with `Window.` prefix.
 
 **In OPEN WINDOW Statement (Usage):**
 ```4gl
-OPEN WINDOW mainWindow WITH FORM "customers"
-  ATTRIBUTES(BORDER, STYLE="noactions")
+OPEN WINDOW viewCustomerWindow WITH FORM "customers"
+  ATTRIBUTES(STYLE="modulewindow")
 ```
 Uses just the style name part, NOT the qualified name.
 
 **Why?**
 The qualified name is a namespace/category prefix. When using it, Genero understands the category from context.
+
+**Style Hierarchy:**
+- Base `Window` style applies to ALL windows (actionPanelPosition=none, ringMenuPosition=none)
+- Named styles like `Window.modulewindow` or `Window.reportviewer` override the base when explicitly applied
+- Main program windows use the base style (no STYLE= needed)
+- Secondary module windows use `STYLE="modulewindow"` for modal behavior
 
 ### 5. Action Defaults Must Have Images
 
@@ -1960,8 +2064,8 @@ MAIN
     CALL init_pgm()  -- Loads styles + registers form_initializer
     
     OPEN WINDOW mainWindow WITH FORM "customers"
-      ATTRIBUTES(BORDER, STYLE="noactions")
     -- Action defaults auto-loaded by form_initializer
+    -- Base Window style disables action panels automatically
     
     -- Module-specific combo population (if needed)
     CALL populate_supplier_combo()
@@ -1974,7 +2078,8 @@ END MAIN
 - `init_pgm()` called first — loads generic.4st AND registers `form_initializer`
 - `form_initializer(frm ui.Form)` automatically calls `frm.loadActionDefaults("generic.4ad")` for every form
 - No need for `DEFINE f ui.Form` / `LET f = ...getForm()` boilerplate
-- STYLE="noactions" applied to disable action panels
+- Base `Window` style applies actionPanelPosition=none, ringMenuPosition=none to all windows automatically
+- Secondary module windows use `STYLE="modulewindow"` for modal behavior with no toolbar
 - Module-specific initialization (combo population) still done in MAIN after OPEN WINDOW
 
 ### 8. ON ACTION Replaces ON KEY
@@ -2027,7 +2132,6 @@ ON ACTION cancel
 MAIN
     CALL init_pgm()  -- Action defaults handled by form_initializer
     OPEN WINDOW mainWindow WITH FORM "products"
-      ATTRIBUTES(BORDER, STYLE="noactions")
     
     CALL populate_supplier_combo()
     CALL populate_category_combo()
@@ -2256,7 +2360,7 @@ mv formfile_clean.per formfile.per
 **Solution:**
 1. Verify generic.4st exists and has style definition
 2. Verify init_pgm() calls ui.Interface.loadStyles()
-3. Check style name format: `STYLE="noactions"` (not `STYLE="Window.noactions"`)
+3. Check style name format: `STYLE="modulewindow"` (not `STYLE="Window.modulewindow"`)
 4. Verify OPEN WINDOW uses correct form name
 
 ---
@@ -2335,7 +2439,7 @@ As you work, the AI learns patterns:
 **generic.4st** - Centralized stylesheets
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
 - Purpose: Shared styles for consistent UI
-- Includes: **Window** (base style — actionPanelPosition=none, ringMenuPosition=none for all windows), Window.reportviewer, Table.reportviewer, Table.MenuTree styles
+- Includes: **Window** (base style — actionPanelPosition=none, ringMenuPosition=none for all windows), **Window.modulewindow** (modal, no action panel/ring menu/toolbar for secondary module windows), Window.reportviewer, Table.reportviewer, Table.MenuTree styles
 
 **report_helper.4gl** - Report viewer utility library
 - Location: `/Users/mikefolcher/4js-github/fgl-darwin/hrm/src/`
@@ -2465,6 +2569,8 @@ As you work, the AI learns patterns:
 **generic.4st**
 - Changed: Renamed `Window.noactions` to base `Window` style (applies to all windows)
 - Effect: All windows get actionPanelPosition=none, ringMenuPosition=none automatically
+- Added: `Window.modulewindow` style (windowType=modal, actionPanelPosition=none, ringMenuPosition=none)
+- Effect: All 32 secondary module windows use consistent modal style via `STYLE="modulewindow"`
 
 **generic.4ad**
 - Added: "launch" ActionDefault (fa-rocket, acceleratorName=Return)
@@ -2484,7 +2590,7 @@ The Genero AI Agent effectively assisted with a complex modernization project by
 6. **Adding new UI patterns** - COMBOBOX population from database, CHECKBOX with defaults, dialog-style confirmation
 7. **Refactoring shared code** - confirm_delete() extracted to main_lib.4gl, applied everywhere
 
-The result: **12 modules with modern forms**, **9 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (36 actions) and stylesheets**, **centralized base Window style**, **form initializer hook with program icon registry**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **INPUT ARRAY with modification triggers**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, **GUI tree menu** with 6 categories and 16 leaf programs, and **shared utility functions** throughout.
+The result: **12 modules with modern forms**, **9 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (36 actions) and stylesheets**, **centralized base Window style**, **dedicated module window style** (32 secondary windows across 17 modules), **form initializer hook with program icon registry**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **INPUT ARRAY with modification triggers**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, **GUI tree menu** with 6 categories and 16 leaf programs, and **shared utility functions** throughout.
 
 ### Key Success Factors
 
@@ -2508,6 +2614,8 @@ The result: **12 modules with modern forms**, **9 fully modernized** from legacy
 ✅ INPUT ARRAY with modification triggers for inline editing (empl_terr)  
 ✅ Transactional save pattern with BEGIN WORK / COMMIT WORK / ROLLBACK WORK  
 ✅ DEFINE placement discipline (all DEFINEs at function top, never inside IF/FOR)  
+✅ Module window style for consistent secondary window behavior (32 windows, 17 modules)  
+✅ Legacy attribute cleanup (removed AT row,col, BORDER, MESSAGE LINE LAST, ERROR LINE LAST)  
 
 ### Recommended Next Steps
 
@@ -2522,7 +2630,7 @@ The result: **12 modules with modern forms**, **9 fully modernized** from legacy
 ---
 
 **Document Created:** February 9, 2026  
-**Last Updated:** February 12, 2026  
+**Last Updated:** February 16, 2026  
 **Genero Version:** 6.00.02-202512011639  
 **Database:** Northwind  
 **Project Location:** `/Users/mikefolcher/4js-github/fgl-darwin/`

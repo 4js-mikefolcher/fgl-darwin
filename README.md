@@ -16,6 +16,7 @@ The application has been modernized with:
 - A reusable report viewer with modal dialog display
 - `ON ACTION` pattern replacing legacy `ON KEY` handlers
 - Form initializer hook for automatic action defaults loading
+- Module window style — secondary windows open as modal dialogs via `STYLE="modulewindow"`
 
 ## Project Structure
 
@@ -34,7 +35,7 @@ fgl-darwin/
 │   ├── bin/                          # Compiled output (.42f, .42m, .42r)
 │   ├── src/                          # Source code
 │   │   ├── Makefile                  # Build configuration
-│   │   ├── generic.4ad               # Shared action defaults (35 actions)
+│   │   ├── generic.4ad               # Shared action defaults (36 actions)
 │   │   ├── generic.4st               # Shared stylesheet
 │   │   ├── main_lib.4gl              # Common library (init, utilities)
 │   │   ├── report_helper.4gl         # Report viewer utility
@@ -110,8 +111,8 @@ Each data management module provides:
 
 | File | Purpose |
 |------|---------|
-| `generic.4ad` | 35 action defaults with Font Awesome icons and accelerator keys |
-| `generic.4st` | Stylesheet with `Window.noactions`, `Window.reportviewer`, `Table.reportviewer` styles |
+| `generic.4ad` | 36 action defaults with Font Awesome icons and accelerator keys |
+| `generic.4st` | Stylesheet with `Window.modulewindow` (modal, no actions/ring), `Window.reportviewer` (modal, bottom actions), `Table.reportviewer`, `Table.MenuTree`, and base `form`/`formField`/`label`/`button`/`toolBar` styles |
 | `main_lib.4gl` | `init_pgm()` — loads styles and registers form initializer; `confirm_delete()` — dialog-based deletion; `generate_temp_filename()` — unique timestamped filenames; `form_initializer()` — auto-loads action defaults for every form |
 | `report_helper.4gl` | `display_report_file()` — reads text file via `base.Channel` and displays in DISPLAY ARRAY |
 | `report_viewer.per` | Modal form with TABLE, monospace font, STRETCHCOLUMNS |
@@ -125,6 +126,7 @@ Each data management module provides:
 | Related Entities | products, orders, supplier, category, region, employees, territories, customer, employee, shipper, details, reportsto, order, product, select |
 | Zoom/Lookup | zoom_employee, zoom_territory, zoom_customer, zoom_product, zoom_order, zoom |
 | Reports | run |
+| Application | launch, to_pdf |
 | Standard | accept, cancel, exit |
 
 ## Database Schema
@@ -214,12 +216,13 @@ Each report has three files:
 ### Shared Modules
 - `main_lib.4gl` — Common library: `init_pgm()` (styles + form initializer), `confirm_delete()`, `generate_temp_filename()`, `form_initializer()`
 - `report_helper.4gl` — Report viewer: `display_report_file()` reads text files and displays in modal dialog
-- `generic.4ad` — 35 action defaults with Font Awesome icons
-- `generic.4st` — Stylesheet with window and table styles
+- `generic.4ad` — 36 action defaults with Font Awesome icons
+- `generic.4st` — Stylesheet with `Window.modulewindow`, `Window.reportviewer`, `Table.reportviewer`, `Table.MenuTree`, and base element styles
 - `report_viewer.per` — Modal report viewer form
 
 ### Key Patterns
 - **Form Initializer Hook** — `ui.Form.setDefaultInitializer("form_initializer")` auto-loads action defaults for every form opened
+- **Module Window Style** — All secondary (non-main) windows use `ATTRIBUTES(STYLE="modulewindow")` to open as modal dialogs with no action panel or ring menu
 - **Dynamic Arrays** — `DYNAMIC ARRAY OF t_recordtype` with `.appendElement()`, `.deleteElement()`, `.getLength()`
 - **CONSTRUCT BY NAME** — Generates flexible WHERE clauses from form input without explicit field mapping
 - **base.Channel** — File I/O for reading/writing report text files
