@@ -30,6 +30,12 @@
     <StyleAttribute name="orientation" value="horizontal" />
   </Style>
 
+  <Style name="Window.modulewindow">
+    <StyleAttribute name="windowType" value="modal" />
+    <StyleAttribute name="actionPanelPosition" value="none" />
+    <StyleAttribute name="ringMenuPosition" value="none" />
+  </Style>
+
   <Style name="Window.reportviewer">
     <StyleAttribute name="windowType" value="modal" />
     <StyleAttribute name="actionPanelPosition" value="bottom" />

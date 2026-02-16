@@ -36,15 +36,15 @@ FUNCTION view_customer(cust_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewCustomerWindow AT 5,5 WITH FORM "customers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewCustomerWindow WITH FORM "customers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " customers.customerid = '", cust_id CLIPPED, "'"
    CALL load_customers(where_clause)
 
    IF customers_arr.getLength() == 0 THEN
-      ERROR "Customer not found"
       CLOSE WINDOW viewCustomerWindow
+      ERROR "Customer not found"
       RETURN
    END IF
 
@@ -258,11 +258,9 @@ FUNCTION edit_customers()
 END FUNCTION
 
 FUNCTION delete_customers()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Customer delete canceled"
         LET int_flag = TRUE
         RETURN
@@ -381,8 +379,8 @@ FUNCTION customer_lookup()
    DEFINE cust_id LIKE customers.customerid
    DEFINE cust_name LIKE customers.companyname
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "customers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "customers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL customer_lookup_menu()
       RETURNING cust_id, cust_name

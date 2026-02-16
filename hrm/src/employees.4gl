@@ -128,8 +128,8 @@ FUNCTION employee_lookup()
    DEFINE employee_id LIKE employees.employeeid
    DEFINE employee_name VARCHAR(32)
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "employees"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "employees"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_courtesy_combo()
    CALL employee_lookup_menu()
@@ -209,8 +209,8 @@ FUNCTION view_employee(empl_id)
    END IF
 
    CALL init_employees()
-   OPEN WINDOW viewWindow AT 5,5 WITH FORM "employees"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewWindow WITH FORM "employees"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_courtesy_combo()
    LET sqlText = "SELECT ",
@@ -227,6 +227,7 @@ FUNCTION view_employee(empl_id)
    CALL fillResultList(sqlText)
 
    IF listCount == 0 THEN
+      CLOSE WINDOW viewWindow
       ERROR "Employee not found"
       RETURN
    END IF
@@ -314,11 +315,9 @@ END FUNCTION
 
 
 FUNCTION delete_employee()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         MESSAGE "Employee delete canceled"
         LET int_flag = TRUE
         RETURN

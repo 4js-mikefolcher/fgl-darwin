@@ -24,16 +24,16 @@ FUNCTION view_region(reg_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewRegionWindow AT 5,5 WITH FORM "region"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewRegionWindow WITH FORM "region"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL init_region()
    LET where_clause = " region.regionid = ", reg_id
    CALL load_regions(where_clause)
 
    IF arr_size == 0 THEN
-      ERROR "Region not found"
       CLOSE WINDOW viewRegionWindow
+      ERROR "Region not found"
       RETURN
    END IF
 
@@ -125,8 +125,8 @@ FUNCTION region_lookup()
    DEFINE region_id LIKE region.regionid
    DEFINE region_desc LIKE region.regiondescription
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "region"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "region"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL region_lookup_menu()
       RETURNING region_id, region_desc
@@ -346,11 +346,9 @@ END FUNCTION
 -- Purpose : Delete an existing region record
 -- =====================================================================
 FUNCTION delete_region()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Region delete canceled"
         LET int_flag = TRUE
         RETURN

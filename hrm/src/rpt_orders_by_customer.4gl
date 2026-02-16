@@ -30,7 +30,7 @@ FUNCTION run_orders_by_customer()
    LET done = FALSE
 
    OPEN WINDOW rptCustWindow WITH FORM "rpt_orders_by_customer"
-      ATTRIBUTES(BORDER, STYLE="noactions")
+      ATTRIBUTES(STYLE="modulewindow")
 
    WHILE NOT done
       LET int_flag = FALSE

@@ -22,15 +22,15 @@ FUNCTION view_shipper(ship_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewShipperWindow AT 5,5 WITH FORM "shippers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewShipperWindow WITH FORM "shippers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " shippers.shipperid = ", ship_id
    CALL load_shippers(where_clause)
 
    IF shippers_arr.getLength() == 0 THEN
-      ERROR "Shipper not found"
       CLOSE WINDOW viewShipperWindow
+      ERROR "Shipper not found"
       RETURN
    END IF
 
@@ -344,8 +344,8 @@ FUNCTION shipper_lookup()
    DEFINE ship_id LIKE shippers.shipperid
    DEFINE ship_name LIKE shippers.companyname
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "shippers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "shippers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL shipper_lookup_menu()
       RETURNING ship_id, ship_name

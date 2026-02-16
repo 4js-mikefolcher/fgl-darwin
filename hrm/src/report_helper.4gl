@@ -33,6 +33,7 @@ FUNCTION display_report_file(rpt_file)
 
    -- Display the report content
    OPEN WINDOW rptViewerWindow WITH FORM "report_viewer"
+      ATTRIBUTES(STYLE="modulewindow")
 
    DISPLAY ARRAY lines TO s_lines.*
 

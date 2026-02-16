@@ -37,15 +37,15 @@ FUNCTION view_supplier(supp_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewSupplierWindow AT 5,5 WITH FORM "suppliers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewSupplierWindow WITH FORM "suppliers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " suppliers.supplierid = ", supp_id
    CALL load_suppliers(where_clause)
 
    IF suppliers_arr.getLength() == 0 THEN
-      ERROR "Supplier not found"
       CLOSE WINDOW viewSupplierWindow
+      ERROR "Supplier not found"
       RETURN
    END IF
 
@@ -382,8 +382,8 @@ FUNCTION supplier_lookup()
    DEFINE supp_id LIKE suppliers.supplierid
    DEFINE supp_name LIKE suppliers.companyname
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "suppliers"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "suppliers"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL supplier_lookup_menu()
       RETURNING supp_id, supp_name

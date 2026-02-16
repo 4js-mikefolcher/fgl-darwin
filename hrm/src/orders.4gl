@@ -54,8 +54,8 @@ FUNCTION view_order(order_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewOrderWindow AT 5,5 WITH FORM "orders"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewOrderWindow WITH FORM "orders"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_shipvia_combo()
    LET arr_max = 1000
@@ -63,8 +63,8 @@ FUNCTION view_order(order_id)
    CALL load_orders(where_clause)
 
    IF arr_size == 0 THEN
-      ERROR "Order not found"
       CLOSE WINDOW viewOrderWindow
+      ERROR "Order not found"
       RETURN
    END IF
 
@@ -101,8 +101,8 @@ FUNCTION view_orders_for_customer(cust_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewOrdersWindow WITH FORM "orders"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_shipvia_combo()
    LET arr_max = 1000
@@ -110,8 +110,8 @@ FUNCTION view_orders_for_customer(cust_id)
    CALL load_orders(where_clause)
 
    IF arr_size == 0 THEN
-      MESSAGE "No orders found for this customer"
       CLOSE WINDOW viewOrdersWindow
+      ERROR "No Orders found for this Customer"
       RETURN
    END IF
 
@@ -134,8 +134,8 @@ FUNCTION view_orders_for_employee(empl_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewOrdersWindow AT 5,5 WITH FORM "orders"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewOrdersWindow WITH FORM "orders"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_shipvia_combo()
    LET arr_max = 1000
@@ -143,8 +143,8 @@ FUNCTION view_orders_for_employee(empl_id)
    CALL load_orders(where_clause)
 
    IF arr_size == 0 THEN
-      MESSAGE "No orders found for this employee"
       CLOSE WINDOW viewOrdersWindow
+      ERROR "No Orders found for this Employee"
       RETURN
    END IF
 
@@ -569,11 +569,9 @@ END FUNCTION
 -- Purpose : Delete an existing order record
 -- =====================================================================
 FUNCTION delete_orders()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Order delete canceled"
         LET int_flag = TRUE
         RETURN
@@ -792,8 +790,8 @@ END FUNCTION #populate_shipvia_combo
 FUNCTION order_lookup()
    DEFINE ord_id LIKE orders.orderid
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "orders"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "orders"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_shipvia_combo()
    CALL order_lookup_menu()

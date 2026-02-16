@@ -29,8 +29,8 @@ FUNCTION view_product(prod_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewProductWindow AT 5,5 WITH FORM "products"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewProductWindow WITH FORM "products"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
@@ -38,8 +38,8 @@ FUNCTION view_product(prod_id)
    CALL load_products(where_clause)
 
    IF products_arr.getLength() == 0 THEN
-      ERROR "Product not found"
       CLOSE WINDOW viewProductWindow
+      ERROR "Product not found"
       RETURN
    END IF
 
@@ -72,8 +72,8 @@ FUNCTION view_products_for_supplier(supp_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewProductsWindow WITH FORM "products"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
@@ -81,8 +81,8 @@ FUNCTION view_products_for_supplier(supp_id)
    CALL load_products(where_clause)
 
    IF products_arr.getLength() == 0 THEN
-      MESSAGE "No products found for this supplier"
       CLOSE WINDOW viewProductsWindow
+      ERROR "No Products found for this Supplier"
       RETURN
    END IF
 
@@ -105,8 +105,8 @@ FUNCTION view_products_for_category(cat_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewProductsWindow AT 5,5 WITH FORM "products"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewProductsWindow WITH FORM "products"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
@@ -114,8 +114,8 @@ FUNCTION view_products_for_category(cat_id)
    CALL load_products(where_clause)
 
    IF products_arr.getLength() == 0 THEN
-      MESSAGE "No products found for this category"
       CLOSE WINDOW viewProductsWindow
+      ERROR "No Products found for this Category"
       RETURN
    END IF
 
@@ -542,8 +542,8 @@ FUNCTION product_lookup()
    DEFINE prod_id LIKE products.productid
    DEFINE prod_name LIKE products.productname
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "products"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "products"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()

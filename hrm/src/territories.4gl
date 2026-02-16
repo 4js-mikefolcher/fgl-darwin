@@ -22,15 +22,15 @@ FUNCTION view_territory(terr_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewTerritoryWindow AT 5,5 WITH FORM "territories"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewTerritoryWindow WITH FORM "territories"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " territories.territoryid = '", terr_id CLIPPED, "'"
    CALL load_territories(where_clause)
 
    IF territories_arr.getLength() == 0 THEN
-      ERROR "Territory not found"
       CLOSE WINDOW viewTerritoryWindow
+      ERROR "Territory not found"
       RETURN
    END IF
 
@@ -64,15 +64,15 @@ FUNCTION view_territories_for_region(reg_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewTerritoriesWindow AT 5,5 WITH FORM "territories"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewTerritoriesWindow WITH FORM "territories"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " territories.regionid = ", reg_id
    CALL load_territories(where_clause)
 
    IF territories_arr.getLength() == 0 THEN
-      MESSAGE "No territories found for this region"
       CLOSE WINDOW viewTerritoriesWindow
+      ERROR "No Territories found for this Region"
       RETURN
    END IF
 
@@ -96,15 +96,15 @@ FUNCTION empl_by_terr(terr_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewEmployeesWindow AT 5,5 WITH FORM "employees"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewEmployeesWindow WITH FORM "employees"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " employees.employeeid IN (SELECT employeeid FROM employeeterritories WHERE territoryid = '", terr_id CLIPPED, "')"
    CALL load_employees_ext(where_clause)
 
    IF get_employees_count() == 0 THEN
-      MESSAGE "No employees found for this territory"
       CLOSE WINDOW viewEmployeesWindow
+      ERROR "No Employees found for this Territory"
       RETURN
    END IF
 
@@ -237,8 +237,8 @@ FUNCTION territories_lookup()
    DEFINE territories_id LIKE territories.territoryid
    DEFINE territories_desc LIKE territories.territorydescription
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "territories"
-      ATTRIBUTES(BORDER)
+   OPEN WINDOW lookupWindow WITH FORM "territories"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL populate_region_combo()
    CALL territories_lookup_menu()

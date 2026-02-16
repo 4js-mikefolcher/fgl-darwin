@@ -28,8 +28,8 @@ FUNCTION view_details_for_order(order_id)
    DEFINE order_id LIKE order_details.orderid
    DEFINE where_clause VARCHAR(500)
 
-   OPEN WINDOW subWindow AT 5,5 WITH FORM "order_details"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW subWindow WITH FORM "order_details"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET skip_query = TRUE
    LET default_order_id = order_id
@@ -330,11 +330,9 @@ END FUNCTION
 -- Purpose : Delete an existing order detail record
 -- =====================================================================
 FUNCTION delete_order_details()
-    DEFINE answer CHAR(1)
 
     LET int_flag = FALSE
-    PROMPT "Are you sure you want to delete this record? (Y/N)" FOR answer
-    IF answer != "Y" THEN
+    IF NOT confirm_delete() THEN
         ERROR "Order detail delete canceled"
         LET int_flag = TRUE
         RETURN

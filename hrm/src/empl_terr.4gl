@@ -18,10 +18,19 @@ DEFINE contrl_empl_id LIKE employees.employeeid
 FUNCTION terr_by_empl(employ_id)
    DEFINE employ_id LIKE employees.employeeid
 
-   OPEN WINDOW subw1 AT 5,5 WITH FORM "empl_terr"
+   OPEN WINDOW subw1 WITH FORM "empl_terr"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET contrl_empl_id = employ_id
    CALL load_empl_terr_by_id(employ_id)
+
+   IF empl_terr_arr.getLength() == 0 THEN
+      LET contrl_empl_id = 0
+      CLOSE WINDOW subw1
+      ERROR "No Territories found for this Employee"
+      RETURN
+   END IF
+
    CALL manage_empl_terr()
    LET contrl_empl_id = 0
 

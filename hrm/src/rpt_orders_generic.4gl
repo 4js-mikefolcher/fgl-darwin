@@ -53,6 +53,7 @@ FUNCTION run_orders_generic()
    LET done = FALSE
 
    OPEN WINDOW rptGenericWindow WITH FORM "rpt_orders_generic"
+      ATTRIBUTES(STYLE="modulewindow")
 
    WHILE NOT done
       LET int_flag = FALSE

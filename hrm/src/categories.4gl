@@ -28,15 +28,15 @@ FUNCTION view_category(cat_id)
       RETURN
    END IF
 
-   OPEN WINDOW viewCategoryWindow AT 5,5 WITH FORM "categories"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW viewCategoryWindow WITH FORM "categories"
+      ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " categories.categoryid = ", cat_id
    CALL load_categories(where_clause)
 
    IF categories_arr.getLength() == 0 THEN
-      ERROR "Category not found"
       CLOSE WINDOW viewCategoryWindow
+      ERROR "Category not found"
       RETURN
    END IF
 
@@ -356,8 +356,8 @@ FUNCTION category_lookup()
    DEFINE cat_id LIKE categories.categoryid
    DEFINE cat_name LIKE categories.categoryname
 
-   OPEN WINDOW lookupWindow AT 5,5 WITH FORM "categories"
-      ATTRIBUTES(BORDER, MESSAGE LINE LAST, ERROR LINE LAST)
+   OPEN WINDOW lookupWindow WITH FORM "categories"
+      ATTRIBUTES(STYLE="modulewindow")
 
    CALL category_lookup_menu()
       RETURNING cat_id, cat_name
