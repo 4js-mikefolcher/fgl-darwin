@@ -28,7 +28,7 @@ SCREEN SIZE 25 BY 80
 }
 
 ATTRIBUTES
-supplierid = formonly.supplierid TYPE SMALLINT;
+supplierid = formonly.supplierid TYPE INTEGER, DEFAULT=0, NOENTRY;
 companyname = formonly.companyname TYPE VARCHAR;
 contactname = formonly.contactname TYPE VARCHAR;
 contacttitle = formonly.contacttitle TYPE VARCHAR;

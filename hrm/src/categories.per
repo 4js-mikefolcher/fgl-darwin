@@ -30,7 +30,7 @@ SCREEN SIZE 25 BY 80
 }
 
 ATTRIBUTES
-categoryid = formonly.categoryid TYPE SMALLINT;
+categoryid = formonly.categoryid TYPE INTEGER, DEFAULT=0, NOENTRY;
 categoryname = formonly.categoryname TYPE VARCHAR;
 description = formonly.description TYPE VARCHAR;
 

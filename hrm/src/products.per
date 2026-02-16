@@ -28,7 +28,7 @@ SCREEN SIZE 25 BY 80
 }
 
 ATTRIBUTES
-productid = formonly.productid TYPE SMALLINT;
+productid = formonly.productid TYPE INTEGER, DEFAULT=0, NOENTRY;
 productname = formonly.productname TYPE VARCHAR;
 supplierid = formonly.supplierid TYPE SMALLINT;
 suppliername = formonly.suppliername TYPE VARCHAR, NOENTRY;

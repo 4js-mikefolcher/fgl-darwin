@@ -385,7 +385,10 @@ END FUNCTION
 
 FUNCTION insert_curr_region()
 
-   INSERT INTO region VALUES (curr_region.*)
+   INSERT INTO region (regionid, regiondescription)
+      VALUES (DEFAULT, curr_region.regiondescription)
+   LET curr_region.regionid = sqlca.sqlerrd[2]
+   CALL display_curr_region()
 
 END FUNCTION
 
@@ -443,12 +446,11 @@ FUNCTION validate_region(mode)
    DEFINE mode CHAR(1)
    DEFINE regionExists SMALLINT
 
-   SELECT 1 INTO regionExists FROM region WHERE region.regionid = curr_region.regionid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Region ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Region ID already exists"
+   IF mode == "C" THEN
+      SELECT 1 INTO regionExists FROM region WHERE region.regionid = curr_region.regionid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Region ID is not found"
+      END IF
    END IF
    IF curr_region.regiondescription IS NULL OR LENGTH(curr_region.regiondescription) == 0 THEN
       RETURN FALSE, "Region Description is required"

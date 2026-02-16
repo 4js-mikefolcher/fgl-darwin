@@ -28,7 +28,7 @@ SCREEN SIZE 25 BY 80
 }
 
 ATTRIBUTES
-stateid = formonly.stateid TYPE SMALLINT;
+stateid = formonly.stateid TYPE INTEGER, DEFAULT=0, NOENTRY;
 statename = formonly.statename TYPE VARCHAR;
 stateabbr = formonly.stateabbr TYPE VARCHAR;
 stateregion = formonly.stateregion TYPE VARCHAR;

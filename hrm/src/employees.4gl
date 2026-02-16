@@ -490,7 +490,7 @@ FUNCTION insertCurrentRec()
       photopath,
       notes)
    VALUES
-      (currentRec.employeeid,
+      (DEFAULT,
       currentRec.lastname,
       currentRec.firstname,
       currentRec.title,
@@ -507,6 +507,8 @@ FUNCTION insertCurrentRec()
       currentRec.reportsto,
       currentRec.photopath,
       currentRec.notes)
+   LET currentRec.employeeid = sqlca.sqlerrd[2]
+   CALL displayCurrentRec()
 
 END FUNCTION #insertCurrentRec
 
@@ -544,12 +546,11 @@ FUNCTION employeeValidation(mode)
    DEFINE employeeExists SMALLINT
    DEFINE fullname VARCHAR(32)
 
-   SELECT 1 INTO employeeExists FROM employees WHERE employees.employeeid = currentRec.employeeid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Employee ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Employee ID already exists"
+   IF mode == "C" THEN
+      SELECT 1 INTO employeeExists FROM employees WHERE employees.employeeid = currentRec.employeeid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Employee ID is not found"
+      END IF
    END IF
 
    IF currentRec.firstname IS NULL OR LENGTH(currentRec.firstname) == 0 THEN

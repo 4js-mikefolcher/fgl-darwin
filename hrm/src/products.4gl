@@ -527,10 +527,12 @@ FUNCTION insert_curr_products()
    INSERT INTO products (productid, productname, supplierid, categoryid,
                          quantityperunit, unitprice, unitsinstock, unitsonorder,
                          reorderlevel, discontinued)
-      VALUES (curr_products.productid, curr_products.productname, curr_products.supplierid,
+      VALUES (DEFAULT, curr_products.productname, curr_products.supplierid,
               curr_products.categoryid, curr_products.quantityperunit, curr_products.unitprice,
               curr_products.unitsinstock, curr_products.unitsonorder, curr_products.reorderlevel,
               curr_products.discontinued)
+   LET curr_products.productid = sqlca.sqlerrd[2]
+   CALL display_curr_products()
 
 END FUNCTION
 
@@ -598,15 +600,11 @@ FUNCTION validate_products(mode)
    DEFINE supplier_name LIKE suppliers.companyname
    DEFINE category_name LIKE categories.categoryname
 
-   SELECT 1 INTO productExists FROM products WHERE products.productid = curr_products.productid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Product ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Product ID already exists"
-   END IF
-   IF curr_products.productid IS NULL THEN
-      RETURN FALSE, "Product ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO productExists FROM products WHERE products.productid = curr_products.productid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Product ID is not found"
+      END IF
    END IF
    IF curr_products.productname IS NULL OR LENGTH(curr_products.productname) == 0 THEN
       RETURN FALSE, "Product Name is required"

@@ -26,7 +26,7 @@ SCREEN SIZE 25 BY 80
 }
 
 ATTRIBUTES
-orderid = formonly.orderid TYPE SMALLINT;
+orderid = formonly.orderid TYPE INTEGER, DEFAULT=0, NOENTRY;
 customerid = formonly.customerid TYPE CHAR;
 customername = formonly.customername, NOENTRY;
 employeeid = formonly.employeeid TYPE SMALLINT;
