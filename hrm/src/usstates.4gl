@@ -237,7 +237,9 @@ END FUNCTION
 FUNCTION insert_curr_usstates()
 
    INSERT INTO usstates (stateid, statename, stateabbr, stateregion)
-      VALUES (curr_usstates.stateid, curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion)
+      VALUES (DEFAULT, curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion)
+   LET curr_usstates.stateid = sqlca.sqlerrd[2]
+   CALL display_curr_usstates()
 
 END FUNCTION
 
@@ -284,15 +286,11 @@ FUNCTION validate_usstates(mode)
    DEFINE mode CHAR(1)
    DEFINE stateExists SMALLINT
 
-   SELECT 1 INTO stateExists FROM usstates WHERE usstates.stateid = curr_usstates.stateid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "State ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "State ID already exists"
-   END IF
-   IF curr_usstates.stateid IS NULL THEN
-      RETURN FALSE, "State ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO stateExists FROM usstates WHERE usstates.stateid = curr_usstates.stateid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "State ID is not found"
+      END IF
    END IF
 
    RETURN TRUE, "Okay"

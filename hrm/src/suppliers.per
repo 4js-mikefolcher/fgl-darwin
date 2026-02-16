@@ -41,7 +41,7 @@ LAYOUT (TEXT="Suppliers Management")
 END
 
 ATTRIBUTES
-  supplierid = formonly.supplierid TYPE SMALLINT;
+  supplierid = formonly.supplierid TYPE INTEGER, DEFAULT=0, NOENTRY;
   companyname = formonly.companyname TYPE VARCHAR;
   contactname = formonly.contactname TYPE VARCHAR;
   contacttitle = formonly.contacttitle TYPE VARCHAR;
@@ -53,7 +53,7 @@ ATTRIBUTES
   phone = formonly.phone TYPE VARCHAR;
   fax = formonly.fax TYPE VARCHAR;
   TEXTEDIT homepage = formonly.homepage TYPE VARCHAR;
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_suppliers(formonly.supplierid, formonly.companyname, formonly.contactname,

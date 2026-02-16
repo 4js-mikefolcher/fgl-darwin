@@ -299,10 +299,12 @@ FUNCTION insert_curr_suppliers()
 
    INSERT INTO suppliers (supplierid, companyname, contactname, contacttitle,
                           address, city, region, postalcode, country, phone, fax, homepage)
-      VALUES (curr_suppliers.supplierid, curr_suppliers.companyname, curr_suppliers.contactname,
+      VALUES (DEFAULT, curr_suppliers.companyname, curr_suppliers.contactname,
               curr_suppliers.contacttitle, curr_suppliers.address, curr_suppliers.city,
               curr_suppliers.region, curr_suppliers.postalcode, curr_suppliers.country,
               curr_suppliers.phone, curr_suppliers.fax, curr_suppliers.homepage)
+   LET curr_suppliers.supplierid = sqlca.sqlerrd[2]
+   CALL display_curr_suppliers()
 
 END FUNCTION
 
@@ -357,15 +359,11 @@ FUNCTION validate_suppliers(mode)
    DEFINE mode CHAR(1)
    DEFINE supplierExists SMALLINT
 
-   SELECT 1 INTO supplierExists FROM suppliers WHERE suppliers.supplierid = curr_suppliers.supplierid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Supplier ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Supplier ID already exists"
-   END IF
-   IF curr_suppliers.supplierid IS NULL THEN
-      RETURN FALSE, "Supplier ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO supplierExists FROM suppliers WHERE suppliers.supplierid = curr_suppliers.supplierid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Supplier ID is not found"
+      END IF
    END IF
    IF curr_suppliers.companyname IS NULL OR LENGTH(curr_suppliers.companyname) == 0 THEN
       RETURN FALSE, "Company Name is required"

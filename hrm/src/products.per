@@ -39,7 +39,7 @@ LAYOUT (TEXT="Products Management")
 END
 
 ATTRIBUTES
-  productid = formonly.productid TYPE SMALLINT;
+  productid = formonly.productid TYPE INTEGER, DEFAULT=0, NOENTRY;
   productname = formonly.productname TYPE VARCHAR;
   COMBOBOX supplierid = formonly.supplierid TYPE SMALLINT;
   COMBOBOX categoryid = formonly.categoryid TYPE SMALLINT;
@@ -49,7 +49,7 @@ ATTRIBUTES
   unitsonorder = formonly.unitsonorder TYPE SMALLINT;
   reorderlevel = formonly.reorderlevel TYPE SMALLINT;
   CHECKBOX discontinued = formonly.discontinued TYPE INTEGER, VALUECHECKED=1, VALUEUNCHECKED=0, TEXT="Discontinued";
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_products(formonly.productid, formonly.productname, formonly.supplierid,

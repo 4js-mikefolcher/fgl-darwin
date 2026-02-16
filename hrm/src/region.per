@@ -31,7 +31,7 @@ LAYOUT (TEXT="Region Management")
 END
 
 ATTRIBUTES
-  regionid = formonly.regionid TYPE INTEGER;
+  regionid = FORMONLY.regionid TYPE INTEGER, DEFAULT=0, NOENTRY, TITLE="Region ID";
   regiondescription = formonly.regiondescription TYPE VARCHAR;
 END
 

@@ -81,6 +81,23 @@ fgl-darwin/
 | `rpt_orders_by_product` | Orders grouped by product/category | Category name, product name |
 | `rpt_orders_by_daterange` | Orders within a date range | Order date (DATEEDIT) |
 
+### Reports
+
+| Module | Description |
+|--------|-------------|
+| `rpt_orders_generic` | Generic order report |
+| `rpt_orders_by_customer` | Orders grouped by customer |
+| `rpt_orders_by_employee` | Orders grouped by employee |
+| `rpt_orders_by_product` | Orders grouped by product |
+| `rpt_orders_by_daterange` | Orders filtered by date range |
+
+### GUI Menu
+
+| Module | Description |
+|--------|-------------|
+| `bdl_menu` | GUI tree menu with toolbar, 6 root categories, 16 leaf programs |
+| `ifx_menu` | Legacy Informix-style character menu |
+
 ## Features
 
 ### CRUD Operations
@@ -154,6 +171,12 @@ The application uses the Northwind database with the following tables:
 - Genero BDL 6.00.02+ (`fgl2p` compiler, `fglform` form compiler)
 - PostgreSQL or Informix database with Northwind schema
 
+### Create the Database
+```bash
+cd dbs
+fglrun northwind_pgs_84x.42r
+```
+
 ### Compile All Modules
 ```bash
 cd hrm
@@ -171,10 +194,15 @@ make rebuild
 
 ## Running
 
-After compilation, executables are located in `hrm/bin/`. Run a module using:
+After compilation, executables are located in `hrm/bin/`. Run the GUI menu or individual modules:
 
 ```bash
 cd hrm/bin
+
+# GUI tree menu (recommended entry point)
+fglrun bdl_menu.42r
+
+# Individual modules
 fglrun main_employees.42r
 fglrun main_customers.42r
 fglrun main_products.42r
@@ -183,6 +211,10 @@ fglrun main_rpt_orders_by_employee.42r
 fglrun main_rpt_orders_by_product.42r
 fglrun main_rpt_orders_by_daterange.42r
 # etc.
+
+# Reports
+fglrun main_rpt_orders_by_customer.42r
+fglrun main_rpt_orders_by_employee.42r
 ```
 
 ## File Types
@@ -230,6 +262,15 @@ Each report has three files:
 ## Documentation
 
 See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for detailed documentation of the modernization process, code patterns, technical decisions, and lessons learned.
+
+### Window Styles
+- **Main windows** — Use the base `Window` style (no action panels or ring menus)
+- **Module windows** — Secondary windows opened from entity modules use `Window.modulewindow` (modal, no action panels or ring menus)
+- **Report viewer** — Report output windows use `Window.reportviewer` style
+
+## Documentation
+
+See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for a detailed account of all modernization phases, patterns, code examples, and technical decisions made during the conversion from legacy Informix 4GL to modern Genero BDL.
 
 ## License
 

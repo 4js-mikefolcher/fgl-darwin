@@ -609,11 +609,13 @@ FUNCTION insert_curr_orders()
    INSERT INTO orders (orderid, customerid, employeeid, orderdate, requireddate, shippeddate,
                        shipvia, freight, shipname, shipaddress, shipcity, shipregion,
                        shippostalcode, shipcountry)
-      VALUES (curr_orders.orderid, curr_orders.customerid, curr_orders.employeeid,
+      VALUES (DEFAULT, curr_orders.customerid, curr_orders.employeeid,
               curr_orders.orderdate, curr_orders.requireddate, curr_orders.shippeddate,
               curr_orders.shipvia, curr_orders.freight, curr_orders.shipname,
               curr_orders.shipaddress, curr_orders.shipcity, curr_orders.shipregion,
               curr_orders.shippostalcode, curr_orders.shipcountry)
+   LET curr_orders.orderid = sqlca.sqlerrd[2]
+   CALL display_curr_orders()
 
 END FUNCTION
 
@@ -686,15 +688,11 @@ FUNCTION validate_orders(mode)
    DEFINE validateStatus SMALLINT
    DEFINE errorMessage CHAR(60)
 
-   SELECT 1 INTO ordersExists FROM orders WHERE orders.orderid = curr_orders.orderid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Order ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Order ID already exists"
-   END IF
-   IF curr_orders.orderid IS NULL THEN
-      RETURN FALSE, "Order ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO ordersExists FROM orders WHERE orders.orderid = curr_orders.orderid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Order ID is not found"
+      END IF
    END IF
    IF curr_orders.orderdate IS NULL THEN
       RETURN FALSE, "Order Date is required"

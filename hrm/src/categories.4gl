@@ -285,7 +285,9 @@ END FUNCTION
 FUNCTION insert_curr_categories()
 
    INSERT INTO categories (categoryid, categoryname, description)
-      VALUES (curr_categories.categoryid, curr_categories.categoryname, curr_categories.description)
+      VALUES (DEFAULT, curr_categories.categoryname, curr_categories.description)
+   LET curr_categories.categoryid = sqlca.sqlerrd[2]
+   CALL display_curr_categories()
 
 END FUNCTION
 
@@ -331,15 +333,11 @@ FUNCTION validate_categories(mode)
    DEFINE mode CHAR(1)
    DEFINE categoryExists SMALLINT
 
-   SELECT 1 INTO categoryExists FROM categories WHERE categories.categoryid = curr_categories.categoryid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Category ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Category ID already exists"
-   END IF
-   IF curr_categories.categoryid IS NULL THEN
-      RETURN FALSE, "Category ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO categoryExists FROM categories WHERE categories.categoryid = curr_categories.categoryid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Category ID is not found"
+      END IF
    END IF
    IF curr_categories.categoryname IS NULL OR LENGTH(curr_categories.categoryname) == 0 THEN
       RETURN FALSE, "Category Name is required"

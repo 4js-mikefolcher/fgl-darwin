@@ -16,7 +16,7 @@ FUNCTION db_create_tables()
     WHENEVER ERROR STOP
 
     EXECUTE IMMEDIATE "CREATE TABLE categories (
-        categoryid SMALLINT NOT NULL PRIMARY KEY,
+        categoryid SERIAL NOT NULL PRIMARY KEY,
         categoryname VARCHAR(15) NOT NULL,
         description VARCHAR(1000),
         picture BYTE)"
@@ -39,7 +39,7 @@ FUNCTION db_create_tables()
         phone VARCHAR(24),
         fax VARCHAR(24))"
     EXECUTE IMMEDIATE "CREATE TABLE employees (
-        employeeid SMALLINT NOT NULL,
+        employeeid SERIAL NOT NULL PRIMARY KEY,
         lastname VARCHAR(20) NOT NULL,
         firstname VARCHAR(10) NOT NULL,
         title VARCHAR(30),
@@ -55,25 +55,25 @@ FUNCTION db_create_tables()
         extension VARCHAR(4),
         photo BYTE,
         notes VARCHAR(1000),
-        reportsto SMALLINT,
+        reportsto INTEGER,
         photopath VARCHAR(255))"
     EXECUTE IMMEDIATE "CREATE TABLE employeeterritories (
-        employeeid SMALLINT NOT NULL,
+        employeeid INTEGER NOT NULL,
         territoryid VARCHAR(20) NOT NULL)"
     EXECUTE IMMEDIATE "CREATE TABLE order_details (
-        orderid SMALLINT NOT NULL,
-        productid SMALLINT NOT NULL,
+        orderid INTEGER NOT NULL,
+        productid INTEGER NOT NULL,
         unitprice FLOAT NOT NULL,
         quantity SMALLINT NOT NULL,
         discount FLOAT NOT NULL)"
     EXECUTE IMMEDIATE "CREATE TABLE orders (
-        orderid SMALLINT NOT NULL,
+        orderid SERIAL NOT NULL PRIMARY KEY,
         customerid CHAR(20),
-        employeeid SMALLINT,
+        employeeid INTEGER,
         orderdate DATE,
         requireddate DATE,
         shippeddate DATE,
-        shipvia SMALLINT,
+        shipvia INTEGER,
         freight SMALLFLOAT,
         shipname VARCHAR(40),
         shipaddress VARCHAR(60),
@@ -82,10 +82,10 @@ FUNCTION db_create_tables()
         shippostalcode VARCHAR(10),
         shipcountry VARCHAR(15))"
     EXECUTE IMMEDIATE "CREATE TABLE products (
-        productid SMALLINT NOT NULL,
+        productid SERIAL NOT NULL PRIMARY KEY,
         productname VARCHAR(40) NOT NULL,
-        supplierid SMALLINT,
-        categoryid SMALLINT,
+        supplierid INTEGER,
+        categoryid INTEGER,
         quantityperunit VARCHAR(20),
         unitprice SMALLFLOAT,
         unitsinstock SMALLINT,
@@ -93,18 +93,18 @@ FUNCTION db_create_tables()
         reorderlevel SMALLINT,
         discontinued INTEGER NOT NULL)"
     EXECUTE IMMEDIATE "CREATE TABLE region (
-        regionid SMALLINT NOT NULL,
+        regionid SERIAL NOT NULL PRIMARY KEY,
         regiondescription CHAR(20) NOT NULL)"
     EXECUTE IMMEDIATE "CREATE TABLE shippers (
-        shipperid SMALLINT NOT NULL,
+        shipperid SERIAL NOT NULL PRIMARY KEY,
         companyname VARCHAR(40) NOT NULL,
         phone VARCHAR(24))"
     EXECUTE IMMEDIATE "CREATE TABLE shippers_tmp (
-        shipperid SMALLINT NOT NULL,
+        shipperid SERIAL NOT NULL PRIMARY KEY,
         companyname VARCHAR(40) NOT NULL,
         phone VARCHAR(24))"
     EXECUTE IMMEDIATE "CREATE TABLE suppliers (
-        supplierid SMALLINT NOT NULL,
+        supplierid SERIAL NOT NULL PRIMARY KEY,
         companyname VARCHAR(40) NOT NULL,
         contactname VARCHAR(30),
         contacttitle VARCHAR(30),
@@ -119,13 +119,12 @@ FUNCTION db_create_tables()
     EXECUTE IMMEDIATE "CREATE TABLE territories (
         territoryid VARCHAR(20) NOT NULL,
         territorydescription CHAR(20) NOT NULL,
-        regionid SMALLINT NOT NULL)"
+        regionid INTEGER NOT NULL)"
     EXECUTE IMMEDIATE "CREATE TABLE usstates (
-        stateid SMALLINT NOT NULL,
+        stateid SERIAL NOT NULL PRIMARY KEY,
         statename VARCHAR(100),
         stateabbr VARCHAR(2),
         stateregion VARCHAR(50))"
-
 END FUNCTION
 
 #+ Drop all tables from database.

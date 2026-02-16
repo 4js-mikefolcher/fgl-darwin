@@ -269,7 +269,9 @@ END FUNCTION
 FUNCTION insert_curr_shippers()
 
    INSERT INTO shippers (shipperid, companyname, phone)
-      VALUES (curr_shippers.shipperid, curr_shippers.companyname, curr_shippers.phone)
+      VALUES (DEFAULT, curr_shippers.companyname, curr_shippers.phone)
+   LET curr_shippers.shipperid = sqlca.sqlerrd[2]
+   CALL display_curr_shippers()
 
 END FUNCTION
 
@@ -315,15 +317,11 @@ FUNCTION validate_shippers(mode)
    DEFINE mode CHAR(1)
    DEFINE shipperExists SMALLINT
 
-   SELECT 1 INTO shipperExists FROM shippers WHERE shippers.shipperid = curr_shippers.shipperid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Shipper ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Shipper ID already exists"
-   END IF
-   IF curr_shippers.shipperid IS NULL THEN
-      RETURN FALSE, "Shipper ID is required"
+   IF mode == "C" THEN
+      SELECT 1 INTO shipperExists FROM shippers WHERE shippers.shipperid = curr_shippers.shipperid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         RETURN FALSE, "Shipper ID is not found"
+      END IF
    END IF
    IF curr_shippers.companyname IS NULL OR LENGTH(curr_shippers.companyname) == 0 THEN
       RETURN FALSE, "Company Name is required"

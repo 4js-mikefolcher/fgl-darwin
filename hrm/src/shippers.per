@@ -32,10 +32,11 @@ LAYOUT (TEXT="Shippers Management")
 END
 
 ATTRIBUTES
+  shipperid = formonly.shipperid TYPE INTEGER, DEFAULT=0, NOENTRY;
   shipperid = formonly.shipperid TYPE SMALLINT;
   companyname = formonly.companyname TYPE VARCHAR;
   phone = formonly.phone TYPE VARCHAR;
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_shippers(formonly.shipperid, formonly.companyname, formonly.phone);

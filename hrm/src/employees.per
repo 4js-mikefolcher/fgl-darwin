@@ -57,7 +57,7 @@ LAYOUT (TEXT="Employee Management")
 END
 
 ATTRIBUTES
-  employeeid = formonly.employeeid TYPE INTEGER;
+  employeeid = formonly.employeeid TYPE INTEGER, DEFAULT=0, NOENTRY;
   lastname = formonly.lastname TYPE VARCHAR;
   firstname = formonly.firstname TYPE VARCHAR;
   title = formonly.title TYPE VARCHAR;
@@ -75,7 +75,7 @@ ATTRIBUTES
   fullname = formonly.fullname TYPE VARCHAR, NOENTRY;
   photopath = formonly.photopath TYPE VARCHAR;
   TEXTEDIT notes = formonly.notes TYPE TEXT, SCROLL;
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_employees(formonly.employeeid, formonly.lastname,

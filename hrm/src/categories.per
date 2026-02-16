@@ -36,10 +36,10 @@ LAYOUT (TEXT="Categories Management")
 END
 
 ATTRIBUTES
-  categoryid = formonly.categoryid TYPE SMALLINT;
+  categoryid = formonly.categoryid TYPE INTEGER, DEFAULT=0, NOENTRY;
   categoryname = formonly.categoryname TYPE VARCHAR;
   TEXTEDIT description = formonly.description TYPE VARCHAR;
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_categories(formonly.categoryid, formonly.categoryname, formonly.description);

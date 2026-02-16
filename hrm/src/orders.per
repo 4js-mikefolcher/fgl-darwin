@@ -49,7 +49,7 @@ LAYOUT (TEXT="Order Management")
 END
 
 ATTRIBUTES
-  orderid = formonly.orderid TYPE SMALLINT;
+  orderid = formonly.orderid TYPE INTEGER, DEFAULT=0, NOENTRY;
   BUTTONEDIT customerid = formonly.customerid TYPE CHAR, ACTION=zoom_customer;
   customername = formonly.customername, NOENTRY;
   BUTTONEDIT employeeid = formonly.employeeid TYPE SMALLINT, ACTION=zoom_employee;
@@ -65,7 +65,7 @@ ATTRIBUTES
   shipregion = formonly.shipregion TYPE VARCHAR;
   shippostal = formonly.shippostalcode TYPE VARCHAR;
   shipcountry = formonly.shipcountry TYPE VARCHAR;
-END
+END --ATTRIBUTES
 
 INSTRUCTIONS
   SCREEN RECORD s_orders(formonly.orderid, formonly.customerid,
