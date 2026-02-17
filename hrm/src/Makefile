@@ -10,7 +10,7 @@ SRCCOMP = fgl2p
 
 # Source files
 FORMS = employees.per empl_terr.per region.per territories.per orders.per order_details.per \
-        categories.per customers.per products.per shippers.per suppliers.per usstates.per \
+        categories.per categories_list.per customers.per products.per shippers.per shippers_list.per suppliers.per suppliers_list.per usstates.per \
         rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
         rpt_orders_by_daterange.per rpt_orders_generic.per report_viewer.per bdl_menu.per
 
@@ -22,10 +22,13 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/orders.42f \
                $(BINDIR)/order_details.42f \
                $(BINDIR)/categories.42f \
+               $(BINDIR)/categories_list.42f \
                $(BINDIR)/customers.42f \
                $(BINDIR)/products.42f \
                $(BINDIR)/shippers.42f \
+               $(BINDIR)/shippers_list.42f \
                $(BINDIR)/suppliers.42f \
+               $(BINDIR)/suppliers_list.42f \
                $(BINDIR)/usstates.42f \
                $(BINDIR)/rpt_orders_by_customer.42f \
                $(BINDIR)/rpt_orders_by_employee.42f \
@@ -92,6 +95,10 @@ $(BINDIR)/categories.42f: categories.per
 	$(FORMCOMP) $<
 	mv categories.42f $(BINDIR)/
 
+$(BINDIR)/categories_list.42f: categories_list.per
+	$(FORMCOMP) $<
+	mv categories_list.42f $(BINDIR)/
+
 $(BINDIR)/customers.42f: customers.per
 	$(FORMCOMP) $<
 	mv customers.42f $(BINDIR)/
@@ -104,9 +111,17 @@ $(BINDIR)/shippers.42f: shippers.per
 	$(FORMCOMP) $<
 	mv shippers.42f $(BINDIR)/
 
+$(BINDIR)/shippers_list.42f: shippers_list.per
+	$(FORMCOMP) $<
+	mv shippers_list.42f $(BINDIR)/
+
 $(BINDIR)/suppliers.42f: suppliers.per
 	$(FORMCOMP) $<
 	mv suppliers.42f $(BINDIR)/
+
+$(BINDIR)/suppliers_list.42f: suppliers_list.per
+	$(FORMCOMP) $<
+	mv suppliers_list.42f $(BINDIR)/
 
 $(BINDIR)/usstates.42f: usstates.per
 	$(FORMCOMP) $<
@@ -251,10 +266,10 @@ region: $(BINDIR)/region.42f $(BINDIR)/main_region.42r
 territories: $(BINDIR)/territories.42f $(BINDIR)/main_territories.42r
 orders: $(BINDIR)/orders.42f $(BINDIR)/main_orders.42r
 order_details: $(BINDIR)/order_details.42f $(BINDIR)/main_order_details.42r
-categories: $(BINDIR)/categories.42f $(BINDIR)/main_categories.42r
+categories: $(BINDIR)/categories.42f $(BINDIR)/categories_list.42f $(BINDIR)/main_categories.42r
 customers: $(BINDIR)/customers.42f $(BINDIR)/main_customers.42r
 products: $(BINDIR)/products.42f $(BINDIR)/main_products.42r
-shippers: $(BINDIR)/shippers.42f $(BINDIR)/main_shippers.42r
+shippers: $(BINDIR)/shippers.42f $(BINDIR)/shippers_list.42f $(BINDIR)/main_shippers.42r
 suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
 

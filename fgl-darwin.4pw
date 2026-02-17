@@ -92,6 +92,7 @@
     <Application binaryName="main_categories" dependencies="-1764485507,1342077549" id="-1450945646" label="main_categories">
       <Configuration id="326131785" label="main_categories"/>
       <File filePath="hrm/src/categories.per"/>
+      <File filePath="hrm/src/categories_list.per"/>
       <File filePath="hrm/src/main_categories.4gl"/>
     </Application>
     <Application binaryName="main_customers" dependencies="-1764485507,1342077549" id="-277559114" label="main_customers">
@@ -133,11 +134,13 @@
       <Configuration id="-2088590197" label="main_shippers"/>
       <File filePath="hrm/src/main_shippers.4gl"/>
       <File filePath="hrm/src/shippers.per"/>
+      <File filePath="hrm/src/shippers_list.per"/>
     </Application>
     <Application binaryName="main_suppliers" dependencies="-1764485507,1342077549" id="1943732612" label="main_suppliers">
       <Configuration id="-538254021" label="main_suppliers"/>
       <File filePath="hrm/src/main_suppliers.4gl"/>
       <File filePath="hrm/src/suppliers.per"/>
+      <File filePath="hrm/src/suppliers_list.per"/>
     </Application>
     <Application binaryName="main_territories" dependencies="1342077549,-1764485507" id="-848542995" label="main_territories">
       <Configuration id="1042893489" label="main_territories"/>

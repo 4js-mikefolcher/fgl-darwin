@@ -112,6 +112,9 @@ FUNCTION submenu_categories()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_categories_view()
+              EXIT MENU
           COMMAND "Products" "View Products in this Category"
               CALL view_products_for_category(curr_categories.categoryid)
           COMMAND "Exit" "Quit operation"
@@ -122,6 +125,52 @@ FUNCTION submenu_categories()
    END WHILE
 
 END FUNCTION #submenu_categories
+
+FUNCTION list_categories_view()
+   DEFINE selectedIdx INTEGER
+
+   OPEN WINDOW listCategoriesWindow WITH FORM "categories_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", categories_arr.getLength() USING "<<<<<", " categories"
+
+   DISPLAY ARRAY categories_arr TO categories_list.*
+       ON ACTION add
+           CALL add_categories()
+           IF int_flag == FALSE THEN
+              CALL refresh_categories(categories_arr.getLength(), "A")
+           END IF
+       ON ACTION modify
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
+               CALL load_curr_categories(selectedIdx)
+               CALL edit_categories()
+               IF int_flag == FALSE THEN
+                   CALL refresh_categories(selectedIdx, "C")
+               END IF
+           ELSE
+               ERROR "Please select a category"
+           END IF
+       ON ACTION delete
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
+               CALL load_curr_categories(selectedIdx)
+               CALL delete_categories()
+               IF int_flag == FALSE THEN
+                   CALL refresh_categories(selectedIdx, "D")
+               END IF
+           ELSE
+               ERROR "Please select a category"
+           END IF
+       ON ACTION exit
+           EXIT DISPLAY
+       ON KEY (ESCAPE)
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listCategoriesWindow
+
+END FUNCTION #list_categories_view
 
 FUNCTION query_categories()
     DEFINE where_clause VARCHAR(500)

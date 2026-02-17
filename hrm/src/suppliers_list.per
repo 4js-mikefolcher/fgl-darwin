@@ -1,0 +1,51 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Suppliers List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  Company        Contact        Title    Address     City    Region  Zip   Country  Phone    Fax      Homepage
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    [c1 |c2            |c3            |c4      |c5         |c6    |c7     |c8   |c9      |c10     |c11     |c12     ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.supplierid TYPE INTEGER, NOENTRY;
+  c2 = formonly.companyname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.contactname TYPE VARCHAR, NOENTRY, SCROLL;
+  c4 = formonly.contacttitle TYPE VARCHAR, NOENTRY, SCROLL;
+  c5 = formonly.address TYPE VARCHAR, NOENTRY, SCROLL;
+  c6 = formonly.city TYPE VARCHAR, NOENTRY, SCROLL;
+  c7 = formonly.region TYPE VARCHAR, NOENTRY, SCROLL;
+  c8 = formonly.postalcode TYPE VARCHAR, NOENTRY, SCROLL;
+  c9 = formonly.country TYPE VARCHAR, NOENTRY, SCROLL;
+  c10 = formonly.phone TYPE VARCHAR, NOENTRY, SCROLL;
+  c11 = formonly.fax TYPE VARCHAR, NOENTRY, SCROLL;
+  c12 = formonly.homepage TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD suppliers_list[10](supplierid, companyname, contactname,
+    contacttitle, address, city, region, postalcode, country,
+    phone, fax, homepage);
+END

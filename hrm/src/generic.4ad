@@ -176,6 +176,11 @@
     comment="Launch the selected program"
     acceleratorName="Return" />
 
+  <ActionDefault name="list"
+    text="List"
+    image="fa-table"
+    comment="Switch to list view" />
+
   <ActionDefault name="exit"
     text="Exit"
     image="fa-power-off"

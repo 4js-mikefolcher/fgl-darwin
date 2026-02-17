@@ -121,6 +121,9 @@ FUNCTION submenu_suppliers()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_suppliers_view()
+              EXIT MENU
           COMMAND "Products" "View Products from this Supplier"
               CALL view_products_for_supplier(curr_suppliers.supplierid)
           COMMAND "Exit" "Quit operation"
@@ -131,6 +134,52 @@ FUNCTION submenu_suppliers()
    END WHILE
 
 END FUNCTION #submenu_suppliers
+
+FUNCTION list_suppliers_view()
+   DEFINE selectedIdx INTEGER
+
+   OPEN WINDOW listSuppliersWindow WITH FORM "suppliers_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", suppliers_arr.getLength() USING "<<<<<", " suppliers"
+
+   DISPLAY ARRAY suppliers_arr TO suppliers_list.*
+       ON ACTION add
+           CALL add_suppliers()
+           IF int_flag == FALSE THEN
+              CALL refresh_suppliers(suppliers_arr.getLength(), "A")
+           END IF
+       ON ACTION modify
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= suppliers_arr.getLength() THEN
+               CALL load_curr_suppliers(selectedIdx)
+               CALL edit_suppliers()
+               IF int_flag == FALSE THEN
+                   CALL refresh_suppliers(selectedIdx, "C")
+               END IF
+           ELSE
+               ERROR "Please select a supplier"
+           END IF
+       ON ACTION delete
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= suppliers_arr.getLength() THEN
+               CALL load_curr_suppliers(selectedIdx)
+               CALL delete_suppliers()
+               IF int_flag == FALSE THEN
+                   CALL refresh_suppliers(selectedIdx, "D")
+               END IF
+           ELSE
+               ERROR "Please select a supplier"
+           END IF
+       ON ACTION exit
+           EXIT DISPLAY
+       ON KEY (ESCAPE)
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listSuppliersWindow
+
+END FUNCTION #list_suppliers_view
 
 FUNCTION query_suppliers()
     DEFINE where_clause VARCHAR(500)

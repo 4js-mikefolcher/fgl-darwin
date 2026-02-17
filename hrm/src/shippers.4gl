@@ -104,6 +104,9 @@ FUNCTION submenu_shippers()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_shippers_view()
+              EXIT MENU
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
@@ -112,6 +115,52 @@ FUNCTION submenu_shippers()
    END WHILE
 
 END FUNCTION #submenu_shippers
+
+FUNCTION list_shippers_view()
+   DEFINE selectedIdx INTEGER
+
+   OPEN WINDOW listShippersWindow WITH FORM "shippers_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", shippers_arr.getLength() USING "<<<<<", " shippers"
+
+   DISPLAY ARRAY shippers_arr TO shippers_list.*
+       ON ACTION add
+           CALL add_shippers()
+           IF int_flag == FALSE THEN
+              CALL refresh_shippers(shippers_arr.getLength(), "A")
+           END IF
+       ON ACTION modify
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= shippers_arr.getLength() THEN
+               CALL load_curr_shippers(selectedIdx)
+               CALL edit_shippers()
+               IF int_flag == FALSE THEN
+                   CALL refresh_shippers(selectedIdx, "C")
+               END IF
+           ELSE
+               ERROR "Please select a shipper"
+           END IF
+       ON ACTION delete
+           LET selectedIdx = ARR_CURR()
+           IF selectedIdx >= 1 AND selectedIdx <= shippers_arr.getLength() THEN
+               CALL load_curr_shippers(selectedIdx)
+               CALL delete_shippers()
+               IF int_flag == FALSE THEN
+                   CALL refresh_shippers(selectedIdx, "D")
+               END IF
+           ELSE
+               ERROR "Please select a shipper"
+           END IF
+       ON ACTION exit
+           EXIT DISPLAY
+       ON KEY (ESCAPE)
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listShippersWindow
+
+END FUNCTION #list_shippers_view
 
 FUNCTION query_shippers()
     DEFINE where_clause VARCHAR(500)
