@@ -104,6 +104,7 @@
     <Application binaryName="main_empl_terr" dependencies="1342077549,-1764485507" id="-1244529906" label="main_empl_terr">
       <Configuration id="765162483" label="main_empl_terr"/>
       <File filePath="hrm/src/empl_terr.per"/>
+      <File filePath="hrm/src/empl_terr_list.per"/>
       <File filePath="hrm/src/main_empl_terr.4gl"/>
     </Application>
     <Application binaryName="main_employees" dependencies="1342077549,-1764485507" id="-1831871049" label="main_employees">

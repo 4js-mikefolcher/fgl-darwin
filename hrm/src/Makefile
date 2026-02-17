@@ -9,7 +9,7 @@ FORMCOMP = fglform
 SRCCOMP = fgl2p
 
 # Source files
-FORMS = employees.per employees_list.per empl_terr.per region.per region_list.per territories.per territories_list.per \
+FORMS = employees.per employees_list.per empl_terr.per empl_terr_list.per region.per region_list.per territories.per territories_list.per \
         orders.per orders_list.per order_details.per order_details_list.per \
         categories.per categories_list.per customers.per customers_list.per \
         products.per products_list.per shippers.per shippers_list.per \
@@ -21,6 +21,7 @@ FORMS = employees.per employees_list.per empl_terr.per region.per region_list.pe
 FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/employees_list.42f \
                $(BINDIR)/empl_terr.42f \
+               $(BINDIR)/empl_terr_list.42f \
                $(BINDIR)/region.42f \
                $(BINDIR)/region_list.42f \
                $(BINDIR)/territories.42f \
@@ -89,6 +90,10 @@ $(BINDIR)/employees_list.42f: employees_list.per
 $(BINDIR)/empl_terr.42f: empl_terr.per
 	$(FORMCOMP) $<
 	mv empl_terr.42f $(BINDIR)/
+
+$(BINDIR)/empl_terr_list.42f: empl_terr_list.per
+	$(FORMCOMP) $<
+	mv empl_terr_list.42f $(BINDIR)/
 
 $(BINDIR)/region.42f: region.per
 	$(FORMCOMP) $<
@@ -304,7 +309,7 @@ rebuild: clean all
 
 # Individual targets for convenience
 employees: $(BINDIR)/employees.42f $(BINDIR)/employees_list.42f $(BINDIR)/main_employees.42r
-empl_terr: $(BINDIR)/empl_terr.42f $(BINDIR)/main_empl_terr.42r
+empl_terr: $(BINDIR)/empl_terr.42f $(BINDIR)/empl_terr_list.42f $(BINDIR)/main_empl_terr.42r
 region: $(BINDIR)/region.42f $(BINDIR)/region_list.42f $(BINDIR)/main_region.42r
 territories: $(BINDIR)/territories.42f $(BINDIR)/territories_list.42f $(BINDIR)/main_territories.42r
 orders: $(BINDIR)/orders.42f $(BINDIR)/orders_list.42f $(BINDIR)/main_orders.42r

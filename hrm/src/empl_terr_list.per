@@ -1,0 +1,47 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Employee Territories List")
+  VBOX
+    TABLE
+    {
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+      [emplid   |fullname                 |terrid            |territorydescription     |regiondesc               ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  emplid = formonly.employeeid TYPE SMALLINT, TITLE="Employee ID";
+  fullname = formonly.fullname TYPE VARCHAR, SCROLL, TITLE="Employee Name";
+  terrid = formonly.territoryid TYPE VARCHAR, TITLE="Territory ID";
+  territorydescription = formonly.territorydescription TYPE VARCHAR, SCROLL, TITLE="Territory";
+  regiondesc = formonly.regiondescription TYPE VARCHAR, SCROLL, TITLE="Region";
+END
+
+INSTRUCTIONS
+  SCREEN RECORD empl_terr_list[10](
+    formonly.employeeid,
+    formonly.fullname,
+    formonly.territoryid,
+    formonly.territorydescription,
+    formonly.regiondescription);
+END

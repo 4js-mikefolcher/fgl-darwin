@@ -4,7 +4,14 @@ TOOLBAR
   ITEM query
   ITEM add
   SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
   AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM list
   SEPARATOR
   ITEM delete
   SEPARATOR
@@ -13,14 +20,14 @@ END
 
 LAYOUT (TEXT="Employee Territories")
   VBOX
-    GROUP (TEXT="Employee Territory Assignments", STYLE="box")
-      TABLE
+    GROUP (TEXT="Employee Territory Assignment", STYLE="box")
+      GRID
       {
-        [emplid   |fullname            |terrid   |territorydescription|regiondesc ]
-        [emplid   |fullname            |terrid   |territorydescription|regiondesc ]
-        [emplid   |fullname            |terrid   |territorydescription|regiondesc ]
-        [emplid   |fullname            |terrid   |territorydescription|regiondesc ]
-        [emplid   |fullname            |terrid   |territorydescription|regiondesc ]
+        Employee ID:            [emplid          ]
+        Employee Name:          [fullname                              ]
+        Territory ID:           [terrid           ]
+        Territory Description:  [territorydescription                  ]
+        Region:                 [regiondesc                            ]
       }
       END
     END
@@ -28,15 +35,15 @@ LAYOUT (TEXT="Employee Territories")
 END
 
 ATTRIBUTES
-  BUTTONEDIT emplid = formonly.employeeid TYPE SMALLINT, ACTION=zoom_employee;
+  BUTTONEDIT emplid = formonly.employeeid TYPE SMALLINT, NOENTRY, ACTION=zoom_employee;
   fullname = formonly.fullname TYPE VARCHAR, NOENTRY;
-  BUTTONEDIT terrid = formonly.territoryid TYPE VARCHAR, ACTION=zoom_territory;
+  BUTTONEDIT terrid = formonly.territoryid TYPE VARCHAR, NOENTRY, ACTION=zoom_territory;
   territorydescription = formonly.territorydescription TYPE VARCHAR, NOENTRY;
   regiondesc = formonly.regiondescription TYPE VARCHAR, NOENTRY;
 END
 
 INSTRUCTIONS
-  SCREEN RECORD sa_empl_terr[5](
+  SCREEN RECORD s_empl_terr(
     formonly.employeeid,
     formonly.fullname,
     formonly.territoryid,
