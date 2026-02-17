@@ -1,4 +1,14 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
+
+TYPE t_employee_list RECORD
+   employeeid LIKE employees.employeeid,
+   lastname LIKE employees.lastname,
+   firstname LIKE employees.firstname,
+   title LIKE employees.title,
+   city LIKE employees.city,
+   country LIKE employees.country
+END RECORD
 
 DEFINE employeeList ARRAY[1000] OF RECORD
    employeeid LIKE employees.employeeid,
@@ -109,6 +119,9 @@ FUNCTION submenu_employee()
                     LET currentIdx = listCount
                  END IF
               END IF
+          COMMAND "List" "Switch to list view"
+              CALL list_employees_view()
+              EXIT MENU
           COMMAND "Territories" "Employee Territories"
               CALL terr_by_empl(currentRec.employeeid)
           COMMAND "Orders" "View Orders for this Employee"
@@ -123,6 +136,91 @@ FUNCTION submenu_employee()
    END WHILE
 
 END FUNCTION
+
+-- =====================================================================
+-- Function: list_employees_view
+-- Purpose : Display employees in a list/table view
+-- =====================================================================
+FUNCTION list_employees_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+   DEFINE list_arr DYNAMIC ARRAY OF t_employee_list
+   DEFINE idx INTEGER
+
+   FOR idx = 1 TO listCount
+      CALL list_arr.appendElement()
+      LET list_arr[idx].employeeid = employeeList[idx].employeeid
+      LET list_arr[idx].lastname = employeeList[idx].lastname
+      LET list_arr[idx].firstname = employeeList[idx].firstname
+      LET list_arr[idx].title = employeeList[idx].title
+      LET list_arr[idx].city = employeeList[idx].city
+      LET list_arr[idx].country = employeeList[idx].country
+   END FOR
+
+   OPEN WINDOW listEmployeesWindow WITH FORM "employees_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " employees"
+
+   DISPLAY ARRAY list_arr TO employees_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listEmployeesWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_employee()
+         IF int_flag == FALSE THEN
+            CALL appendEmployee()
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= listCount THEN
+            CALL fillCurrentRec(selectedIdx)
+            CALL edit_employee()
+            IF int_flag == FALSE THEN
+                  CALL updateEmployee()
+            END IF
+         ELSE
+            ERROR "Please select an employee"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= listCount THEN
+            CALL fillCurrentRec(selectedIdx)
+            CALL delete_employee()
+            IF int_flag == FALSE THEN
+                  CALL removeEmployee()
+            END IF
+         ELSE
+            ERROR "Please select an employee"
+         END IF
+      WHEN cViewRecord
+         CALL fillCurrentRec(selectedIdx)
+         CALL displayCurrentRec()
+   END CASE
+
+END FUNCTION #list_employees_view
 
 FUNCTION employee_lookup()
    DEFINE employee_id LIKE employees.employeeid

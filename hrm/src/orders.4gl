@@ -1,4 +1,14 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
+
+TYPE t_order_list RECORD
+   orderid LIKE orders.orderid,
+   customername LIKE customers.companyname,
+   employeename VARCHAR(30),
+   orderdate LIKE orders.orderdate,
+   shipvia LIKE orders.shipvia,
+   freight LIKE orders.freight
+END RECORD
 
 DEFINE orders_arr ARRAY[1000] OF RECORD
    orderid LIKE orders.orderid,
@@ -259,6 +269,9 @@ FUNCTION submenu_orders()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_orders_view()
+              EXIT MENU
           COMMAND "Customer" "View Customer"
               CALL view_customer(curr_orders.customerid)
           COMMAND "Employee" "View Employee"
@@ -275,6 +288,91 @@ FUNCTION submenu_orders()
    END WHILE
 
 END FUNCTION #submenu_orders
+
+-- =====================================================================
+-- Function: list_orders_view
+-- Purpose : Display orders in a list/table view
+-- =====================================================================
+FUNCTION list_orders_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+   DEFINE list_arr DYNAMIC ARRAY OF t_order_list
+   DEFINE idx INTEGER
+
+   FOR idx = 1 TO arr_size
+      CALL list_arr.appendElement()
+      LET list_arr[idx].orderid = orders_arr[idx].orderid
+      LET list_arr[idx].customername = orders_arr[idx].customername
+      LET list_arr[idx].employeename = orders_arr[idx].employeename
+      LET list_arr[idx].orderdate = orders_arr[idx].orderdate
+      LET list_arr[idx].shipvia = orders_arr[idx].shipvia
+      LET list_arr[idx].freight = orders_arr[idx].freight
+   END FOR
+
+   OPEN WINDOW listOrdersWindow WITH FORM "orders_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " orders"
+
+   DISPLAY ARRAY list_arr TO orders_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listOrdersWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_orders()
+         IF int_flag == FALSE THEN
+            CALL refresh_orders(arr_size, "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_orders(selectedIdx)
+            CALL edit_orders()
+            IF int_flag == FALSE THEN
+                  CALL refresh_orders(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select an order"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_orders(selectedIdx)
+            CALL delete_orders()
+            IF int_flag == FALSE THEN
+                  CALL refresh_orders(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select an order"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_orders(selectedIdx)
+         CALL display_curr_orders()
+   END CASE
+
+END FUNCTION #list_orders_view
 
 -- =====================================================================
 -- Function: query_orders

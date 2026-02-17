@@ -1,3 +1,4 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
 
 TYPE t_product RECORD
@@ -231,6 +232,9 @@ FUNCTION submenu_products()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_products_view()
+              EXIT MENU
           COMMAND "Supplier" "View Supplier"
               CALL view_supplier(curr_products.supplierid)
           COMMAND "Category" "View Category"
@@ -243,6 +247,75 @@ FUNCTION submenu_products()
    END WHILE
 
 END FUNCTION #submenu_products
+
+FUNCTION list_products_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   OPEN WINDOW listProductsWindow WITH FORM "products_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", products_arr.getLength() USING "<<<<<", " products"
+
+   DISPLAY ARRAY products_arr TO products_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listProductsWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_products()
+         IF int_flag == FALSE THEN
+            CALL refresh_products(products_arr.getLength(), "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= products_arr.getLength() THEN
+            CALL load_curr_products(selectedIdx)
+            CALL edit_products()
+            IF int_flag == FALSE THEN
+                  CALL refresh_products(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a product"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= products_arr.getLength() THEN
+            CALL load_curr_products(selectedIdx)
+            CALL delete_products()
+            IF int_flag == FALSE THEN
+                  CALL refresh_products(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a product"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_products(selectedIdx)
+         CALL display_curr_products()
+   END CASE
+
+END FUNCTION #list_products_view
 
 FUNCTION query_products()
     DEFINE where_clause VARCHAR(500)

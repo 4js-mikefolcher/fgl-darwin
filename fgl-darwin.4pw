@@ -98,6 +98,7 @@
     <Application binaryName="main_customers" dependencies="-1764485507,1342077549" id="-277559114" label="main_customers">
       <Configuration id="1914147351" label="main_customers"/>
       <File filePath="hrm/src/customers.per"/>
+      <File filePath="hrm/src/customers_list.per"/>
       <File filePath="hrm/src/main_customers.4gl"/>
     </Application>
     <Application binaryName="main_empl_terr" dependencies="1342077549,-1764485507" id="-1244529906" label="main_empl_terr">
@@ -108,27 +109,32 @@
     <Application binaryName="main_employees" dependencies="1342077549,-1764485507" id="-1831871049" label="main_employees">
       <Configuration id="1456803507" label="main_employees"/>
       <File filePath="hrm/src/employees.per"/>
+      <File filePath="hrm/src/employees_list.per"/>
       <File filePath="hrm/src/main_employees.4gl"/>
     </Application>
     <Application binaryName="main_order_details" dependencies="1342077549,-1764485507" id="-1785317408" label="main_order_details">
       <Configuration id="52164362" label="main_order_details"/>
       <File filePath="hrm/src/main_order_details.4gl"/>
       <File filePath="hrm/src/order_details.per"/>
+      <File filePath="hrm/src/order_details_list.per"/>
     </Application>
     <Application binaryName="main_orders" dependencies="1342077549,-1764485507" id="822429273" label="main_orders">
       <Configuration id="-2062329214" label="main_orders"/>
       <File filePath="hrm/src/main_orders.4gl"/>
       <File filePath="hrm/src/orders.per"/>
+      <File filePath="hrm/src/orders_list.per"/>
     </Application>
     <Application binaryName="main_products" dependencies="-1764485507,1342077549" id="-887432760" label="main_products">
       <Configuration id="-1539998008" label="main_products"/>
       <File filePath="hrm/src/main_products.4gl"/>
       <File filePath="hrm/src/products.per"/>
+      <File filePath="hrm/src/products_list.per"/>
     </Application>
     <Application binaryName="main_region" dependencies="1342077549,-1764485507" id="157165365" label="main_region">
       <Configuration id="565233410" label="main_region"/>
       <File filePath="hrm/src/main_region.4gl"/>
       <File filePath="hrm/src/region.per"/>
+      <File filePath="hrm/src/region_list.per"/>
     </Application>
     <Application binaryName="main_shippers" dependencies="-1764485507,1342077549" id="2064185099" label="main_shippers">
       <Configuration id="-2088590197" label="main_shippers"/>
@@ -146,11 +152,13 @@
       <Configuration id="1042893489" label="main_territories"/>
       <File filePath="hrm/src/main_territories.4gl"/>
       <File filePath="hrm/src/territories.per"/>
+      <File filePath="hrm/src/territories_list.per"/>
     </Application>
     <Application binaryName="main_usstates" dependencies="-1764485507,1342077549" id="1245935566" label="main_usstates">
       <Configuration id="1509101812" label="main_usstates"/>
       <File filePath="hrm/src/main_usstates.4gl"/>
       <File filePath="hrm/src/usstates.per"/>
+      <File filePath="hrm/src/usstates_list.per"/>
     </Application>
     <Application binaryName="main_rpt_orders_by_customer" dependencies="-1764485507,1342077549" id="1134826701" label="main_rpt_orders_by_customer">
       <Configuration id="1134826702" label="main_rpt_orders_by_customer"/>
@@ -189,6 +197,7 @@
       <File filePath="hrm/src/employees.4gl"/>
       <File filePath="hrm/src/generic.4ad"/>
       <File filePath="hrm/src/generic.4st"/>
+      <File filePath="hrm/src/list_view_helper.4gl"/>
       <File filePath="hrm/src/main_lib.4gl"/>
       <File filePath="hrm/src/order_details.4gl"/>
       <File filePath="hrm/src/orders.4gl"/>

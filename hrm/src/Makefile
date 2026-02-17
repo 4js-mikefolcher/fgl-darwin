@@ -9,27 +9,38 @@ FORMCOMP = fglform
 SRCCOMP = fgl2p
 
 # Source files
-FORMS = employees.per empl_terr.per region.per territories.per orders.per order_details.per \
-        categories.per categories_list.per customers.per products.per shippers.per shippers_list.per suppliers.per suppliers_list.per usstates.per \
+FORMS = employees.per employees_list.per empl_terr.per region.per region_list.per territories.per territories_list.per \
+        orders.per orders_list.per order_details.per order_details_list.per \
+        categories.per categories_list.per customers.per customers_list.per \
+        products.per products_list.per shippers.per shippers_list.per \
+        suppliers.per suppliers_list.per usstates.per usstates_list.per \
         rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
         rpt_orders_by_daterange.per rpt_orders_generic.per report_viewer.per bdl_menu.per
 
 # Compiled form targets
 FORM_TARGETS = $(BINDIR)/employees.42f \
+               $(BINDIR)/employees_list.42f \
                $(BINDIR)/empl_terr.42f \
                $(BINDIR)/region.42f \
+               $(BINDIR)/region_list.42f \
                $(BINDIR)/territories.42f \
+               $(BINDIR)/territories_list.42f \
                $(BINDIR)/orders.42f \
+               $(BINDIR)/orders_list.42f \
                $(BINDIR)/order_details.42f \
+               $(BINDIR)/order_details_list.42f \
                $(BINDIR)/categories.42f \
                $(BINDIR)/categories_list.42f \
                $(BINDIR)/customers.42f \
+               $(BINDIR)/customers_list.42f \
                $(BINDIR)/products.42f \
+               $(BINDIR)/products_list.42f \
                $(BINDIR)/shippers.42f \
                $(BINDIR)/shippers_list.42f \
                $(BINDIR)/suppliers.42f \
                $(BINDIR)/suppliers_list.42f \
                $(BINDIR)/usstates.42f \
+               $(BINDIR)/usstates_list.42f \
                $(BINDIR)/rpt_orders_by_customer.42f \
                $(BINDIR)/rpt_orders_by_employee.42f \
                $(BINDIR)/rpt_orders_by_product.42f \
@@ -71,6 +82,10 @@ $(BINDIR)/employees.42f: employees.per
 	$(FORMCOMP) $<
 	mv employees.42f $(BINDIR)/
 
+$(BINDIR)/employees_list.42f: employees_list.per
+	$(FORMCOMP) $<
+	mv employees_list.42f $(BINDIR)/
+
 $(BINDIR)/empl_terr.42f: empl_terr.per
 	$(FORMCOMP) $<
 	mv empl_terr.42f $(BINDIR)/
@@ -79,17 +94,33 @@ $(BINDIR)/region.42f: region.per
 	$(FORMCOMP) $<
 	mv region.42f $(BINDIR)/
 
+$(BINDIR)/region_list.42f: region_list.per
+	$(FORMCOMP) $<
+	mv region_list.42f $(BINDIR)/
+
 $(BINDIR)/territories.42f: territories.per
 	$(FORMCOMP) $<
 	mv territories.42f $(BINDIR)/
+
+$(BINDIR)/territories_list.42f: territories_list.per
+	$(FORMCOMP) $<
+	mv territories_list.42f $(BINDIR)/
 
 $(BINDIR)/orders.42f: orders.per
 	$(FORMCOMP) $<
 	mv orders.42f $(BINDIR)/
 
+$(BINDIR)/orders_list.42f: orders_list.per
+	$(FORMCOMP) $<
+	mv orders_list.42f $(BINDIR)/
+
 $(BINDIR)/order_details.42f: order_details.per
 	$(FORMCOMP) $<
 	mv order_details.42f $(BINDIR)/
+
+$(BINDIR)/order_details_list.42f: order_details_list.per
+	$(FORMCOMP) $<
+	mv order_details_list.42f $(BINDIR)/
 
 $(BINDIR)/categories.42f: categories.per
 	$(FORMCOMP) $<
@@ -103,9 +134,17 @@ $(BINDIR)/customers.42f: customers.per
 	$(FORMCOMP) $<
 	mv customers.42f $(BINDIR)/
 
+$(BINDIR)/customers_list.42f: customers_list.per
+	$(FORMCOMP) $<
+	mv customers_list.42f $(BINDIR)/
+
 $(BINDIR)/products.42f: products.per
 	$(FORMCOMP) $<
 	mv products.42f $(BINDIR)/
+
+$(BINDIR)/products_list.42f: products_list.per
+	$(FORMCOMP) $<
+	mv products_list.42f $(BINDIR)/
 
 $(BINDIR)/shippers.42f: shippers.per
 	$(FORMCOMP) $<
@@ -126,6 +165,10 @@ $(BINDIR)/suppliers_list.42f: suppliers_list.per
 $(BINDIR)/usstates.42f: usstates.per
 	$(FORMCOMP) $<
 	mv usstates.42f $(BINDIR)/
+
+$(BINDIR)/usstates_list.42f: usstates_list.per
+	$(FORMCOMP) $<
+	mv usstates_list.42f $(BINDIR)/
 
 $(BINDIR)/rpt_orders_by_customer.42f: rpt_orders_by_customer.per
 	$(FORMCOMP) $<
@@ -156,11 +199,11 @@ $(BINDIR)/bdl_menu.42f: bdl_menu.per
 	mv bdl_menu.42f $(BINDIR)/
 
 # Common modules for cross-navigation
-CORE_MODULES = main_lib.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl \
+CORE_MODULES = main_lib.4gl list_view_helper.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl \
                orders.4gl order_details.4gl customers.4gl shippers.4gl \
                products.4gl suppliers.4gl categories.4gl
 
-CORE_42M = main_lib.42m employees.42m empl_terr.42m territories.42m region.42m \
+CORE_42M = main_lib.42m list_view_helper.42m employees.42m empl_terr.42m territories.42m region.42m \
            orders.42m order_details.42m customers.42m shippers.42m \
            products.42m suppliers.42m categories.42m
 
@@ -226,9 +269,9 @@ $(BINDIR)/main_suppliers.42r: main_suppliers.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_suppliers.42r $^
 	mv main_suppliers.42r main_suppliers.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_usstates.42r: main_usstates.4gl main_lib.4gl usstates.4gl
+$(BINDIR)/main_usstates.42r: main_usstates.4gl main_lib.4gl list_view_helper.4gl usstates.4gl
 	$(SRCCOMP) -o main_usstates.42r $^
-	mv main_usstates.42r main_usstates.42m main_lib.42m usstates.42m $(BINDIR)/
+	mv main_usstates.42r main_usstates.42m main_lib.42m list_view_helper.42m usstates.42m $(BINDIR)/
 
 # Report program compilation rules
 $(BINDIR)/main_rpt_orders_by_customer.42r: main_rpt_orders_by_customer.4gl main_lib.4gl report_helper.4gl rpt_orders_by_customer.4gl
@@ -260,18 +303,18 @@ clean:
 rebuild: clean all
 
 # Individual targets for convenience
-employees: $(BINDIR)/employees.42f $(BINDIR)/main_employees.42r
+employees: $(BINDIR)/employees.42f $(BINDIR)/employees_list.42f $(BINDIR)/main_employees.42r
 empl_terr: $(BINDIR)/empl_terr.42f $(BINDIR)/main_empl_terr.42r
-region: $(BINDIR)/region.42f $(BINDIR)/main_region.42r
-territories: $(BINDIR)/territories.42f $(BINDIR)/main_territories.42r
-orders: $(BINDIR)/orders.42f $(BINDIR)/main_orders.42r
-order_details: $(BINDIR)/order_details.42f $(BINDIR)/main_order_details.42r
+region: $(BINDIR)/region.42f $(BINDIR)/region_list.42f $(BINDIR)/main_region.42r
+territories: $(BINDIR)/territories.42f $(BINDIR)/territories_list.42f $(BINDIR)/main_territories.42r
+orders: $(BINDIR)/orders.42f $(BINDIR)/orders_list.42f $(BINDIR)/main_orders.42r
+order_details: $(BINDIR)/order_details.42f $(BINDIR)/order_details_list.42f $(BINDIR)/main_order_details.42r
 categories: $(BINDIR)/categories.42f $(BINDIR)/categories_list.42f $(BINDIR)/main_categories.42r
-customers: $(BINDIR)/customers.42f $(BINDIR)/main_customers.42r
-products: $(BINDIR)/products.42f $(BINDIR)/main_products.42r
+customers: $(BINDIR)/customers.42f $(BINDIR)/customers_list.42f $(BINDIR)/main_customers.42r
+products: $(BINDIR)/products.42f $(BINDIR)/products_list.42f $(BINDIR)/main_products.42r
 shippers: $(BINDIR)/shippers.42f $(BINDIR)/shippers_list.42f $(BINDIR)/main_shippers.42r
 suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
-usstates: $(BINDIR)/usstates.42f $(BINDIR)/main_usstates.42r
+usstates: $(BINDIR)/usstates.42f $(BINDIR)/usstates_list.42f $(BINDIR)/main_usstates.42r
 
 ifx_menu: $(BINDIR)/ifx_menu.42r
 

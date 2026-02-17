@@ -1,0 +1,50 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Products List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  Product Name                      Supplier Category Qty Per Unit          Unit Price Stock Order Reorder Disc
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.productid TYPE INTEGER, NOENTRY;
+  c2 = formonly.productname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.supplierid TYPE SMALLINT, NOENTRY;
+  c4 = formonly.categoryid TYPE SMALLINT, NOENTRY;
+  c5 = formonly.quantityperunit TYPE VARCHAR, NOENTRY, SCROLL;
+  c6 = formonly.unitprice TYPE FLOAT, NOENTRY;
+  c7 = formonly.unitsinstock TYPE SMALLINT, NOENTRY;
+  c8 = formonly.unitsonorder TYPE SMALLINT, NOENTRY;
+  c9 = formonly.reorderlevel TYPE SMALLINT, NOENTRY;
+  c10 = formonly.discontinued TYPE INTEGER, NOENTRY;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD products_list[10](productid, productname, supplierid,
+                                  categoryid, quantityperunit, unitprice,
+                                  unitsinstock, unitsonorder, reorderlevel,
+                                  discontinued);
+END

@@ -1,3 +1,4 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
 
 TYPE t_territory RECORD
@@ -220,6 +221,9 @@ FUNCTION submenu_territories()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_territories_view()
+              EXIT MENU
           COMMAND "Region" "View Region"
               CALL view_region(curr_territories.regionid)
           COMMAND "Employees" "View Employees in this Territory"
@@ -232,6 +236,79 @@ FUNCTION submenu_territories()
    END WHILE
 
 END FUNCTION #submenu_territories
+
+-- =====================================================================
+-- Function: list_territories_view
+-- Purpose : Display territories in a list/table view
+-- =====================================================================
+FUNCTION list_territories_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   OPEN WINDOW listTerritoriesWindow WITH FORM "territories_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", territories_arr.getLength() USING "<<<<<", " territories"
+
+   DISPLAY ARRAY territories_arr TO territories_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listTerritoriesWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_territories()
+         IF int_flag == FALSE THEN
+            CALL refresh_territories(territories_arr.getLength(), "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= territories_arr.getLength() THEN
+            CALL load_curr_territories(selectedIdx)
+            CALL edit_territories()
+            IF int_flag == FALSE THEN
+                  CALL refresh_territories(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a territory"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= territories_arr.getLength() THEN
+            CALL load_curr_territories(selectedIdx)
+            CALL delete_territories()
+            IF int_flag == FALSE THEN
+                  CALL refresh_territories(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a territory"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_territories(selectedIdx)
+         CALL display_curr_territories()
+   END CASE
+
+END FUNCTION #list_territories_view
 
 FUNCTION territories_lookup()
    DEFINE territories_id LIKE territories.territoryid

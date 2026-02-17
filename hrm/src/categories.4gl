@@ -1,3 +1,5 @@
+
+IMPORT FGL list_view_helper
 DATABASE northwind
 
 -- =====================================================================
@@ -128,6 +130,7 @@ END FUNCTION #submenu_categories
 
 FUNCTION list_categories_view()
    DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
 
    OPEN WINDOW listCategoriesWindow WITH FORM "categories_list"
       ATTRIBUTES(STYLE="modulewindow")
@@ -136,39 +139,61 @@ FUNCTION list_categories_view()
 
    DISPLAY ARRAY categories_arr TO categories_list.*
        ON ACTION add
-           CALL add_categories()
-           IF int_flag == FALSE THEN
-              CALL refresh_categories(categories_arr.getLength(), "A")
-           END IF
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
        ON ACTION modify
-           LET selectedIdx = ARR_CURR()
-           IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
-               CALL load_curr_categories(selectedIdx)
-               CALL edit_categories()
-               IF int_flag == FALSE THEN
-                   CALL refresh_categories(selectedIdx, "C")
-               END IF
-           ELSE
-               ERROR "Please select a category"
-           END IF
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
        ON ACTION delete
-           LET selectedIdx = ARR_CURR()
-           IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
-               CALL load_curr_categories(selectedIdx)
-               CALL delete_categories()
-               IF int_flag == FALSE THEN
-                   CALL refresh_categories(selectedIdx, "D")
-               END IF
-           ELSE
-               ERROR "Please select a category"
-           END IF
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
        ON ACTION exit
+           LET int_flag = TRUE
            EXIT DISPLAY
-       ON KEY (ESCAPE)
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
            EXIT DISPLAY
    END DISPLAY
 
    CLOSE WINDOW listCategoriesWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+   
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_categories()
+         IF int_flag == FALSE THEN
+            CALL refresh_categories(categories_arr.getLength(), "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
+            CALL load_curr_categories(selectedIdx)
+            CALL edit_categories()
+            IF int_flag == FALSE THEN
+                  CALL refresh_categories(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a category"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= categories_arr.getLength() THEN
+            CALL load_curr_categories(selectedIdx)
+            CALL delete_categories()
+            IF int_flag == FALSE THEN
+                  CALL refresh_categories(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a category"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_categories(selectedIdx)
+         CALL display_curr_categories()
+   END CASE
 
 END FUNCTION #list_categories_view
 

@@ -1,0 +1,42 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Customers List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID    Company Name                      Contact Name              Title                 Phone
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    [c1   |c2                               |c3                       |c4                   |c5                      ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.customerid TYPE CHAR, NOENTRY;
+  c2 = formonly.companyname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.contactname TYPE VARCHAR, NOENTRY, SCROLL;
+  c4 = formonly.contacttitle TYPE VARCHAR, NOENTRY, SCROLL;
+  c5 = formonly.phone TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD customers_list[10](customerid, companyname, contactname, contacttitle, phone);
+END

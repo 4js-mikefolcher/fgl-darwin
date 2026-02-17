@@ -1,8 +1,17 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
 
 -- =====================================================================
 -- Record Type Definitions
 -- =====================================================================
+TYPE t_customer_list RECORD
+   customerid LIKE customers.customerid,
+   companyname LIKE customers.companyname,
+   contactname LIKE customers.contactname,
+   contacttitle LIKE customers.contacttitle,
+   phone LIKE customers.phone
+END RECORD
+
 TYPE t_customer RECORD
    customerid LIKE customers.customerid,
    companyname LIKE customers.companyname,
@@ -120,6 +129,9 @@ FUNCTION submenu_customers()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_customers_view()
+              EXIT MENU
           COMMAND "Orders" "View Orders for this Customer"
               CALL view_orders_for_customer(curr_customers.customerid)
           COMMAND "Exit" "Quit operation"
@@ -130,6 +142,90 @@ FUNCTION submenu_customers()
    END WHILE
 
 END FUNCTION #submenu_customers
+
+-- =====================================================================
+-- Function: list_customers_view
+-- Purpose : Display customers in a list/table view
+-- =====================================================================
+FUNCTION list_customers_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+   DEFINE list_arr DYNAMIC ARRAY OF t_customer_list
+   DEFINE idx INTEGER
+
+   FOR idx = 1 TO customers_arr.getLength()
+      CALL list_arr.appendElement()
+      LET list_arr[idx].customerid = customers_arr[idx].customerid
+      LET list_arr[idx].companyname = customers_arr[idx].companyname
+      LET list_arr[idx].contactname = customers_arr[idx].contactname
+      LET list_arr[idx].contacttitle = customers_arr[idx].contacttitle
+      LET list_arr[idx].phone = customers_arr[idx].phone
+   END FOR
+
+   OPEN WINDOW listCustomersWindow WITH FORM "customers_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " customers"
+
+   DISPLAY ARRAY list_arr TO customers_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listCustomersWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_customers()
+         IF int_flag == FALSE THEN
+            CALL refresh_customers(customers_arr.getLength(), "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= customers_arr.getLength() THEN
+            CALL load_curr_customers(selectedIdx)
+            CALL edit_customers()
+            IF int_flag == FALSE THEN
+                  CALL refresh_customers(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a customer"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= customers_arr.getLength() THEN
+            CALL load_curr_customers(selectedIdx)
+            CALL delete_customers()
+            IF int_flag == FALSE THEN
+                  CALL refresh_customers(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a customer"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_customers(selectedIdx)
+         CALL display_curr_customers()
+   END CASE
+
+END FUNCTION #list_customers_view
 
 FUNCTION query_customers()
     DEFINE where_clause VARCHAR(500)

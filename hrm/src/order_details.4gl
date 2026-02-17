@@ -1,8 +1,18 @@
+IMPORT FGL list_view_helper
+
 DATABASE northwind
 
 DEFINE order_details_arr ARRAY[10000] OF RECORD
    orderid LIKE order_details.orderid,
    productid LIKE order_details.productid,
+   productname LIKE products.productname,
+   unitprice LIKE order_details.unitprice,
+   quantity LIKE order_details.quantity,
+   discount LIKE order_details.discount
+END RECORD
+
+TYPE t_order_detail_list RECORD
+   orderid LIKE order_details.orderid,
    productname LIKE products.productname,
    unitprice LIKE order_details.unitprice,
    quantity LIKE order_details.quantity,
@@ -117,6 +127,9 @@ FUNCTION submenu_order_details()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_order_details_view()
+              EXIT MENU
           COMMAND "Order" "View Order"
               CALL view_order(curr_order_details.orderid)
           COMMAND "Product" "View Product"
@@ -129,6 +142,90 @@ FUNCTION submenu_order_details()
    END WHILE
 
 END FUNCTION #submenu_order_details
+
+-- =====================================================================
+-- Function: list_order_details_view
+-- Purpose : Display order details in a list/table view
+-- =====================================================================
+FUNCTION list_order_details_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+   DEFINE list_arr DYNAMIC ARRAY OF t_order_detail_list
+   DEFINE idx INTEGER
+
+   FOR idx = 1 TO arr_size
+      CALL list_arr.appendElement()
+      LET list_arr[idx].orderid = order_details_arr[idx].orderid
+      LET list_arr[idx].productname = order_details_arr[idx].productname
+      LET list_arr[idx].unitprice = order_details_arr[idx].unitprice
+      LET list_arr[idx].quantity = order_details_arr[idx].quantity
+      LET list_arr[idx].discount = order_details_arr[idx].discount
+   END FOR
+
+   OPEN WINDOW listOrderDetailsWindow WITH FORM "order_details_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " order details"
+
+   DISPLAY ARRAY list_arr TO order_details_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listOrderDetailsWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_order_details()
+         IF int_flag == FALSE THEN
+            CALL refresh_order_details(arr_size, "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_order_details(selectedIdx)
+            CALL edit_order_details()
+            IF int_flag == FALSE THEN
+                  CALL refresh_order_details(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select an order detail"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_order_details(selectedIdx)
+            CALL delete_order_details()
+            IF int_flag == FALSE THEN
+                  CALL refresh_order_details(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select an order detail"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_order_details(selectedIdx)
+         CALL display_curr_order_details()
+   END CASE
+
+END FUNCTION #list_order_details_view
 
 -- =====================================================================
 -- Function: query_order_details

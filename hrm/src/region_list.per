@@ -1,0 +1,39 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Region List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  Description
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    [c1 |c2                                                           ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.regionid TYPE INTEGER, NOENTRY;
+  c2 = formonly.regiondescription TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD region_list[10](regionid, regiondescription);
+END

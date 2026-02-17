@@ -1,3 +1,4 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
 
 TYPE t_usstate RECORD
@@ -68,6 +69,9 @@ FUNCTION submenu_usstates()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_usstates_view()
+              EXIT MENU
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
               EXIT MENU
@@ -76,6 +80,79 @@ FUNCTION submenu_usstates()
    END WHILE
 
 END FUNCTION #submenu_usstates
+
+-- =====================================================================
+-- Function: list_usstates_view
+-- Purpose : Display US states in a list/table view
+-- =====================================================================
+FUNCTION list_usstates_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   OPEN WINDOW listUsstatesWindow WITH FORM "usstates_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", usstates_arr.getLength() USING "<<<<<", " states"
+
+   DISPLAY ARRAY usstates_arr TO usstates_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listUsstatesWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_usstates()
+         IF int_flag == FALSE THEN
+            CALL refresh_usstates(usstates_arr.getLength(), "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= usstates_arr.getLength() THEN
+            CALL load_curr_usstates(selectedIdx)
+            CALL edit_usstates()
+            IF int_flag == FALSE THEN
+                  CALL refresh_usstates(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a state"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= usstates_arr.getLength() THEN
+            CALL load_curr_usstates(selectedIdx)
+            CALL delete_usstates()
+            IF int_flag == FALSE THEN
+                  CALL refresh_usstates(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a state"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_usstates(selectedIdx)
+         CALL display_curr_usstates()
+   END CASE
+
+END FUNCTION #list_usstates_view
 
 FUNCTION query_usstates()
     DEFINE where_clause VARCHAR(500)

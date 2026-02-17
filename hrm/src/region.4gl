@@ -1,4 +1,10 @@
+IMPORT FGL list_view_helper
 DATABASE northwind
+
+TYPE t_region_list RECORD
+   regionid LIKE region.regionid,
+   regiondescription LIKE region.regiondescription
+END RECORD
 
 DEFINE region_arr ARRAY[1000] OF RECORD LIKE region.*
 DEFINE curr_region RECORD LIKE region.*
@@ -110,6 +116,9 @@ FUNCTION submenu_region()
                  END IF
               END IF
               EXIT MENU
+          COMMAND "List" "Switch to list view"
+              CALL list_region_view()
+              EXIT MENU
           COMMAND "Territories" "View Territories in this Region"
               CALL view_territories_for_region(curr_region.regionid)
           COMMAND "Exit" "Quit operation"
@@ -120,6 +129,87 @@ FUNCTION submenu_region()
    END WHILE
 
 END FUNCTION #submenu_region
+
+-- =====================================================================
+-- Function: list_region_view
+-- Purpose : Display regions in a list/table view
+-- =====================================================================
+FUNCTION list_region_view()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+   DEFINE list_arr DYNAMIC ARRAY OF t_region_list
+   DEFINE idx INTEGER
+
+   FOR idx = 1 TO arr_size
+      CALL list_arr.appendElement()
+      LET list_arr[idx].regionid = region_arr[idx].regionid
+      LET list_arr[idx].regiondescription = region_arr[idx].regiondescription
+   END FOR
+
+   OPEN WINDOW listRegionWindow WITH FORM "region_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " regions"
+
+   DISPLAY ARRAY list_arr TO region_list.*
+       ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+       ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+       ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW listRegionWindow
+
+   IF int_flag THEN
+      RETURN
+   END IF
+
+   CASE selectedOption
+      WHEN cAddRecord
+         CALL add_region()
+         IF int_flag == FALSE THEN
+            CALL refresh_regions(arr_size, "A")
+         END IF
+      WHEN cEditRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_region(selectedIdx)
+            CALL edit_region()
+            IF int_flag == FALSE THEN
+                  CALL refresh_regions(selectedIdx, "C")
+            END IF
+         ELSE
+            ERROR "Please select a region"
+         END IF
+      WHEN cDeleteRecord
+         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
+            CALL load_curr_region(selectedIdx)
+            CALL delete_region()
+            IF int_flag == FALSE THEN
+                  CALL refresh_regions(selectedIdx, "D")
+            END IF
+         ELSE
+            ERROR "Please select a region"
+         END IF
+      WHEN cViewRecord
+         CALL load_curr_region(selectedIdx)
+         CALL display_curr_region()
+   END CASE
+
+END FUNCTION #list_region_view
 
 FUNCTION region_lookup()
    DEFINE region_id LIKE region.regionid
