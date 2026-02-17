@@ -4,7 +4,7 @@ Genero Darwin Project — A demonstration application showing how to evolve a le
 
 ## Overview
 
-This project is an Informix 4GL application built on the Northwind database schema. It provides CRUD (Create, Read, Update, Delete) functionality for managing business data including employees, customers, orders, products, and more. The application targets PostgreSQL via the Genero BDL database abstraction layer and uses PostgreSQL SERIAL columns for auto-generated primary keys.
+This project is an Informix 4GL application built on the Northwind database schema. It provides CRUD (Create, Read, Update, Delete) functionality for managing business data including employees, customers, orders, products, and more.
 
 ## Project Structure
 
@@ -12,13 +12,13 @@ This project is an Informix 4GL application built on the Northwind database sche
 fgl-darwin/
 ├── dbs/
 │   ├── informix/
-│   │   └── northwind.informix.sql       # Original Informix schema
+│   │   └── northwind.informix.sql       # Informix create database
 │   ├── postgres/
 │   │   ├── createdb.txt                  # PostgreSQL setup instructions
 │   │   └── fglprofile.pgs               # Genero database profile for PostgreSQL
 │   ├── northwind.4db                     # Genero schema definition (XML)
 │   ├── northwind.sch                     # Genero schema file
-│   └── northwind_pgs_84x.4gl            # PostgreSQL 8.4+ database creation script
+│   └── northwind_pgs_84x.4gl            # Database creation script
 ├── hrm/
 │   ├── bin/                              # Compiled output (.42f, .42m, .42r files)
 │   └── src/                              # Source code
@@ -86,7 +86,7 @@ Foreign key fields support Ctrl-T lookup functionality:
 
 ## Database Schema
 
-The application uses the Northwind database with PostgreSQL. The schema is defined in `dbs/northwind_pgs_84x.4gl` with the following tables:
+The application uses the Northwind database. The schema is defined in `dbs/northwind_pgs_84x.4gl` and `northwind.informix.sql` with the following tables:
 
 | Table | Primary Key | Description |
 |-------|-------------|-------------|
@@ -108,7 +108,7 @@ The application uses the Northwind database with PostgreSQL. The schema is defin
 ### Prerequisites
 - Genero BDL 6.00+ (`fgl2p` compiler and `fglcomp` compiler)
 - Genero Form Compiler (`fglform`)
-- PostgreSQL database with Northwind schema
+- PostgreSQL or Informix database with Northwind schema
 
 ### Create the Database
 ```bash
