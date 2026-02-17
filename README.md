@@ -1,10 +1,10 @@
 # fgl-darwin
 
-Genero Darwin Project — A demonstration application showing how to evolve a legacy Informix 4GL application into a modern Genero BDL (Business Development Language) web application, using the Northwind database schema.
+Genero Darwin Project — A demonstration application showing how to evolve a legacy Informix 4GL application with Genero BDL (Business Development Language), using the Northwind database schema.
 
 ## Overview
 
-This project provides CRUD (Create, Read, Update, Delete) functionality for managing business data including employees, customers, orders, products, and more. It has been progressively modernized from terminal-style Informix 4GL to modern Genero BDL with contemporary UI patterns, PostgreSQL support, dynamic arrays, professional toolbars, and centralized styling.
+This project is an Informix 4GL application built on the Northwind database schema. It provides CRUD (Create, Read, Update, Delete) functionality for managing business data including employees, customers, orders, products, and more. The application targets PostgreSQL via the Genero BDL database abstraction layer and uses PostgreSQL SERIAL columns for auto-generated primary keys.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ fgl-darwin/
 │   ├── postgres/
 │   │   ├── createdb.txt                  # PostgreSQL setup instructions
 │   │   └── fglprofile.pgs               # Genero database profile for PostgreSQL
-│   ├── northwind.4db                     # Genero schema definition
+│   ├── northwind.4db                     # Genero schema definition (XML)
 │   ├── northwind.sch                     # Genero schema file
 │   └── northwind_pgs_84x.4gl            # PostgreSQL 8.4+ database creation script
 ├── hrm/
@@ -28,7 +28,7 @@ fgl-darwin/
 │       ├── northwind.sch                 # Schema reference
 │       └── Makefile                      # Build configuration
 ├── Makefile                              # Root build file
-├── GENERO_MODERNIZATION_GUIDE.md         # Detailed modernization documentation
+├── northwind.sch                         # Root schema reference
 └── README.md
 ```
 
@@ -39,7 +39,7 @@ The application consists of the following modules:
 | Module | Description |
 |--------|-------------|
 | `employees` | Employee management with territory assignments |
-| `empl_terr` | Employee-Territory relationships (inline INPUT ARRAY editing) |
+| `empl_terr` | Employee-Territory relationships |
 | `territories` | Territory management |
 | `region` | Region management |
 | `orders` | Order management with customer/employee/shipper associations |
@@ -50,23 +50,7 @@ The application consists of the following modules:
 | `categories` | Product category management |
 | `shippers` | Shipping company management |
 | `usstates` | US States reference data |
-
-### Reports
-
-| Module | Description |
-|--------|-------------|
-| `rpt_orders_generic` | Generic order report |
-| `rpt_orders_by_customer` | Orders grouped by customer |
-| `rpt_orders_by_employee` | Orders grouped by employee |
-| `rpt_orders_by_product` | Orders grouped by product |
-| `rpt_orders_by_daterange` | Orders filtered by date range |
-
-### GUI Menu
-
-| Module | Description |
-|--------|-------------|
-| `bdl_menu` | GUI tree menu with toolbar, 6 root categories, 16 leaf programs |
-| `ifx_menu` | Legacy Informix-style character menu |
+| `ifx_menu` | Informix-style character menu |
 
 ## Features
 
@@ -75,7 +59,7 @@ Each module provides:
 - **Query** — Search records using query-by-example (CONSTRUCT)
 - **Add** — Create new records (serial IDs are database-generated)
 - **Modify** — Edit existing records
-- **Delete** — Remove records with `confirm_delete()` dialog
+- **Delete** — Remove records with PROMPT confirmation
 
 ### PostgreSQL SERIAL Column Handling
 Tables with auto-increment primary keys use the PostgreSQL `DEFAULT` keyword in INSERT statements. After insert, the generated ID is captured via `sqlca.sqlerrd[2]` and the form is refreshed to display the new value. Affected tables: `categories`, `employees`, `orders`, `products`, `region`, `shippers`, `suppliers`, `usstates`.
@@ -85,24 +69,13 @@ Tables with auto-increment primary keys use the PostgreSQL `DEFAULT` keyword in 
 - **Cross-module navigation** — View related records (e.g., view orders for a customer, territories for an employee)
 
 ### Field Lookups
-Foreign key fields support BUTTONEDIT zoom lookup functionality:
-- Opens a module window to search and select related records
+Foreign key fields support Ctrl-T lookup functionality:
+- Opens a lookup window to search and select related records
 - Automatically populates the field with the selected value
 - Available for employee, territory, customer, product, order, supplier, category, shipper, and region lookups
 
-### Modern UI Features
-- **Dynamic arrays** (`DYNAMIC ARRAY OF t_recordtype`) replacing legacy static arrays
-- **Professional toolbars** with Font Awesome icons
-- **COMBOBOX / CHECKBOX controls** for products, territories, and employees modules
-- **TABLE container** for empl_terr list view with inline INPUT ARRAY editing
-- **VBOX / GROUP / GRID containers** for modern form layouts
-- **Report viewer** — modal dialog with monospace TABLE display for report output
-
-### Centralized Configuration
-- **`generic.4ad`** — 36 action defaults with Font Awesome icons and accelerators
-- **`generic.4st`** — Stylesheet with base `Window` style (no action panels/ring menus), `Window.modulewindow` for secondary windows (modal), and `Window.reportviewer` / `Table.reportviewer` for reports
-- **`main_lib.4gl`** — Common initialization (`init_pgm()`) and utility functions
-- **`report_helper.4gl`** — Reusable report viewer using `base.Channel` and `DISPLAY ARRAY`
+### Common Library
+- **`main_lib.4gl`** — Common initialization (`init_pgm()`) and utility functions (`get_arr_max()`)
 
 ### Keyboard Shortcuts
 | Key | Action |
@@ -140,6 +113,7 @@ The application uses the Northwind database with PostgreSQL. The schema is defin
 ### Create the Database
 ```bash
 cd dbs
+fglcomp northwind_pgs_84x.4gl
 fglrun northwind_pgs_84x.42r
 ```
 
@@ -167,13 +141,10 @@ make rebuild
 
 ## Running
 
-After compilation, executables are located in `hrm/bin/`. Run the GUI menu or individual modules:
+After compilation, executables are located in `hrm/bin/`. Run modules using:
 
 ```bash
 cd hrm/bin
-
-# GUI tree menu (recommended entry point)
-fglrun bdl_menu.42r
 
 # Individual modules
 fglrun main_employees.42r
@@ -181,9 +152,8 @@ fglrun main_orders.42r
 fglrun main_products.42r
 # etc.
 
-# Reports
-fglrun main_rpt_orders_by_customer.42r
-fglrun main_rpt_orders_by_employee.42r
+# Informix-style menu
+fglrun ifx_menu.42r
 ```
 
 ## File Types
@@ -192,19 +162,19 @@ fglrun main_rpt_orders_by_employee.42r
 |-----------|-------------|
 | `.4gl` | Genero BDL source code |
 | `.per` | Form definition (screen layout) |
-| `.4ad` | Action defaults definition |
-| `.4st` | Stylesheet definition |
 | `.42f` | Compiled form file |
 | `.42m` | Compiled module file |
 | `.42r` | Compiled runnable program |
 | `.42d` | Compiled database schema |
+| `.4db` | Genero database schema definition (XML) |
+| `.sch` | Genero schema file |
 
 ## Architecture
 
 ### Module Structure
 Each entity typically has:
 - `<entity>.4gl` — Business logic (CRUD operations, validation, lookups, display)
-- `<entity>.per` — Modern form layout with VBOX/GROUP/GRID containers
+- `<entity>.per` — Form layout definition
 - `main_<entity>.4gl` — Entry point that opens the form and runs the MENU
 
 ### Core Modules
@@ -214,15 +184,6 @@ The following modules are compiled together to support cross-module navigation:
 - `orders.4gl`, `order_details.4gl`
 - `customers.4gl`, `shippers.4gl`
 - `products.4gl`, `suppliers.4gl`, `categories.4gl`
-
-### Window Styles
-- **Main windows** — Use the base `Window` style (no action panels or ring menus)
-- **Module windows** — Secondary windows opened from entity modules use `Window.modulewindow` (modal, no action panels or ring menus)
-- **Report viewer** — Report output windows use `Window.reportviewer` style
-
-## Documentation
-
-See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for a detailed account of all modernization phases, patterns, code examples, and technical decisions made during the conversion from legacy Informix 4GL to modern Genero BDL.
 
 ## License
 

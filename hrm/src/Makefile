@@ -2,7 +2,7 @@
 # Compiles .per forms and .4gl modules
 
 # Directories
-BINDIR = ../bin
+BINDIR = ../../bin
 
 # Compilers
 FORMCOMP = fglform

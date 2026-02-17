@@ -29,5 +29,32 @@ region:
 territories:
 	$(MAKE) -C $(SRCDIR) territories
 
-.PHONY: all clean rebuild employees empl_terr region territories
+orders:
+	$(MAKE) -C $(SRCDIR) orders
+
+order_details:
+	$(MAKE) -C $(SRCDIR) order_details
+
+categories:
+	$(MAKE) -C $(SRCDIR) categories
+
+customers:
+	$(MAKE) -C $(SRCDIR) customers
+
+products:
+	$(MAKE) -C $(SRCDIR) products
+
+shippers:
+	$(MAKE) -C $(SRCDIR) shippers
+
+suppliers:
+	$(MAKE) -C $(SRCDIR) suppliers
+
+usstates:
+	$(MAKE) -C $(SRCDIR) usstates
+
+ifx_menu:
+	$(MAKE) -C $(SRCDIR) ifx_menu
+
+.PHONY: all clean rebuild ifx_menu employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates
 
