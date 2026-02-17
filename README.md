@@ -14,7 +14,9 @@ The application has been modernized with:
 - `COMBOBOX`, `CHECKBOX`, `BUTTONEDIT`, `DATEEDIT`, and `TEXTEDIT` form controls
 - `CONSTRUCT BY NAME` for flexible report criteria
 - A reusable report viewer with modal dialog display
-- `ON ACTION` pattern replacing legacy `ON KEY` handlers
+- `ON ACTION` pattern replacing legacy `ON KEY` handlers — zero `ON KEY` statements remain
+- `BUTTONEDIT` with `ON ACTION zoom_*` for foreign key lookups (customer, employee, order, product)
+- PostgreSQL `SERIAL` columns with `INSERT ... VALUES (DEFAULT, ...)` and `sqlca.sqlerrd[2]` for auto-generated IDs
 - Form initializer hook for automatic action defaults loading
 - Module window style — secondary windows open as modal dialogs via `STYLE="modulewindow"`
 
@@ -31,8 +33,9 @@ fgl-darwin/
 │   └── postgres/
 │       ├── createdb.txt              # PostgreSQL setup instructions
 │       └── fglprofile.pgs            # PostgreSQL FGLPROFILE
+├── bin/                               # Compiled output (.42f, .42m, .42r)
 ├── hrm/
-│   ├── bin/                          # Compiled output (.42f, .42m, .42r)
+│   ├── bin/                          # Legacy compiled output (symlink or copy)
 │   ├── src/                          # Source code
 │   │   ├── Makefile                  # Build configuration
 │   │   ├── generic.4ad               # Shared action defaults (36 actions)
@@ -103,7 +106,7 @@ fgl-darwin/
 ### CRUD Operations
 Each data management module provides:
 - **Query** — Search records using query-by-example (CONSTRUCT)
-- **Add** — Create new records
+- **Add** — Create new records (serial primary keys use `INSERT ... DEFAULT` with `sqlca.sqlerrd[2]`)
 - **Modify** — Edit existing records
 - **Delete** — Remove records with dialog confirmation
 
@@ -199,6 +202,7 @@ After compilation, executables are located in `hrm/bin/`. Run the GUI menu or in
 
 ```bash
 cd hrm/bin
+# Ensure FGLPROFILE and database are configured
 
 # GUI tree menu (recommended entry point)
 fglrun bdl_menu.42r
@@ -269,9 +273,11 @@ See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for detailed 
 - **Module windows** — Secondary windows opened from entity modules use `Window.modulewindow` (modal, no action panels or ring menus)
 - **Report viewer** — Report output windows use `Window.reportviewer` style
 
-## Documentation
-
-See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for a detailed account of all modernization phases, patterns, code examples, and technical decisions made during the conversion from legacy Informix 4GL to modern Genero BDL.
+### Serial Column Handling
+- All 7 tables with `SERIAL` primary keys use `INSERT ... VALUES (DEFAULT, ...)` instead of explicit ID values
+- After INSERT, `sqlca.sqlerrd[2]` retrieves the auto-generated ID
+- Form fields for serial columns use `NOENTRY` and `DEFAULT=0` attributes
+- Affected tables: categories, customers (orders FK), employees, orders, order_details, products, region, shippers, suppliers, territories, usstates
 
 ## License
 

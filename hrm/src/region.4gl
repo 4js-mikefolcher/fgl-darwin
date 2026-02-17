@@ -280,9 +280,9 @@ FUNCTION add_region()
     CALL clear_curr_region()
     INPUT BY NAME curr_region.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -316,9 +316,9 @@ FUNCTION edit_region()
     LET int_flag = FALSE
     INPUT BY NAME curr_region.regiondescription
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT

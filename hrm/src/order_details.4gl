@@ -144,9 +144,9 @@ FUNCTION query_order_details()
                               order_details.unitprice, order_details.quantity, order_details.discount
        FROM s_order_details.orderid, s_order_details.productid,
             s_order_details.unitprice, s_order_details.quantity, s_order_details.discount
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -226,32 +226,24 @@ FUNCTION add_order_details()
            IF curr_order_details.orderid > 0 THEN
                NEXT FIELD productid
            END IF
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(orderid) THEN
-               CALL order_lookup()
-                  RETURNING selected_order_id
-               IF selected_order_id > 0 THEN
-                  LET curr_order_details.orderid = selected_order_id
-               END IF
+        ON ACTION zoom_order
+            CALL order_lookup()
+               RETURNING selected_order_id
+            IF selected_order_id > 0 THEN
+               LET curr_order_details.orderid = selected_order_id
             END IF
-            IF INFIELD(productid) THEN
-               CALL product_lookup()
-                  RETURNING selected_product_id, selected_product_name
-               IF selected_product_id > 0 THEN
-                  LET curr_order_details.productid = selected_product_id
-                  LET curr_order_details.productname = selected_product_name
-               END IF
+        ON ACTION zoom_product
+            CALL product_lookup()
+               RETURNING selected_product_id, selected_product_name
+            IF selected_product_id > 0 THEN
+               LET curr_order_details.productid = selected_product_id
+               LET curr_order_details.productname = selected_product_name
             END IF
-
-        BEFORE FIELD orderid
-            MESSAGE "Use Ctrl-T to open lookup window"
-        BEFORE FIELD productid
-            MESSAGE "Use Ctrl-T to open lookup window"
 
         AFTER FIELD orderid
             CALL validate_orderid_field()
@@ -300,9 +292,9 @@ FUNCTION edit_order_details()
     LET int_flag = FALSE
     INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT

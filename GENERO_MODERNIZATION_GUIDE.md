@@ -33,9 +33,12 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - Centralize action definitions and stylesheets for code reuse
 - Eliminate legacy terminal-style form code
 - Replace `ON KEY (ACCEPT)` / `ON KEY (CONTROL-P)` with `ON ACTION accept` / `ON ACTION cancel`
+- Replace `ON KEY (CONTROL-T)` with `ON ACTION zoom_*` matching BUTTONEDIT ACTION names
 - Replace `PROMPT`-based delete confirmations with `confirm_delete()` dialog
 - Use COMBOBOX and CHECKBOX form controls where appropriate
 - Create report modules with CONSTRUCT-based criteria, text file output, and report viewer
+- Use `INSERT ... VALUES (DEFAULT, ...)` for PostgreSQL SERIAL columns with `sqlca.sqlerrd[2]`
+- Update Makefiles for proper build output directory and complete target coverage
 
 ### Key Achievements
 
@@ -63,6 +66,12 @@ This conversation demonstrates how to use the **Genero AI Agent** to modernize l
 - ✅ **Program icons** — `build_program_icons()` maps 17 programs to Font Awesome icons including bdl_menu and 4 reports
 - ✅ **INPUT ARRAY with modification triggers** — empl_terr fully modernized with inline editing, transactional save, validation
 - ✅ **Module window style** — `Window.modulewindow` in generic.4st for all secondary windows (32 OPEN WINDOW statements across 17 modules)
+- ✅ **Serial field INSERT modernization** — All 7 SERIAL columns use `INSERT ... VALUES (DEFAULT, ...)` with `sqlca.sqlerrd[2]` for auto-generated IDs
+- ✅ **SERIAL form attributes** — All serial PK form fields use `NOENTRY` and `DEFAULT=0`
+- ✅ **BUTTONEDIT zoom actions in orders** — `ON ACTION zoom_customer` and `ON ACTION zoom_employee` wired to BUTTONEDIT fields
+- ✅ **BUTTONEDIT zoom actions in order_details** — `ON ACTION zoom_order` and `ON ACTION zoom_product` wired to BUTTONEDIT fields
+- ✅ **Complete ON KEY elimination** — Zero `ON KEY` statements remain across entire codebase (25 replaced in 5 files)
+- ✅ **Makefile restructuring** — All missing module targets added to hrm/Makefile and root Makefile
 
 ---
 
@@ -847,6 +856,141 @@ OPEN WINDOW viewCustomerWindow WITH FORM "customers"
 - **BORDER, MESSAGE LINE LAST, ERROR LINE LAST are legacy:** These terminal-style attributes are not needed in modern GUI applications
 - **Named styles override base styles:** `Window.modulewindow` overrides the base `Window` style when explicitly applied with `STYLE="modulewindow"`
 - **Style consolidation:** The 4 report criteria modules (rpt_orders_by_*) previously used `STYLE="noactions"` — now unified under `STYLE="modulewindow"`
+
+### Phase 32: Serial Field INSERT Modernization
+
+**Objective:** Update all INSERT statements for tables with PostgreSQL SERIAL primary keys to use `DEFAULT` instead of explicit values, retrieve the auto-generated ID with `sqlca.sqlerrd[2]`, and update form attributes.
+
+**Context:** PostgreSQL SERIAL columns auto-generate values. Passing an explicit value (like 0) can cause constraint violations or sequence conflicts. The correct approach is `INSERT ... VALUES (DEFAULT, ...)` which lets PostgreSQL generate the next sequence value.
+
+**Files Modified (INSERT functions):**
+- `categories.4gl` — `insert_curr_categories()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_categories()`
+- `suppliers.4gl` — `insert_curr_suppliers()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_suppliers()`
+- `shippers.4gl` — `insert_curr_shippers()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_shippers()`
+- `products.4gl` — `insert_curr_products()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_products()`
+- `region.4gl` — `insert_curr_region()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_region()`
+- `usstates.4gl` — `insert_curr_usstates()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_usstates()`
+- `orders.4gl` — `insert_curr_orders()`: VALUES (DEFAULT, ...), added `sqlca.sqlerrd[2]` + `display_curr_orders()`
+
+**Form Files Modified (.per):**
+- All 7 forms with serial PK fields updated to: `TYPE INTEGER, NOENTRY, DEFAULT=0`
+- `NOENTRY` prevents user from editing the auto-generated field
+- `DEFAULT=0` shows 0 for new records (replaced by actual ID after INSERT)
+
+**Pattern Applied:**
+```4gl
+FUNCTION insert_curr_entity()
+   INSERT INTO entity (entityid, field1, field2, ...)
+      VALUES (DEFAULT, curr_entity.field1, curr_entity.field2, ...)
+   LET curr_entity.entityid = sqlca.sqlerrd[2]
+   CALL display_curr_entity()
+END FUNCTION
+```
+
+**Key Learnings:**
+- `sqlca.sqlerrd[2]` contains the last SERIAL/auto-increment value after INSERT
+- `DEFAULT` keyword in VALUES tells PostgreSQL to use the column's default (sequence nextval)
+- Form fields for serial PKs should be `NOENTRY` to prevent user editing
+- `DISPLAY BY NAME` after INSERT shows the actual generated ID to the user
+
+### Phase 33: Makefile Restructuring
+
+**Objective:** Update Makefiles to ensure all module targets are present and the build chain is complete.
+
+**Files Modified:**
+- `hrm/Makefile` — Added all missing module targets: orders, order_details, categories, customers, products, shippers, suppliers, usstates, ifx_menu (previously only had employees, empl_terr, region, territories)
+- `Makefile` (root) — Added missing ifx_menu target
+
+**Key Change:** The `hrm/Makefile` delegates to `hrm/src/Makefile` which has the actual compilation rules. The intermediate `hrm/Makefile` was missing most module targets, so running `make orders` from the project root would fail. All 12+ entity modules and the menu programs are now accessible from both the root and hrm directories.
+
+**Build Output:** Compiled files (.42f, .42m, .42r) are output to `hrm/bin/` (BINDIR = ../bin in hrm/src/Makefile).
+
+### Phase 34: Orders BUTTONEDIT Zoom Actions
+
+**Objective:** Wire `ON ACTION zoom_customer` and `ON ACTION zoom_employee` to the BUTTONEDIT fields in orders.per, replacing the legacy `ON KEY (CONTROL-T)` with `INFIELD()` pattern.
+
+**File Modified:**
+- `orders.4gl` — `add_orders()` and `edit_orders()` functions
+
+**Before (legacy):**
+```4gl
+ON KEY (CONTROL-T)
+   CASE
+      WHEN INFIELD(customerid)
+         CALL customer_lookup() RETURNING cust_id, cust_name
+         -- set fields
+      WHEN INFIELD(employeeid)
+         CALL employee_lookup() RETURNING empl_id, empl_name
+         -- set fields
+   END CASE
+```
+
+**After (modern):**
+```4gl
+ON ACTION zoom_customer
+   CALL customer_lookup() RETURNING cust_id, cust_name
+   IF cust_id IS NOT NULL AND cust_id != " " THEN
+      LET curr_orders.customerid = cust_id
+      LET curr_orders.customername = cust_name
+   END IF
+
+ON ACTION zoom_employee
+   CALL employee_lookup() RETURNING empl_id, empl_name
+   IF empl_id IS NOT NULL AND empl_id > 0 THEN
+      LET curr_orders.employeeid = empl_id
+      LET curr_orders.employeename = empl_name
+   END IF
+```
+
+**Additional Changes:**
+- Replaced `ON KEY (ACCEPT)` → `ON ACTION accept` and `ON KEY (CONTROL-P)` → `ON ACTION cancel`
+- Removed `BEFORE FIELD "Use Ctrl-T to select"` messages (BUTTONEDIT provides visual zoom button)
+- Removed unused shipper lookup variables (shipvia uses COMBOBOX, not BUTTONEDIT)
+
+**Key Learning:**
+- When a form has `BUTTONEDIT field ACTION=zoom_xxx`, the corresponding `ON ACTION zoom_xxx` in the .4gl code fires when the user clicks the BUTTONEDIT button
+- Each BUTTONEDIT gets its own dedicated `ON ACTION` — no need for `INFIELD()` case logic
+- COMBOBOX fields (like shipvia) don't need zoom lookups since the user selects from a dropdown
+
+### Phase 35: Complete ON KEY Elimination Sweep
+
+**Objective:** Find and replace ALL remaining `ON KEY` statements across the entire codebase, following the patterns established in orders.4gl.
+
+**Scope:** 25 ON KEY statements found across 5 files.
+
+**Files Modified:**
+
+**orders.4gl** (1 block):
+- CONSTRUCT: `ON KEY (ACCEPT)` → `ON ACTION accept`, `ON KEY (CONTROL-P)` → `ON ACTION cancel`
+
+**customers.4gl** (3 blocks):
+- CONSTRUCT: `ON KEY (ACCEPT)` → `ON ACTION accept`, `ON KEY (CONTROL-P)` → `ON ACTION cancel`
+- `add_customers()`: same pattern
+- `edit_customers()`: same pattern
+
+**order_details.4gl** (3 blocks):
+- CONSTRUCT: `ON KEY (ACCEPT)` → `ON ACTION accept`, `ON KEY (CONTROL-P)` → `ON ACTION cancel`
+- `add_order_details()`: `ON KEY (CONTROL-T)` with `INFIELD()` → `ON ACTION zoom_order` + `ON ACTION zoom_product` (matching BUTTONEDIT ACTION names in order_details.per). Removed `BEFORE FIELD "Use Ctrl-T"` messages.
+- `edit_order_details()`: `ON KEY (ACCEPT/CONTROL-P)` → `ON ACTION accept/cancel`
+
+**region.4gl** (2 blocks):
+- `add_region()`: `ON KEY (ACCEPT)` → `ON ACTION accept`, `ON KEY (CONTROL-P)` → `ON ACTION cancel`
+- `edit_region()`: same pattern
+- Note: CONSTRUCT was already modernized in a prior phase
+
+**employees.4gl** (3 blocks):
+- `add_employee()`: `ON KEY (ACCEPT/CONTROL-P)` → `ON ACTION accept/cancel`
+- `edit_employee()`: same pattern
+- `query_employee()` CONSTRUCT: `ON KEY (ACCEPT/CONTROL-P)` → `ON ACTION accept/cancel`. Removed duplicate `ON ACTION cancel` that existed alongside `ON KEY (CONTROL-P)`.
+
+**Verification:**
+- `grep_search` for "ON KEY" in `**/*.4gl` — **zero matches** (confirmed complete elimination)
+- `make rebuild` — **zero errors** across all forms and programs
+
+**Key Learnings:**
+- BUTTONEDIT zoom actions need dedicated `ON ACTION zoom_xxx` handlers matching the form's `ACTION=zoom_xxx`
+- When a module already has `ON ACTION cancel` alongside `ON KEY (CONTROL-P)`, removing the ON KEY block eliminates the duplicate
+- The CONSTRUCT statement already modernized in some modules (region) but not others — a full sweep catches all remaining instances
 
 ---
 
@@ -1839,21 +1983,23 @@ END FUNCTION
 ### 8. Region Module
 **Purpose:** Manage regions  
 **Fields:** 2 (regionid, regiondescription)  
-**Status:** .per modernized, main_region.4gl modernized (ON ACTION), .4gl still legacy
+**Status:** .per modernized, main_region.4gl modernized, .4gl partially modernized (ON ACTION, INSERT DEFAULT)
 
 **Key Features:**
 - Simplest module (2 fields)
 - main_region.4gl uses modern ON ACTION pattern
+- All ON KEY statements replaced with ON ACTION accept/cancel
+- INSERT uses DEFAULT for serial regionid, sqlca.sqlerrd[2] retrieves generated ID
 
 **Files:**
-- `region.per` - Modern form with TOOLBAR, VBOX/GROUP/GRID
+- `region.per` - Modern form with TOOLBAR, VBOX/GROUP/GRID, NOENTRY on regionid
 - `main_region.4gl` - Modernized with ON ACTION
-- `region.4gl` - Still legacy (pending .4gl conversion)
+- `region.4gl` - ON ACTION pattern, INSERT DEFAULT, still uses static arrays (pending dynamic array conversion)
 
 ### 9. Employees Module
 **Purpose:** Manage employee records  
 **Fields:** 18 (personal info, contact, employment details)  
-**Status:** .per modernized, main_employees.4gl modernized, .4gl still legacy
+**Status:** .per modernized, main_employees.4gl modernized, .4gl partially modernized (ON ACTION, INSERT DEFAULT)
 
 **Key Features:**
 - **3 GROUPs** in form: Personal Info, Contact Info, Employment Details
@@ -1863,11 +2009,12 @@ END FUNCTION
 - **TEXTEDIT** for notes field with SCROLL
 - fullname computed field (NOENTRY)
 - populate_courtesy_combo() function in employees.4gl
+- All ON KEY statements replaced with ON ACTION accept/cancel
 
 **Files:**
 - `employees.per` - Modern form with 3 groups, COMBOBOX, DATEEDIT, BUTTONEDIT, TEXTEDIT
 - `main_employees.4gl` - Modernized with ON ACTION, populates courtesy combo
-- `employees.4gl` - Still legacy (pending .4gl conversion), has populate_courtesy_combo()
+- `employees.4gl` - ON ACTION pattern, still uses static arrays (pending dynamic array conversion), has populate_courtesy_combo()
 
 ### 10. Employee Territories Module
 **Purpose:** Manage employee-territory assignments (many-to-many)  
@@ -1892,31 +2039,36 @@ END FUNCTION
 
 ### 11. Orders Module
 **Purpose:** Manage customer orders  
-**Status:** .per modernized, main/4gl still legacy
+**Status:** .per modernized, .4gl partially modernized (ON ACTION, INSERT DEFAULT, zoom actions)
 
 **Key Features:**
 - **BUTTONEDIT** for customerid (ACTION=zoom_customer) and employeeid (ACTION=zoom_employee)
 - **COMBOBOX** for shipvia (shipper selection)
 - **DATEEDIT** for orderdate, requireddate, shippeddate
 - customername and employeename as NOENTRY display fields
+- **ON ACTION zoom_customer** and **ON ACTION zoom_employee** wired to BUTTONEDIT fields in add/edit
+- All ON KEY statements replaced with ON ACTION accept/cancel
+- INSERT uses DEFAULT for serial orderid, sqlca.sqlerrd[2] retrieves generated ID
 
 **Files:**
-- `orders.per` - Modern form with BUTTONEDIT, COMBOBOX, DATEEDIT
+- `orders.per` - Modern form with BUTTONEDIT, COMBOBOX, DATEEDIT, NOENTRY on orderid
 - `main_orders.4gl` - Still legacy (pending conversion)
-- `orders.4gl` - Still legacy (pending .4gl conversion)
+- `orders.4gl` - ON ACTION pattern with zoom handlers, INSERT DEFAULT, still uses static arrays (pending dynamic array conversion)
 
 ### 12. Order Details Module
 **Purpose:** Manage line items within orders  
-**Status:** .per modernized, main/4gl still legacy
+**Status:** .per modernized, .4gl partially modernized (ON ACTION, zoom actions)
 
 **Key Features:**
 - **BUTTONEDIT** for orderid (ACTION=zoom_order) and productid (ACTION=zoom_product)
 - productname as NOENTRY display field
+- **ON ACTION zoom_order** and **ON ACTION zoom_product** wired to BUTTONEDIT fields in add
+- All ON KEY statements replaced with ON ACTION accept/cancel
 
 **Files:**
 - `order_details.per` - Modern form with BUTTONEDIT
 - `main_order_details.4gl` - Still legacy (pending conversion)
-- `order_details.4gl` - Still legacy (pending .4gl conversion)
+- `order_details.4gl` - ON ACTION pattern with zoom handlers, still uses static arrays (pending dynamic array conversion)
 
 ---
 
@@ -2293,216 +2445,55 @@ Requires `IMPORT util` at the module level.
 
 **Key Insight:** In the .4pw project file, files used by multiple applications (like report_helper.4gl) should be placed in the Shared Library node, not duplicated in each Application node.
 
-### 8. ON ACTION Replaces ON KEY
+### 20. INSERT DEFAULT for PostgreSQL SERIAL Columns
 
-**Why Important:**
-- ON KEY uses key codes tied to terminal emulators (CTRL-P, ACCEPT)
-- ON ACTION uses named actions that work with toolbars, buttons, and keyboard
-- Actions map to generic.4ad for consistent icons and accelerators
-
-**Migration Pattern:**
-```4gl
--- Before (terminal-dependent)
-ON KEY (ACCEPT)
-    ACCEPT INPUT
-ON KEY (CONTROL-P)
-    LET int_flag = TRUE
-    EXIT INPUT
-
--- After (platform-independent)
-ON ACTION accept
-    ACCEPT INPUT
-ON ACTION cancel
-    LET int_flag = TRUE
-    EXIT INPUT
-```
-
-**Applied In:** CONSTRUCT, INPUT BY NAME across all modules.
-
-### 9. confirm_delete() is a Reusable Pattern
-
-**Why Important:**
-- PROMPT requires terminal-style text input ("Y/N")
-- confirm_delete() uses MENU with STYLE="dialog" for GUI dialog
-- Defined once in main_lib.4gl, used everywhere
-- Returns BOOLEAN for clean conditional logic
-
-**Applied In:** categories, suppliers, shippers, usstates, products, customers modules.
-
-### 10. COMBOBOX Population Strategy
-
-**Key Insight:** Populate comboboxes ONCE when the form opens in MAIN, not in each add/edit function.
-
-**Why:**
-- Combobox items persist for the lifetime of the window
-- Populating on every add/edit is wasteful
-- The main program has the right scope (after OPEN WINDOW, before menu loop)
+**Key Insight:** PostgreSQL SERIAL columns auto-generate values via sequences. Using `INSERT ... VALUES (DEFAULT, ...)` lets PostgreSQL generate the next ID, and `sqlca.sqlerrd[2]` retrieves the generated value.
 
 **Pattern:**
 ```4gl
-MAIN
-    CALL init_pgm()  -- Action defaults handled by form_initializer
-    OPEN WINDOW mainWindow WITH FORM "products"
-      ATTRIBUTES(BORDER, STYLE="noactions")
-    
-    CALL populate_supplier_combo()
-    CALL populate_category_combo()
-    -- ... start menu loop ...
-END MAIN
+INSERT INTO entity (entityid, field1, field2)
+   VALUES (DEFAULT, curr_entity.field1, curr_entity.field2)
+LET curr_entity.entityid = sqlca.sqlerrd[2]
+CALL display_curr_entity()
 ```
 
-**Static vs Dynamic Combos:**
-- **Dynamic** (from database): `populate_supplier_combo()`, `populate_category_combo()`, `populate_region_combo()`
-- **Static** (fixed values): `populate_courtesy_combo()` — uses hardcoded `cb.addItem()` calls
+**Form Side:** Serial PK fields use `NOENTRY` (prevent user editing) and `DEFAULT=0` (show 0 for new records).
 
-### 11. Form Initializer Eliminates Boilerplate
+### 21. BUTTONEDIT Zoom Actions Replace ON KEY CONTROL-T
 
-**Key Insight:** `ui.Form.setDefaultInitializer()` registers a callback that fires automatically every time any form opens.
+**Key Insight:** When a form uses `BUTTONEDIT field ACTION=zoom_xxx`, the .4gl code needs a corresponding `ON ACTION zoom_xxx` handler. This replaces the legacy `ON KEY (CONTROL-T)` with `INFIELD()` case logic pattern.
 
-**Before (repeated in every main program):**
+**Before (legacy):**
 ```4gl
-DEFINE f ui.Form
-LET f = ui.Window.getCurrent().getForm()
-CALL f.loadActionDefaults("generic.4ad")
+ON KEY (CONTROL-T)
+   CASE
+      WHEN INFIELD(customerid)
+         CALL customer_lookup() RETURNING id, name
+      WHEN INFIELD(employeeid)
+         CALL employee_lookup() RETURNING id, name
+   END CASE
 ```
 
-**After (registered once in init_pgm):**
+**After (modern):**
 ```4gl
--- In main_lib.4gl
-CALL ui.Form.setDefaultInitializer("form_initializer")
-
-FUNCTION form_initializer(frm ui.Form)
-    CALL frm.loadActionDefaults("generic.4ad")
-END FUNCTION
+ON ACTION zoom_customer
+   CALL customer_lookup() RETURNING id, name
+   IF id IS NOT NULL THEN
+      LET curr_record.customerid = id
+      LET curr_record.customername = name
+   END IF
+ON ACTION zoom_employee
+   CALL employee_lookup() RETURNING id, name
+   IF id IS NOT NULL AND id > 0 THEN
+      LET curr_record.employeeid = id
+      LET curr_record.employeename = name
+   END IF
 ```
 
-**Benefits:**
-- Code removed from 9 main programs
-- New modules get action defaults automatically
-- Single point of change for global form initialization
-
-### 12. TABLE Container Syntax
-
-**Key Insight:** TABLE rows use pipe `|` separators between columns, and the row template must be repeated to match the SCREEN RECORD array size.
-
-**Correct:**
-```per
-TABLE
-{
-  [emplid   |fullname            |terrid   ]
-  [emplid   |fullname            |terrid   ]
-  [emplid   |fullname            |terrid   ]
-}
-END
-
-INSTRUCTIONS
-  SCREEN RECORD sa_empl_terr[3](...);
-END
-```
-
-**Wrong (causes -2029 error):**
-```per
--- Adjacent brackets instead of pipes:
-[emplid   ][fullname            ][terrid   ]
-
--- Mismatched row count vs SCREEN RECORD size:
-TABLE (HEIGHT=10)
-{  -- only 1 row template
-  [emplid   |fullname            |terrid   ]
-}
--- with SCREEN RECORD sa_empl_terr[10] → error!
-```
-
-### 11. Build System: fgl2p vs fglcomp
-
-**Key Insight:** Individual `fglcomp -r module.4gl` fails when the module calls functions defined in other .4gl files (e.g., `confirm_delete()` from `main_lib.4gl`).
-
-**Solution:** Use `fgl2p` to compile and link multiple modules together:
-```bash
-fgl2p -o main_products.42r main_products.4gl main_lib.4gl products.4gl
-```
-
-**Best Practice:** Always use the Makefile which has proper dependency rules. The root `hrm/Makefile` handles all cross-module linking automatically.
-
-### 12. CHECKBOX Defaults Matter
-
-**Key Insight:** When adding a new record, CHECKBOX fields may display inconsistently if not initialized.
-
-**Solution:** Always set a default value before INPUT:
-```4gl
-LET curr_products.discontinued = 0
-```
-
-This ensures the checkbox appears unchecked for new records.
-
-### 13. CONSTRUCT BY NAME Does Not Take FROM Clause
-
-**Key Insight:** `CONSTRUCT BY NAME` maps form fields to columns automatically. Do NOT add `FROM s_criteria.*`.
-
-**Wrong:**
-```4gl
-CONSTRUCT BY NAME where_clause FROM s_criteria.* ON customers.customerid
-```
-
-**Correct:**
-```4gl
-CONSTRUCT BY NAME where_clause ON customers.customerid, customers.companyname
-```
-
-### 14. SQL Aliases Break CONSTRUCT WHERE Clauses
-
-**Key Insight:** CONSTRUCT generates WHERE clauses using the exact column names from the ON clause (e.g., `customers.customerid = 'ALFKI'`). If SQL uses aliases (`FROM customers c`), the WHERE clause won't match.
-
-**Solution:** Use full table names in SQL — no aliases:
-```4gl
--- WRONG (alias mismatch)
-LET sql_stmt = "SELECT c.customerid FROM customers c WHERE ", where_clause
-
--- CORRECT (full table names match CONSTRUCT output)
-LET sql_stmt = "SELECT customers.customerid FROM customers WHERE ", where_clause
-```
-
-**Note:** `STRING.replace()` does NOT exist in Genero BDL 6.00.02, so you cannot programmatically swap alias names.
-
-### 15. FORMONLY TYPE STRING Is Invalid in .per Files
-
-**Key Insight:** The `.per` form compiler does not accept `TYPE STRING` for FORMONLY attributes. Use SQL-compatible types instead.
-
-**Wrong:**
-```per
-EDIT line_text = FORMONLY.line_text TYPE STRING;
-```
-
-**Correct:**
-```per
-EDIT line_text = FORMONLY.line_text TYPE VARCHAR, SCROLL;
-```
-
-Valid types: CHAR, VARCHAR, INTEGER, SMALLINT, DATE, DATETIME, DECIMAL, FLOAT, etc.
-
-### 16. TABLES Section Must Come After LAYOUT
-
-**Key Insight:** In .per forms, the `TABLES` section must appear AFTER the `LAYOUT` section, not before `TOOLBAR`.
-
-### 17. util.Datetime.format() Is a Static Method
-
-**Key Insight:** `util.Datetime.format(CURRENT, "%Y%m%d_%H%M%S")` is a static method call on the `util.Datetime` class. It does not require an instance.
-
-Requires `IMPORT util` at the module level.
-
-### 18. Custom Styles for Specialized Windows
-
-**Key Insight:** Create named styles in generic.4st for specialized windows rather than using generic built-in styles like "dialog".
-
-**Benefits:**
-- Full control over window behavior (modal, toolbar visibility, action panels)
-- Table-level styling (font family, row highlighting)
-- Reusable across multiple forms
-- Style name on LAYOUT maps to `Window.name`, style on TABLE maps to `Table.name`
-
-### 19. Shared Files Belong in the Shared Library Node
-
-**Key Insight:** In the .4pw project file, files used by multiple applications (like report_helper.4gl) should be placed in the Shared Library node, not duplicated in each Application node.
+**Key Points:**
+- Each BUTTONEDIT gets its own dedicated ON ACTION — no INFIELD() case logic needed
+- COMBOBOX fields don't need zoom lookups (user selects from dropdown)
+- BEFORE FIELD "Use Ctrl-T" messages are unnecessary with BUTTONEDIT (visual button is self-documenting)
 
 ---
 
@@ -2788,6 +2779,61 @@ As you work, the AI learns patterns:
 - Added: "launch" ActionDefault (fa-rocket, acceleratorName=Return)
 - Total: 36 action defaults
 
+**orders.4gl** (Phase 32, 34, 35)
+- Updated: INSERT uses DEFAULT for serial orderid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: ON ACTION zoom_customer and ON ACTION zoom_employee in add_orders() and edit_orders()
+- Replaced: ON KEY (CONTROL-T) with INFIELD() → dedicated ON ACTION zoom_* handlers
+- Replaced: All ON KEY (ACCEPT/CONTROL-P) → ON ACTION accept/cancel
+- Removed: BEFORE FIELD "Use Ctrl-T" messages, unused shipper lookup variables
+
+**orders.per** (Phase 32)
+- Updated: orderid field with NOENTRY, DEFAULT=0 for serial column
+
+**order_details.4gl** (Phase 35)
+- Replaced: ON KEY (CONTROL-T) with INFIELD() → ON ACTION zoom_order + ON ACTION zoom_product
+- Replaced: All ON KEY (ACCEPT/CONTROL-P) → ON ACTION accept/cancel in CONSTRUCT, add, edit
+- Removed: BEFORE FIELD "Use Ctrl-T" messages
+
+**customers.4gl** (Phase 35)
+- Replaced: All ON KEY (ACCEPT/CONTROL-P) → ON ACTION accept/cancel in CONSTRUCT, add_customers, edit_customers
+
+**region.4gl** (Phase 32, 35)
+- Updated: INSERT uses DEFAULT for serial regionid, sqlca.sqlerrd[2] retrieves generated ID
+- Replaced: All ON KEY (ACCEPT/CONTROL-P) → ON ACTION accept/cancel in add_region, edit_region
+
+**employees.4gl** (Phase 35)
+- Replaced: All ON KEY (ACCEPT/CONTROL-P) → ON ACTION accept/cancel in add_employee, edit_employee, query_employee CONSTRUCT
+- Fixed: Removed duplicate ON ACTION cancel in CONSTRUCT (existed alongside ON KEY)
+
+**categories.4gl** (Phase 32)
+- Updated: INSERT uses DEFAULT for serial categoryid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: CALL display_curr_categories() after INSERT
+
+**suppliers.4gl** (Phase 32)
+- Updated: INSERT uses DEFAULT for serial supplierid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: CALL display_curr_suppliers() after INSERT
+
+**shippers.4gl** (Phase 32)
+- Updated: INSERT uses DEFAULT for serial shipperid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: CALL display_curr_shippers() after INSERT
+
+**products.4gl** (Phase 32)
+- Updated: INSERT uses DEFAULT for serial productid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: CALL display_curr_products() after INSERT
+
+**usstates.4gl** (Phase 32)
+- Updated: INSERT uses DEFAULT for serial stateid, sqlca.sqlerrd[2] retrieves generated ID
+- Added: CALL display_curr_usstates() after INSERT
+
+**All 7 .per forms with serial PKs** (Phase 32)
+- Updated: Serial PK fields to TYPE INTEGER, NOENTRY, DEFAULT=0
+
+**hrm/Makefile** (Phase 33)
+- Added: All missing module targets (orders, order_details, categories, customers, products, shippers, suppliers, usstates, ifx_menu)
+
+**Makefile (root)** (Phase 33)
+- Added: Missing ifx_menu target
+
 ---
 
 ## Conclusion
@@ -2802,7 +2848,7 @@ The Genero AI Agent effectively assisted with a complex modernization project by
 6. **Adding new UI patterns** - COMBOBOX population from database, CHECKBOX with defaults, dialog-style confirmation
 7. **Refactoring shared code** - confirm_delete() extracted to main_lib.4gl, applied everywhere
 
-The result: **12 modules with modern forms**, **9 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (36 actions) and stylesheets**, **centralized base Window style**, **dedicated module window style** (32 secondary windows across 17 modules), **form initializer hook with program icon registry**, **proper record types**, **dynamic arrays**, **ON ACTION events**, **INPUT ARRAY with modification triggers**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, **GUI tree menu** with 6 categories and 16 leaf programs, and **shared utility functions** throughout.
+The result: **12 modules with modern forms**, **9 fully modernized** from legacy terminal-style code to modern web-ready applications, **4 report modules** with CONSTRUCT criteria and text file output, a **reusable report viewer** with modal dialog and monospace table, **centralized action definitions (36 actions) and stylesheets**, **centralized base Window style**, **dedicated module window style** (32 secondary windows across 17 modules), **form initializer hook with program icon registry**, **proper record types**, **dynamic arrays**, **ON ACTION events** (zero ON KEY remaining), **INSERT DEFAULT for SERIAL columns** with sqlca.sqlerrd[2], **BUTTONEDIT zoom actions** for customer/employee/order/product lookups, **INPUT ARRAY with modification triggers**, **COMBOBOX/CHECKBOX/BUTTONEDIT/DATEEDIT/TEXTEDIT controls**, **TABLE containers**, **base.Channel file I/O**, **REPORT engine**, **GUI tree menu** with 6 categories and 16 leaf programs, and **shared utility functions** throughout.
 
 ### Key Success Factors
 
@@ -2828,16 +2874,18 @@ The result: **12 modules with modern forms**, **9 fully modernized** from legacy
 ✅ DEFINE placement discipline (all DEFINEs at function top, never inside IF/FOR)  
 ✅ Module window style for consistent secondary window behavior (32 windows, 17 modules)  
 ✅ Legacy attribute cleanup (removed AT row,col, BORDER, MESSAGE LINE LAST, ERROR LINE LAST)  
+✅ Serial field INSERT modernization (DEFAULT + sqlca.sqlerrd[2] across 7 modules)  
+✅ BUTTONEDIT zoom actions wired in orders.4gl and order_details.4gl  
+✅ Complete ON KEY elimination (25 replacements across 5 files, zero remaining)  
+✅ Makefile restructuring (all module targets added to hrm/Makefile and root Makefile)  
 
 ### Recommended Next Steps
 
-1. Convert remaining .4gl modules to modern patterns: region.4gl, employees.4gl, orders.4gl, order_details.4gl
+1. Convert remaining .4gl modules to dynamic arrays: region.4gl, employees.4gl, orders.4gl, order_details.4gl, customers.4gl (still use static ARRAY or partial patterns)
 2. Convert remaining main programs: main_orders.4gl, main_order_details.4gl
-3. Implement zoom/lookup window functions: employee_lookup(), territory_lookup(), customer_lookup(), product_lookup(), order_lookup()
-4. Test the modernized application with real data
-5. Add master-detail patterns for orders/order_details
-6. Add report export options (CSV, PDF via Genero Report Engine)
-7. Document application architecture for team reference
+3. Test the modernized application with real data
+4. Add master-detail patterns for orders/order_details
+5. Add report export options (CSV, PDF via Genero Report Engine)
 
 ---
 

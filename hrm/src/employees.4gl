@@ -257,9 +257,9 @@ FUNCTION add_employee()
     LET int_flag = FALSE
 
     INPUT BY NAME currentRec.* WITHOUT DEFAULTS
-        ON KEY(ACCEPT)
+        ON ACTION accept
            ACCEPT INPUT
-        ON KEY(CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -288,9 +288,9 @@ FUNCTION edit_employee()
 
     LET int_flag = FALSE
     INPUT BY NAME currentRec.* WITHOUT DEFAULTS
-        ON KEY(ACCEPT)
+        ON ACTION accept
            ACCEPT INPUT
-        ON KEY(CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -342,14 +342,11 @@ FUNCTION query_employee()
        employees.homephone, employees.extension, employees.reportsto,
        employees.photopath, employees.notes # FROM s_employees.*
 
-        ON KEY(ACCEPT)
+        ON ACTION accept
            ACCEPT CONSTRUCT
-        ON KEY(CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
-       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT CONSTRUCT
 
     END CONSTRUCT
 

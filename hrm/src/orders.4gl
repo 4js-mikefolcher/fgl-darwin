@@ -296,9 +296,9 @@ FUNCTION query_orders()
                               s_orders.shipvia, s_orders.freight,
                               s_orders.shipname,s_orders.shipaddress, s_orders.shipcity,
                               s_orders.shipregion, s_orders.shippostalcode, s_orders.shipcountry
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -373,50 +373,31 @@ FUNCTION add_orders()
     DEFINE selected_customer_name LIKE customers.companyname
     DEFINE selected_employee_id LIKE employees.employeeid
     DEFINE selected_employee_name VARCHAR(32)
-    DEFINE selected_shipper_id LIKE shippers.shipperid
-    DEFINE selected_shipper_name LIKE shippers.companyname
 
     CLEAR FORM
     LET int_flag = FALSE
     CALL clear_curr_orders()
     INPUT BY NAME curr_orders.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(customerid) THEN
-               CALL customer_lookup()
-                  RETURNING selected_customer_id, selected_customer_name
-               IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
-                  LET curr_orders.customerid = selected_customer_id
-                  LET curr_orders.customername = selected_customer_name
-               END IF
+        ON ACTION zoom_customer
+            CALL customer_lookup()
+               RETURNING selected_customer_id, selected_customer_name
+            IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
+               LET curr_orders.customerid = selected_customer_id
+               LET curr_orders.customername = selected_customer_name
             END IF
-            IF INFIELD(employeeid) THEN
-               CALL employee_lookup()
-                  RETURNING selected_employee_id, selected_employee_name
-               IF selected_employee_id > 0 THEN
-                  LET curr_orders.employeeid = selected_employee_id
-                  LET curr_orders.employeename = selected_employee_name
-               END IF
+        ON ACTION zoom_employee
+            CALL employee_lookup()
+               RETURNING selected_employee_id, selected_employee_name
+            IF selected_employee_id > 0 THEN
+               LET curr_orders.employeeid = selected_employee_id
+               LET curr_orders.employeename = selected_employee_name
             END IF
-            IF INFIELD(shipvia) THEN
-               CALL shipper_lookup()
-                  RETURNING selected_shipper_id, selected_shipper_name
-               IF selected_shipper_id > 0 THEN
-                  LET curr_orders.shipvia = selected_shipper_id
-               END IF
-            END IF
-
-        BEFORE FIELD customerid
-            MESSAGE "Use Ctrl-T to open lookup window"
-        BEFORE FIELD employeeid
-            MESSAGE "Use Ctrl-T to open lookup window"
-        BEFORE FIELD shipvia
-            MESSAGE "Use Ctrl-T to open lookup window"
 
         AFTER FIELD customerid
             CALL validate_customer_field()
@@ -473,8 +454,6 @@ FUNCTION edit_orders()
     DEFINE selected_customer_name LIKE customers.companyname
     DEFINE selected_employee_id LIKE employees.employeeid
     DEFINE selected_employee_name VARCHAR(32)
-    DEFINE selected_shipper_id LIKE shippers.shipperid
-    DEFINE selected_shipper_name LIKE shippers.companyname
 
     LET int_flag = FALSE
     INPUT BY NAME curr_orders.customerid, curr_orders.employeeid,
@@ -483,42 +462,25 @@ FUNCTION edit_orders()
                   curr_orders.shipname, curr_orders.shipaddress, curr_orders.shipcity,
                   curr_orders.shipregion, curr_orders.shippostalcode, curr_orders.shipcountry
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
-        ON KEY (CONTROL-T)
-            IF INFIELD(customerid) THEN
-               CALL customer_lookup()
-                  RETURNING selected_customer_id, selected_customer_name
-               IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
-                  LET curr_orders.customerid = selected_customer_id
-                  LET curr_orders.customername = selected_customer_name
-               END IF
+        ON ACTION zoom_customer
+            CALL customer_lookup()
+               RETURNING selected_customer_id, selected_customer_name
+            IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
+               LET curr_orders.customerid = selected_customer_id
+               LET curr_orders.customername = selected_customer_name
             END IF
-            IF INFIELD(employeeid) THEN
-               CALL employee_lookup()
-                  RETURNING selected_employee_id, selected_employee_name
-               IF selected_employee_id > 0 THEN
-                  LET curr_orders.employeeid = selected_employee_id
-                  LET curr_orders.employeename = selected_employee_name
-               END IF
+        ON ACTION zoom_employee
+            CALL employee_lookup()
+               RETURNING selected_employee_id, selected_employee_name
+            IF selected_employee_id > 0 THEN
+               LET curr_orders.employeeid = selected_employee_id
+               LET curr_orders.employeename = selected_employee_name
             END IF
-            IF INFIELD(shipvia) THEN
-               CALL shipper_lookup()
-                  RETURNING selected_shipper_id, selected_shipper_name
-               IF selected_shipper_id > 0 THEN
-                  LET curr_orders.shipvia = selected_shipper_id
-               END IF
-            END IF
-
-        BEFORE FIELD customerid
-            MESSAGE "Use Ctrl-T to open lookup window"
-        BEFORE FIELD employeeid
-            MESSAGE "Use Ctrl-T to open lookup window"
-        BEFORE FIELD shipvia
-            MESSAGE "Use Ctrl-T to open lookup window"
 
         AFTER FIELD customerid
             CALL validate_customer_field()

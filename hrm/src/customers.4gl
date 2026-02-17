@@ -142,9 +142,9 @@ FUNCTION query_customers()
                               customers.region, customers.postalcode, customers.country,
                               customers.phone, customers.fax
        FROM s_customers.*
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT CONSTRUCT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT CONSTRUCT
     END CONSTRUCT
@@ -200,9 +200,9 @@ FUNCTION add_customers()
     CALL clear_curr_customers()
     INPUT BY NAME curr_customers.*
         ATTRIBUTE(UNBUFFERED)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
@@ -233,9 +233,9 @@ FUNCTION edit_customers()
                   curr_customers.address, curr_customers.city, curr_customers.region,
                   curr_customers.postalcode, curr_customers.country, curr_customers.phone, curr_customers.fax
         ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON KEY (ACCEPT)
+        ON ACTION accept
             ACCEPT INPUT
-        ON KEY (CONTROL-P)
+        ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT

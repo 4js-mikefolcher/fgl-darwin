@@ -125,26 +125,32 @@
   <!-- Zoom/Lookup Actions -->
   <ActionDefault name="zoom_employee"
     image="zoom"
+    defaultView="no"
     comment="Look up employee" />
   
   <ActionDefault name="zoom_territory"
     image="zoom"
+    defaultView="no"
     comment="Look up territory" />
   
   <ActionDefault name="zoom_customer"
     image="zoom"
+    defaultView="no"
     comment="Look up customer" />
   
   <ActionDefault name="zoom_product"
     image="zoom"
+    defaultView="no"
     comment="Look up product" />
   
   <ActionDefault name="zoom_order"
     image="zoom"
+    defaultView="no"
     comment="Look up order" />
   
   <ActionDefault name="zoom"
     image="zoom"
+    defaultView="no"
     comment="Look up record" />
   
   <!-- Report Actions -->
