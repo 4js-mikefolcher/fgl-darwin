@@ -204,13 +204,15 @@ $(BINDIR)/bdl_menu.42f: bdl_menu.per
 	mv bdl_menu.42f $(BINDIR)/
 
 # Common modules for cross-navigation
-CORE_MODULES = main_lib.4gl list_view_helper.4gl employees.4gl empl_terr.4gl territories.4gl region.4gl \
+CORE_MODULES = main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
+               employees.4gl empl_terr.4gl territories.4gl region.4gl \
                orders.4gl order_details.4gl customers.4gl shippers.4gl \
-               products.4gl suppliers.4gl categories.4gl
+               products.4gl suppliers.4gl categories.4gl usstates.4gl
 
-CORE_42M = main_lib.42m list_view_helper.42m employees.42m empl_terr.42m territories.42m region.42m \
+CORE_42M = main_lib.42m list_view_helper.42m controller.42m dispatch.42m \
+           employees.42m empl_terr.42m territories.42m region.42m \
            orders.42m order_details.42m customers.42m shippers.42m \
-           products.42m suppliers.42m categories.42m
+           products.42m suppliers.42m categories.42m usstates.42m
 
 # Report modules
 RPT_MODULES = rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
@@ -266,17 +268,17 @@ $(BINDIR)/main_products.42r: main_products.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_products.42r $^
 	mv main_products.42r main_products.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_shippers.42r: main_shippers.4gl main_lib.4gl shippers.4gl
+$(BINDIR)/main_shippers.42r: main_shippers.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_shippers.42r $^
-	mv main_shippers.42r main_shippers.42m main_lib.42m shippers.42m $(BINDIR)/
+	mv main_shippers.42r main_shippers.42m $(CORE_42M) $(BINDIR)/
 
 $(BINDIR)/main_suppliers.42r: main_suppliers.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_suppliers.42r $^
 	mv main_suppliers.42r main_suppliers.42m $(CORE_42M) $(BINDIR)/
 
-$(BINDIR)/main_usstates.42r: main_usstates.4gl main_lib.4gl list_view_helper.4gl usstates.4gl
+$(BINDIR)/main_usstates.42r: main_usstates.4gl $(CORE_MODULES)
 	$(SRCCOMP) -o main_usstates.42r $^
-	mv main_usstates.42r main_usstates.42m main_lib.42m list_view_helper.42m usstates.42m $(BINDIR)/
+	mv main_usstates.42r main_usstates.42m $(CORE_42M) $(BINDIR)/
 
 # Report program compilation rules
 $(BINDIR)/main_rpt_orders_by_customer.42r: main_rpt_orders_by_customer.4gl main_lib.4gl report_helper.4gl rpt_orders_by_customer.4gl

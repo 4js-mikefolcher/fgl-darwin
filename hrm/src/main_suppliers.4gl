@@ -10,7 +10,7 @@ MAIN
         COMMAND "Query" "Search for Suppliers"
             CALL submenu_suppliers()
         COMMAND "Add" "Add a new Supplier"
-            CALL add_suppliers()
+            CALL suppliers_do_add()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

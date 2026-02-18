@@ -1,4 +1,5 @@
 IMPORT FGL list_view_helper
+IMPORT FGL controller
 DATABASE northwind
 
 TYPE t_territory RECORD
@@ -9,6 +10,37 @@ END RECORD
 
 DEFINE territories_arr DYNAMIC ARRAY OF t_territory
 DEFINE curr_territories t_territory
+
+-- =====================================================================
+-- Function: get_config (PRIVATE)
+-- Purpose : Return controller configuration for territories module
+-- =====================================================================
+PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
+   DEFINE cfg t_controller_config
+
+   LET cfg.moduleName = "territories"
+   LET cfg.formName = "territories"
+   LET cfg.listFormName = "territories_list"
+   LET cfg.windowTitle = "Territories Management"
+   LET cfg.hasModify = TRUE
+   LET cfg.hasQuery = TRUE
+   LET cfg.hasLookup = TRUE
+   LET cfg.entityName = "Territory"
+
+   RETURN cfg
+
+END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: submenu_territories
+-- Purpose : Main entry point for territories management
+-- =====================================================================
+FUNCTION submenu_territories()
+
+   CALL controller_init(get_config())
+   CALL controller_query_then_navigate()
+
+END FUNCTION #submenu_territories
 
 -- =====================================================================
 -- Function: view_territory
@@ -26,8 +58,9 @@ FUNCTION view_territory(terr_id)
    OPEN WINDOW viewTerritoryWindow WITH FORM "territories"
       ATTRIBUTES(STYLE="modulewindow")
 
+   CALL populate_region_combo()
    LET where_clause = " territories.territoryid = '", terr_id CLIPPED, "'"
-   CALL load_territories(where_clause)
+   CALL territories_do_load(where_clause)
 
    IF territories_arr.getLength() == 0 THEN
       CLOSE WINDOW viewTerritoryWindow
@@ -35,18 +68,8 @@ FUNCTION view_territory(terr_id)
       RETURN
    END IF
 
-   CALL populate_region_combo()
-   CALL load_curr_territories(1)
-   CALL display_curr_territories()
-
-   MENU "Territory View"
-      COMMAND "Region" "View Region"
-         CALL view_region(curr_territories.regionid)
-      COMMAND "Employees" "View Employees in this Territory"
-         CALL empl_by_terr(curr_territories.territoryid)
-      COMMAND "Exit" "Quit operation"
-         EXIT MENU
-   END MENU
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
    CLOSE WINDOW viewTerritoryWindow
 
@@ -68,8 +91,9 @@ FUNCTION view_territories_for_region(reg_id)
    OPEN WINDOW viewTerritoriesWindow WITH FORM "territories"
       ATTRIBUTES(STYLE="modulewindow")
 
+   CALL populate_region_combo()
    LET where_clause = " territories.regionid = ", reg_id
-   CALL load_territories(where_clause)
+   CALL territories_do_load(where_clause)
 
    IF territories_arr.getLength() == 0 THEN
       CLOSE WINDOW viewTerritoriesWindow
@@ -77,7 +101,6 @@ FUNCTION view_territories_for_region(reg_id)
       RETURN
    END IF
 
-   CALL populate_region_combo()
    CALL submenu_territories_view()
 
    CLOSE WINDOW viewTerritoriesWindow
@@ -126,467 +149,242 @@ FUNCTION submenu_territories_view()
    LET currentIdx = 1
    WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength()
 
-       CALL load_curr_territories(currentIdx)
-       CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
+      CALL territories_load_at(currentIdx)
+      CALL territories_display_curr()
+      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
+      MESSAGE statusMessage
 
-       MENU "Territories View"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > territories_arr.getLength() THEN
-                 LET currentIdx = territories_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = territories_arr.getLength()
-              EXIT MENU
-          COMMAND "Region" "View Region"
-              CALL view_region(curr_territories.regionid)
-          COMMAND "Employees" "View Employees in this Territory"
-              CALL empl_by_terr(curr_territories.territoryid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
+      MENU "Territories View"
+         COMMAND "First" "View first record in result set"
+            LET currentIdx = 1
+            EXIT MENU
+         COMMAND "Previous" "View previous record in result set"
+            LET currentIdx = currentIdx - 1
+            IF currentIdx < 1 THEN
+               LET currentIdx = 1
+            END IF
+            EXIT MENU
+         COMMAND "Next" "View next record in result set"
+            LET currentIdx = currentIdx + 1
+            IF currentIdx > territories_arr.getLength() THEN
+               LET currentIdx = territories_arr.getLength()
+            END IF
+            EXIT MENU
+         COMMAND "Last" "View last record in result set"
+            LET currentIdx = territories_arr.getLength()
+            EXIT MENU
+         COMMAND "Region" "View Region"
+            CALL view_region(curr_territories.regionid)
+         COMMAND "Employees" "View Employees in this Territory"
+            CALL empl_by_terr(curr_territories.territoryid)
+         COMMAND "Exit" "Quit operation"
+            LET currentIdx = 0
+            EXIT MENU
+      END MENU
 
    END WHILE
 
 END FUNCTION #submenu_territories_view
 
-FUNCTION submenu_territories()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
+-- =====================================================================
+-- Dispatch interface: territories_get_count
+-- =====================================================================
+FUNCTION territories_get_count()
 
-   CALL query_territories()
-   IF territories_arr.getLength() == 0 THEN
-      RETURN
+   RETURN territories_arr.getLength()
+
+END FUNCTION #territories_get_count
+
+-- =====================================================================
+-- Dispatch interface: territories_load_at
+-- =====================================================================
+FUNCTION territories_load_at(idx)
+   DEFINE idx INTEGER
+
+   INITIALIZE curr_territories.* TO NULL
+   IF idx >= 1 AND idx <= territories_arr.getLength() THEN
+      LET curr_territories = territories_arr[idx]
    END IF
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength()
-
-       CALL load_curr_territories(currentIdx)
-       CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Territories Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > territories_arr.getLength() THEN
-                 LET currentIdx = territories_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = territories_arr.getLength()
-              EXIT MENU
-          COMMAND "Add" "Add a new territory"
-              CALL add_territories()
-              IF int_flag == FALSE THEN
-                 CALL refresh_territories(currentIdx, "A")
-                 LET currentIdx = territories_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Modify" "Edit an existing territory"
-              CALL edit_territories()
-              IF int_flag == FALSE THEN
-                 CALL refresh_territories(currentIdx, "C")
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete a territory"
-              CALL delete_territories()
-              IF int_flag == FALSE THEN
-                 CALL refresh_territories(currentIdx, "D")
-                 IF currentIdx > territories_arr.getLength() THEN
-                    LET currentIdx = territories_arr.getLength()
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "List" "Switch to list view"
-              CALL list_territories_view()
-              EXIT MENU
-          COMMAND "Region" "View Region"
-              CALL view_region(curr_territories.regionid)
-          COMMAND "Employees" "View Employees in this Territory"
-              CALL empl_by_terr(curr_territories.territoryid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
-
-END FUNCTION #submenu_territories
+END FUNCTION #territories_load_at
 
 -- =====================================================================
--- Function: list_territories_view
--- Purpose : Display territories in a list/table view
+-- Dispatch interface: territories_display_curr
 -- =====================================================================
-FUNCTION list_territories_view()
-   DEFINE selectedIdx INTEGER
-   DEFINE selectedOption INTEGER
-
-   OPEN WINDOW listTerritoriesWindow WITH FORM "territories_list"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   MESSAGE "Displayed ", territories_arr.getLength() USING "<<<<<", " territories"
-
-   DISPLAY ARRAY territories_arr TO territories_list.*
-       ON ACTION add
-         LET selectedOption = cAddRecord
-         EXIT DISPLAY
-       ON ACTION modify
-         LET selectedOption = cEditRecord
-         LET selectedIdx = ARR_CURR()
-         EXIT DISPLAY
-       ON ACTION delete
-         LET selectedIdx = ARR_CURR()
-         LET selectedOption = cDeleteRecord
-         EXIT DISPLAY
-       ON ACTION exit
-           LET int_flag = TRUE
-           EXIT DISPLAY
-       ON ACTION accept
-           LET selectedIdx = ARR_CURR()
-           LET selectedOption = cViewRecord
-           EXIT DISPLAY
-   END DISPLAY
-
-   CLOSE WINDOW listTerritoriesWindow
-
-   IF int_flag THEN
-      RETURN
-   END IF
-
-   CASE selectedOption
-      WHEN cAddRecord
-         CALL add_territories()
-         IF int_flag == FALSE THEN
-            CALL refresh_territories(territories_arr.getLength(), "A")
-         END IF
-      WHEN cEditRecord
-         IF selectedIdx >= 1 AND selectedIdx <= territories_arr.getLength() THEN
-            CALL load_curr_territories(selectedIdx)
-            CALL edit_territories()
-            IF int_flag == FALSE THEN
-                  CALL refresh_territories(selectedIdx, "C")
-            END IF
-         ELSE
-            ERROR "Please select a territory"
-         END IF
-      WHEN cDeleteRecord
-         IF selectedIdx >= 1 AND selectedIdx <= territories_arr.getLength() THEN
-            CALL load_curr_territories(selectedIdx)
-            CALL delete_territories()
-            IF int_flag == FALSE THEN
-                  CALL refresh_territories(selectedIdx, "D")
-            END IF
-         ELSE
-            ERROR "Please select a territory"
-         END IF
-      WHEN cViewRecord
-         CALL load_curr_territories(selectedIdx)
-         CALL display_curr_territories()
-   END CASE
-
-END FUNCTION #list_territories_view
-
-FUNCTION territories_lookup()
-   DEFINE territories_id LIKE territories.territoryid
-   DEFINE territories_desc LIKE territories.territorydescription
-
-   OPEN WINDOW lookupWindow WITH FORM "territories"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_region_combo()
-   CALL territories_lookup_menu()
-      RETURNING territories_id, territories_desc
-
-   CLOSE WINDOW lookupWindow
-
-   RETURN territories_id, territories_desc
-
-END FUNCTION #territories_lookup
-
-FUNCTION territories_lookup_menu()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-   DEFINE selectedIdx INTEGER
-
-   CALL query_territories()
-   IF territories_arr.getLength() == 0 THEN
-      RETURN "", ""
-   END IF
-
-   LET currentIdx = 1
-   LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength() AND selectedIdx == 0
-
-       CALL load_curr_territories(currentIdx)
-       CALL display_curr_territories()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Territory Select"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > territories_arr.getLength() THEN
-                 LET currentIdx = territories_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = territories_arr.getLength()
-              EXIT MENU
-          COMMAND "Select" "Select a territory"
-              LET selectedIdx = currentIdx
-              EXIT MENU
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
-
-   IF selectedIdx > 0 THEN
-      RETURN curr_territories.territoryid, curr_territories.territorydescription
-   END IF
-   RETURN "", ""
-
-END FUNCTION #territories_lookup_menu
-
--- =====================================================================
--- Function: query_territories
--- Purpose : Search and display territories using CONSTRUCT, store in array
--- =====================================================================
-FUNCTION query_territories()
-    DEFINE where_clause VARCHAR(255)
-
-    CLEAR FORM
-    CALL clear_curr_territories()
-    LET int_flag = FALSE
-    CONSTRUCT where_clause ON territories.territoryid, territories.territorydescription,
-                              territories.regionid
-       FROM s_territories.*
-        ON ACTION accept
-            ACCEPT CONSTRUCT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT CONSTRUCT
-    END CONSTRUCT
-
-    IF int_flag THEN
-       CALL clear_curr_territories()
-       CALL clear_territories()
-       RETURN
-    END IF
-
-    CALL load_territories(where_clause)
-
-    IF territories_arr.getLength() == 0 THEN
-        MESSAGE "No territories found."
-        RETURN
-    END IF
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: load_territories
--- Purpose : Load territories into dynamic array based on WHERE clause
--- =====================================================================
-FUNCTION load_territories(where_clause)
-    DEFINE where_clause VARCHAR(255)
-    DEFINE sql_stmt VARCHAR(512)
-    DEFINE temp_territory t_territory
-
-    LET sql_stmt = " SELECT territoryid, territorydescription, regionid",
-                   " FROM territories",
-                   " WHERE ", where_clause CLIPPED, " ORDER BY territoryid"
-
-    CALL clear_territories()
-
-    PREPARE p_territories FROM sql_stmt
-    DECLARE c_territories CURSOR FOR p_territories
-    FOREACH c_territories INTO temp_territory.*
-        CALL territories_arr.appendElement()
-        LET territories_arr[territories_arr.getLength()] = temp_territory
-    END FOREACH
-    CALL clear_curr_territories()
-
-END FUNCTION
-
-FUNCTION clear_territories()
-
-   CALL territories_arr.clear()
-
-END FUNCTION #clear_territories
-
--- =====================================================================
--- Function: add_territories
--- Purpose : Add a new territory record
--- =====================================================================
-FUNCTION add_territories()
-    DEFINE territories_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-
-    CLEAR FORM
-    LET int_flag = FALSE
-    CALL clear_curr_territories()
-    INPUT BY NAME curr_territories.*
-        ATTRIBUTE(UNBUFFERED)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            CALL validate_territories("A")
-               RETURNING territories_valid, valid_msg
-            IF NOT territories_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Territory add canceled"
-       RETURN
-    END IF
-
-    CALL insert_curr_territories()
-    MESSAGE "Territory record added"
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: edit_territories
--- Purpose : Edit an existing territory record
--- =====================================================================
-FUNCTION edit_territories()
-    DEFINE territories_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-
-    LET int_flag = FALSE
-    INPUT BY NAME curr_territories.territorydescription, curr_territories.regionid
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            CALL validate_territories("C")
-               RETURNING territories_valid, valid_msg
-            IF NOT territories_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Territory update canceled"
-       RETURN
-    END IF
-
-    CALL update_curr_territories()
-    MESSAGE "Territory record updated"
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: delete_territories
--- Purpose : Delete an existing territory record
--- =====================================================================
-FUNCTION delete_territories()
-
-    LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
-        ERROR "Territory delete canceled"
-        LET int_flag = TRUE
-        RETURN
-    END IF
-
-    CALL delete_curr_territories()
-    MESSAGE "Territory record deleted"
-
-END FUNCTION
-
-FUNCTION load_curr_territories(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_territories()
-   IF currIdx > 0 AND currIdx <= territories_arr.getLength() THEN
-      LET curr_territories = territories_arr[currIdx]
-   END IF
-
-END FUNCTION
-
-FUNCTION display_curr_territories()
+FUNCTION territories_display_curr()
 
    DISPLAY BY NAME curr_territories.*
 
-END FUNCTION
+END FUNCTION #territories_display_curr
 
-FUNCTION clear_curr_territories()
+-- =====================================================================
+-- Dispatch interface: territories_clear_curr
+-- =====================================================================
+FUNCTION territories_clear_curr()
 
    INITIALIZE curr_territories.* TO NULL
 
-END FUNCTION
+END FUNCTION #territories_clear_curr
 
-FUNCTION insert_curr_territories()
+-- =====================================================================
+-- Dispatch interface: territories_do_query
+-- =====================================================================
+FUNCTION territories_do_query()
+   DEFINE where_clause VARCHAR(255)
 
-   INSERT INTO territories (territoryid, territorydescription, regionid) 
+   CLEAR FORM
+   CALL territories_clear_curr()
+   CALL populate_region_combo()
+   LET int_flag = FALSE
+   CONSTRUCT where_clause ON territories.territoryid, territories.territorydescription,
+                             territories.regionid
+      FROM s_territories.*
+      ON ACTION accept
+         ACCEPT CONSTRUCT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT CONSTRUCT
+   END CONSTRUCT
+
+   IF int_flag THEN
+      CALL territories_clear_curr()
+      CALL territories_arr.clear()
+      RETURN
+   END IF
+
+   CALL territories_do_load(where_clause)
+
+   IF territories_arr.getLength() == 0 THEN
+      MESSAGE "No territories found."
+      RETURN
+   END IF
+
+END FUNCTION #territories_do_query
+
+-- =====================================================================
+-- Function: territories_do_load (PRIVATE)
+-- Purpose : Load territories into dynamic array based on WHERE clause
+-- =====================================================================
+PRIVATE FUNCTION territories_do_load(where_clause)
+   DEFINE where_clause VARCHAR(255)
+   DEFINE sql_stmt VARCHAR(512)
+   DEFINE temp_territory t_territory
+
+   LET sql_stmt = " SELECT territoryid, territorydescription, regionid",
+                  " FROM territories",
+                  " WHERE ", where_clause CLIPPED, " ORDER BY territoryid"
+
+   CALL territories_arr.clear()
+
+   PREPARE p_territories FROM sql_stmt
+   DECLARE c_territories CURSOR FOR p_territories
+   FOREACH c_territories INTO temp_territory.*
+      CALL territories_arr.appendElement()
+      LET territories_arr[territories_arr.getLength()] = temp_territory
+   END FOREACH
+   CALL territories_clear_curr()
+
+END FUNCTION #territories_do_load
+
+-- =====================================================================
+-- Dispatch interface: territories_do_add
+-- =====================================================================
+FUNCTION territories_do_add()
+   DEFINE territories_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+
+   CLEAR FORM
+   LET int_flag = FALSE
+   CALL territories_clear_curr()
+   CALL populate_region_combo()
+   INPUT BY NAME curr_territories.*
+      ATTRIBUTE(UNBUFFERED)
+      ON ACTION accept
+         ACCEPT INPUT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT INPUT
+      AFTER INPUT
+         CALL validate_territories("A")
+            RETURNING territories_valid, valid_msg
+         IF NOT territories_valid THEN
+            ERROR valid_msg
+            CONTINUE INPUT
+         END IF
+   END INPUT
+
+   IF int_flag THEN
+      ERROR "Territory add canceled"
+      RETURN
+   END IF
+
+   INSERT INTO territories (territoryid, territorydescription, regionid)
       VALUES (curr_territories.territoryid, curr_territories.territorydescription, curr_territories.regionid)
+   CALL territories_display_curr()
+   MESSAGE "Territory record added"
 
-END FUNCTION
+END FUNCTION #territories_do_add
 
-FUNCTION update_curr_territories()
+-- =====================================================================
+-- Dispatch interface: territories_do_edit
+-- =====================================================================
+FUNCTION territories_do_edit()
+   DEFINE territories_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+
+   CALL populate_region_combo()
+   LET int_flag = FALSE
+   INPUT BY NAME curr_territories.territorydescription, curr_territories.regionid
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
+      ON ACTION accept
+         ACCEPT INPUT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT INPUT
+      AFTER INPUT
+         CALL validate_territories("C")
+            RETURNING territories_valid, valid_msg
+         IF NOT territories_valid THEN
+            ERROR valid_msg
+            CONTINUE INPUT
+         END IF
+   END INPUT
+
+   IF int_flag THEN
+      ERROR "Territory update canceled"
+      RETURN
+   END IF
 
    UPDATE territories
       SET territorydescription = curr_territories.territorydescription,
           regionid = curr_territories.regionid
     WHERE territoryid = curr_territories.territoryid
+   MESSAGE "Territory record updated"
 
-END FUNCTION
+END FUNCTION #territories_do_edit
 
-FUNCTION delete_curr_territories()
+-- =====================================================================
+-- Dispatch interface: territories_do_delete
+-- =====================================================================
+FUNCTION territories_do_delete()
+
+   LET int_flag = FALSE
+   IF NOT confirm_delete() THEN
+      ERROR "Territory delete canceled"
+      LET int_flag = TRUE
+      RETURN
+   END IF
 
    DELETE FROM territories
     WHERE territoryid = curr_territories.territoryid
+   MESSAGE "Territory record deleted"
 
-END FUNCTION
+END FUNCTION #territories_do_delete
 
-FUNCTION refresh_territories(currIdx, operation)
+-- =====================================================================
+-- Dispatch interface: territories_do_refresh
+-- =====================================================================
+FUNCTION territories_do_refresh(currIdx, operation)
    DEFINE currIdx INTEGER
    DEFINE operation CHAR(1)
    DEFINE idx INTEGER
@@ -606,9 +404,126 @@ FUNCTION refresh_territories(currIdx, operation)
          END FOR
    END CASE
 
-END FUNCTION #refresh_territories
+END FUNCTION #territories_do_refresh
 
-FUNCTION validate_territories(mode)
+-- =====================================================================
+-- Dispatch interface: territories_list_display
+-- =====================================================================
+FUNCTION territories_list_display()
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   MESSAGE "Displayed ", territories_arr.getLength() USING "<<<<<", " territories"
+
+   DISPLAY ARRAY territories_arr TO territories_list.*
+      ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+      ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+      ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+      ON ACTION exit
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cViewRecord
+         EXIT DISPLAY
+   END DISPLAY
+
+   RETURN selectedIdx, selectedOption
+
+END FUNCTION #territories_list_display
+
+-- =====================================================================
+-- Function: territories_lookup
+-- Purpose : Open territory lookup window, return selected territory
+-- =====================================================================
+FUNCTION territories_lookup()
+   DEFINE territories_id LIKE territories.territoryid
+   DEFINE territories_desc LIKE territories.territorydescription
+
+   OPEN WINDOW lookupWindow WITH FORM "territories"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   CALL populate_region_combo()
+   CALL territories_lookup_menu()
+      RETURNING territories_id, territories_desc
+
+   CLOSE WINDOW lookupWindow
+
+   RETURN territories_id, territories_desc
+
+END FUNCTION #territories_lookup
+
+-- =====================================================================
+-- Function: territories_lookup_menu
+-- Purpose : Navigate territories for selection
+-- =====================================================================
+FUNCTION territories_lookup_menu()
+   DEFINE currentIdx INTEGER
+   DEFINE statusMessage CHAR(60)
+   DEFINE selectedIdx INTEGER
+
+   CALL territories_do_query()
+   IF territories_arr.getLength() == 0 THEN
+      RETURN "", ""
+   END IF
+
+   LET currentIdx = 1
+   LET selectedIdx = 0
+   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength() AND selectedIdx == 0
+
+      CALL territories_load_at(currentIdx)
+      CALL territories_display_curr()
+      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
+      MESSAGE statusMessage
+
+      MENU "Territory Select"
+         COMMAND "First" "View first record in result set"
+            LET currentIdx = 1
+            EXIT MENU
+         COMMAND "Previous" "View previous record in result set"
+            LET currentIdx = currentIdx - 1
+            IF currentIdx < 1 THEN
+               LET currentIdx = 1
+            END IF
+            EXIT MENU
+         COMMAND "Next" "View next record in result set"
+            LET currentIdx = currentIdx + 1
+            IF currentIdx > territories_arr.getLength() THEN
+               LET currentIdx = territories_arr.getLength()
+            END IF
+            EXIT MENU
+         COMMAND "Last" "View last record in result set"
+            LET currentIdx = territories_arr.getLength()
+            EXIT MENU
+         COMMAND "Select" "Select a territory"
+            LET selectedIdx = currentIdx
+            EXIT MENU
+         COMMAND "Exit" "Quit operation"
+            LET currentIdx = 0
+            EXIT MENU
+      END MENU
+
+   END WHILE
+
+   IF selectedIdx > 0 THEN
+      RETURN curr_territories.territoryid, curr_territories.territorydescription
+   END IF
+   RETURN "", ""
+
+END FUNCTION #territories_lookup_menu
+
+-- =====================================================================
+-- Function: validate_territories (PRIVATE)
+-- =====================================================================
+PRIVATE FUNCTION validate_territories(mode)
    DEFINE mode CHAR(1)
    DEFINE territoriesExists SMALLINT
 
@@ -629,7 +544,8 @@ FUNCTION validate_territories(mode)
       RETURN FALSE, "Region is required"
    END IF
    RETURN TRUE, "Okay"
-END FUNCTION
+
+END FUNCTION #validate_territories
 
 -- =====================================================================
 -- Function: populate_region_combo

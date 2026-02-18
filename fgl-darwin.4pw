@@ -193,7 +193,9 @@
     </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
       <File filePath="hrm/src/categories.4gl"/>
+      <File filePath="hrm/src/controller.4gl"/>
       <File filePath="hrm/src/customers.4gl"/>
+      <File filePath="hrm/src/dispatch.4gl"/>
       <File filePath="hrm/src/empl_terr.4gl"/>
       <File filePath="hrm/src/employees.4gl"/>
       <File filePath="hrm/src/generic.4ad"/>

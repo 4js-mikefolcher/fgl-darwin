@@ -1,4 +1,5 @@
 IMPORT FGL list_view_helper
+IMPORT FGL controller
 
 DATABASE northwind
 
@@ -15,6 +16,23 @@ DEFINE curr_empl_terr t_empl_terr
 DEFINE contrl_empl_id LIKE employees.employeeid
 
 -- =====================================================================
+-- Function: get_config
+-- Purpose : Return the controller configuration for employee territories
+-- =====================================================================
+PRIVATE FUNCTION get_config() RETURNS t_controller_config
+   DEFINE cfg t_controller_config
+   LET cfg.moduleName   = "empl_terr"
+   LET cfg.formName     = "empl_terr"
+   LET cfg.listFormName = "empl_terr_list"
+   LET cfg.windowTitle  = "Employee Territories Management"
+   LET cfg.hasModify    = FALSE
+   LET cfg.hasQuery     = TRUE
+   LET cfg.hasLookup    = FALSE
+   LET cfg.entityName   = "Employee Territory"
+   RETURN cfg
+END FUNCTION #get_config
+
+-- =====================================================================
 -- Function: terr_by_empl
 -- Purpose : Open employee territories in a sub-window for a given employee
 -- =====================================================================
@@ -27,7 +45,7 @@ FUNCTION terr_by_empl(employ_id)
 
    LET contrl_empl_id = employ_id
    LET where_clause = " employeeterritories.employeeid = ", employ_id
-   CALL load_empl_terr(where_clause)
+   CALL empl_terr_do_load(where_clause)
 
    IF empl_terr_arr.getLength() == 0 THEN
       LET contrl_empl_id = 0
@@ -36,228 +54,130 @@ FUNCTION terr_by_empl(employ_id)
       RETURN
    END IF
 
-   CALL submenu_empl_terr_nav()
-   LET contrl_empl_id = 0
+   CALL controller_init(get_config())
+   CALL controller_navigate()
 
+   LET contrl_empl_id = 0
    CLOSE WINDOW subw1
 
 END FUNCTION #terr_by_empl
 
 -- =====================================================================
 -- Function: submenu_empl_terr
--- Purpose : Entry point when launched standalone (query first)
+-- Purpose : Standard entry point — query then navigate using controller
 -- =====================================================================
 FUNCTION submenu_empl_terr()
 
-   CALL query_empl_terr()
-   IF empl_terr_arr.getLength() == 0 THEN
-      RETURN
-   END IF
-   CALL submenu_empl_terr_nav()
+   CALL controller_init(get_config())
+   CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_empl_terr
 
 -- =====================================================================
--- Function: submenu_empl_terr_nav
--- Purpose : Record-at-a-time navigation menu for employee territories
+-- Dispatch Interface: Functions called by the controller via dispatch
 -- =====================================================================
-FUNCTION submenu_empl_terr_nav()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= empl_terr_arr.getLength()
+-- Return the number of records in the result set
+FUNCTION empl_terr_get_count() RETURNS INTEGER
+   RETURN empl_terr_arr.getLength()
+END FUNCTION #empl_terr_get_count
 
-       CALL load_curr_empl_terr(currentIdx)
-       CALL display_curr_empl_terr()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", empl_terr_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
+-- Load the record at index into the current record
+FUNCTION empl_terr_load_at(idx INTEGER)
+   INITIALIZE curr_empl_terr.* TO NULL
+   IF idx > 0 AND idx <= empl_terr_arr.getLength() THEN
+      LET curr_empl_terr = empl_terr_arr[idx]
+   END IF
+END FUNCTION #empl_terr_load_at
 
-       MENU "Employee Territories Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > empl_terr_arr.getLength() THEN
-                 LET currentIdx = empl_terr_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = empl_terr_arr.getLength()
-              EXIT MENU
-          COMMAND "Add" "Add a new employee territory"
-              CALL add_empl_terr()
-              IF int_flag == FALSE THEN
-                 CALL refresh_empl_terr(currentIdx, "A")
-                 LET currentIdx = empl_terr_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete an employee territory"
-              CALL delete_empl_terr()
-              IF int_flag == FALSE THEN
-                 CALL refresh_empl_terr(currentIdx, "D")
-                 IF currentIdx > empl_terr_arr.getLength() THEN
-                    LET currentIdx = empl_terr_arr.getLength()
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "List" "Switch to list view"
-              CALL list_empl_terr_view()
-              EXIT MENU
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
+-- Display the current record on the form
+FUNCTION empl_terr_display_curr()
+   DISPLAY BY NAME curr_empl_terr.*
+END FUNCTION #empl_terr_display_curr
 
-   END WHILE
-
-END FUNCTION #submenu_empl_terr_nav
+-- Clear the current record and form
+FUNCTION empl_terr_clear_curr()
+   INITIALIZE curr_empl_terr.* TO NULL
+END FUNCTION #empl_terr_clear_curr
 
 -- =====================================================================
--- Function: list_empl_terr_view
--- Purpose : Display employee territories in a list/table view
+-- Function: empl_terr_do_query
+-- Purpose : Search using CONSTRUCT and load results
 -- =====================================================================
-FUNCTION list_empl_terr_view()
-   DEFINE selectedIdx INTEGER
-   DEFINE selectedOption INTEGER
+FUNCTION empl_terr_do_query()
+   DEFINE where_clause VARCHAR(500)
 
-   OPEN WINDOW listEmplTerrWindow WITH FORM "empl_terr_list"
-      ATTRIBUTES(STYLE="modulewindow")
+   CLEAR FORM
+   CALL empl_terr_clear_curr()
+   LET int_flag = FALSE
+   CONSTRUCT where_clause ON employeeterritories.employeeid,
+                             employees.lastname,
+                             employeeterritories.territoryid,
+                             territories.territorydescription,
+                             region.regiondescription
+      FROM s_empl_terr.*
 
-   MESSAGE "Displayed ", empl_terr_arr.getLength() USING "<<<<<", " employee territories"
+      BEFORE FIELD fullname
+         MESSAGE "Enter search criteria for the employee's last name"
+      AFTER FIELD fullname
+         MESSAGE ""
 
-   DISPLAY ARRAY empl_terr_arr TO empl_terr_list.*
-       ON ACTION add
-         LET selectedOption = cAddRecord
-         EXIT DISPLAY
-       ON ACTION delete
-         LET selectedIdx = ARR_CURR()
-         LET selectedOption = cDeleteRecord
-         EXIT DISPLAY
-       ON ACTION exit
-           LET int_flag = TRUE
-           EXIT DISPLAY
-       ON ACTION accept
-           LET selectedIdx = ARR_CURR()
-           LET selectedOption = cViewRecord
-           EXIT DISPLAY
-   END DISPLAY
+      ON ACTION accept
+          ACCEPT CONSTRUCT
+      ON ACTION cancel
+          LET int_flag = TRUE
+          EXIT CONSTRUCT
 
-   CLOSE WINDOW listEmplTerrWindow
+   END CONSTRUCT
 
    IF int_flag THEN
+      CALL empl_terr_clear_curr()
+      CALL empl_terr_arr.clear()
       RETURN
    END IF
 
-   CASE selectedOption
-      WHEN cAddRecord
-         CALL add_empl_terr()
-         IF int_flag == FALSE THEN
-            CALL refresh_empl_terr(empl_terr_arr.getLength(), "A")
-         END IF
-      WHEN cDeleteRecord
-         IF selectedIdx >= 1 AND selectedIdx <= empl_terr_arr.getLength() THEN
-            CALL load_curr_empl_terr(selectedIdx)
-            CALL delete_empl_terr()
-            IF int_flag == FALSE THEN
-                  CALL refresh_empl_terr(selectedIdx, "D")
-            END IF
-         ELSE
-            ERROR "Please select an employee territory"
-         END IF
-      WHEN cViewRecord
-         CALL load_curr_empl_terr(selectedIdx)
-         CALL display_curr_empl_terr()
-   END CASE
+   CALL empl_terr_do_load(where_clause)
 
-END FUNCTION #list_empl_terr_view
+   IF empl_terr_arr.getLength() == 0 THEN
+      MESSAGE "No employee territories found."
+   END IF
+
+END FUNCTION #empl_terr_do_query
 
 -- =====================================================================
--- Function: query_empl_terr
--- Purpose : Search and display employeeterritories using CONSTRUCT
--- =====================================================================
-FUNCTION query_empl_terr()
-    DEFINE where_clause VARCHAR(500)
-
-    CLEAR FORM
-    CALL clear_curr_empl_terr()
-    LET int_flag = FALSE
-    CONSTRUCT where_clause ON employeeterritories.employeeid,
-                              employees.lastname,
-                              employeeterritories.territoryid,
-                              territories.territorydescription,
-                              region.regiondescription
-       FROM s_empl_terr.*
-
-        BEFORE FIELD fullname
-           MESSAGE "Enter search criteria for the employee's last name"
-        AFTER FIELD fullname
-           MESSAGE ""
-
-        ON ACTION accept
-            ACCEPT CONSTRUCT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT CONSTRUCT
-
-    END CONSTRUCT
-
-    IF int_flag THEN
-       CALL clear_curr_empl_terr()
-       CALL empl_terr_arr.clear()
-       RETURN
-    END IF
-
-    CALL load_empl_terr(where_clause)
-
-    IF empl_terr_arr.getLength() == 0 THEN
-        MESSAGE "No employee territories found."
-    END IF
-
-END FUNCTION #query_empl_terr
-
--- =====================================================================
--- Function: load_empl_terr
+-- Function: empl_terr_do_load
 -- Purpose : Load employeeterritories into dynamic array based on WHERE clause
 -- =====================================================================
-FUNCTION load_empl_terr(where_clause)
-    DEFINE where_clause VARCHAR(500)
-    DEFINE sql_stmt VARCHAR(2000)
-    DEFINE l_rec t_empl_terr
+PRIVATE FUNCTION empl_terr_do_load(where_clause VARCHAR(500))
+   DEFINE sql_stmt VARCHAR(2000)
+   DEFINE l_rec t_empl_terr
 
-    LET sql_stmt = " SELECT employeeterritories.employeeid,",
-                   " RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname,",
-                   " employeeterritories.territoryid, territories.territorydescription, region.regiondescription",
-                   " FROM employeeterritories",
-                   " INNER JOIN employees ON employees.employeeid = employeeterritories.employeeid",
-                   " INNER JOIN territories ON territories.territoryid = employeeterritories.territoryid",
-                   " INNER JOIN region ON region.regionid = territories.regionid",
-                   " WHERE ", where_clause,
-                   " ORDER BY employeeterritories.employeeid, employeeterritories.territoryid"
+   LET sql_stmt = " SELECT employeeterritories.employeeid,",
+                  " RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname,",
+                  " employeeterritories.territoryid, territories.territorydescription, region.regiondescription",
+                  " FROM employeeterritories",
+                  " INNER JOIN employees ON employees.employeeid = employeeterritories.employeeid",
+                  " INNER JOIN territories ON territories.territoryid = employeeterritories.territoryid",
+                  " INNER JOIN region ON region.regionid = territories.regionid",
+                  " WHERE ", where_clause,
+                  " ORDER BY employeeterritories.employeeid, employeeterritories.territoryid"
 
-    CALL empl_terr_arr.clear()
+   CALL empl_terr_arr.clear()
 
-    PREPARE p_empl_terr FROM sql_stmt
-    DECLARE c_empl_terr CURSOR FOR p_empl_terr
-    FOREACH c_empl_terr INTO l_rec.*
-        CALL empl_terr_arr.appendElement()
-        LET empl_terr_arr[empl_terr_arr.getLength()] = l_rec
-    END FOREACH
+   PREPARE p_empl_terr FROM sql_stmt
+   DECLARE c_empl_terr CURSOR FOR p_empl_terr
+   FOREACH c_empl_terr INTO l_rec.*
+      CALL empl_terr_arr.appendElement()
+      LET empl_terr_arr[empl_terr_arr.getLength()] = l_rec
+   END FOREACH
 
-END FUNCTION #load_empl_terr
+END FUNCTION #empl_terr_do_load
 
 -- =====================================================================
--- Function: add_empl_terr
+-- Function: empl_terr_do_add
 -- Purpose : Add a new employee territory assignment
 -- =====================================================================
-FUNCTION add_empl_terr()
+FUNCTION empl_terr_do_add()
    DEFINE selected_employee_id LIKE employees.employeeid
    DEFINE selected_fullname VARCHAR(32)
    DEFINE selected_territory_id LIKE territories.territoryid
@@ -267,7 +187,7 @@ FUNCTION add_empl_terr()
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL clear_curr_empl_terr()
+   CALL empl_terr_clear_curr()
 
    -- Pre-fill employee id when launched from employee context
    IF contrl_empl_id > 0 THEN
@@ -277,7 +197,7 @@ FUNCTION add_empl_terr()
       IF empl_terr_valid THEN
          LET curr_empl_terr.fullname = valid_msg
       END IF
-      CALL display_curr_empl_terr()
+      CALL empl_terr_display_curr()
    END IF
 
    INPUT BY NAME curr_empl_terr.employeeid, curr_empl_terr.territoryid
@@ -336,7 +256,7 @@ FUNCTION add_empl_terr()
           EXIT INPUT
 
       AFTER INPUT
-         CALL validate_empl_terr()
+         CALL empl_terr_validate()
             RETURNING empl_terr_valid, valid_msg
          IF NOT empl_terr_valid THEN
             ERROR valid_msg
@@ -349,119 +269,103 @@ FUNCTION add_empl_terr()
       RETURN
    END IF
 
-   CALL insert_curr_empl_terr()
-   MESSAGE "Employee territory record added"
-
-END FUNCTION #add_empl_terr
-
--- =====================================================================
--- Function: delete_empl_terr
--- Purpose : Delete an existing employee territory record
--- =====================================================================
-FUNCTION delete_empl_terr()
-
-    LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
-        ERROR "Employee territory delete canceled"
-        LET int_flag = TRUE
-        RETURN
-    END IF
-
-    CALL delete_curr_empl_terr()
-    MESSAGE "Employee territory record deleted"
-
-END FUNCTION #delete_empl_terr
-
--- =====================================================================
--- Function: load_curr_empl_terr
--- Purpose : Load a record from the array into the current record
--- =====================================================================
-FUNCTION load_curr_empl_terr(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_empl_terr()
-   IF currIdx > 0 AND currIdx <= empl_terr_arr.getLength() THEN
-      LET curr_empl_terr = empl_terr_arr[currIdx]
-   END IF
-
-END FUNCTION #load_curr_empl_terr
-
--- =====================================================================
--- Function: display_curr_empl_terr
--- Purpose : Display the current record on the form
--- =====================================================================
-FUNCTION display_curr_empl_terr()
-
-   DISPLAY BY NAME curr_empl_terr.*
-
-END FUNCTION #display_curr_empl_terr
-
--- =====================================================================
--- Function: clear_curr_empl_terr
--- Purpose : Initialize the current record to NULL
--- =====================================================================
-FUNCTION clear_curr_empl_terr()
-
-   INITIALIZE curr_empl_terr.* TO NULL
-
-END FUNCTION #clear_curr_empl_terr
-
--- =====================================================================
--- Function: insert_curr_empl_terr
--- Purpose : Insert the current record into the database
--- =====================================================================
-FUNCTION insert_curr_empl_terr()
-
    INSERT INTO employeeterritories (employeeid, territoryid)
       VALUES (curr_empl_terr.employeeid, curr_empl_terr.territoryid)
+   MESSAGE "Employee territory record added"
 
-END FUNCTION #insert_curr_empl_terr
+END FUNCTION #empl_terr_do_add
 
 -- =====================================================================
--- Function: delete_curr_empl_terr
--- Purpose : Delete the current record from the database
+-- Function: empl_terr_do_edit
+-- Purpose : Edit not supported for employee territories (no-op)
 -- =====================================================================
-FUNCTION delete_curr_empl_terr()
+FUNCTION empl_terr_do_edit()
+   LET int_flag = TRUE
+END FUNCTION #empl_terr_do_edit
+
+-- =====================================================================
+-- Function: empl_terr_do_delete
+-- Purpose : Delete an existing employee territory record
+-- =====================================================================
+FUNCTION empl_terr_do_delete()
+
+   LET int_flag = FALSE
+   IF NOT confirm_delete() THEN
+      ERROR "Employee territory delete canceled"
+      LET int_flag = TRUE
+      RETURN
+   END IF
 
    DELETE FROM employeeterritories
     WHERE employeeid = curr_empl_terr.employeeid
       AND territoryid = curr_empl_terr.territoryid
+   MESSAGE "Employee territory record deleted"
 
-END FUNCTION #delete_curr_empl_terr
+END FUNCTION #empl_terr_do_delete
 
 -- =====================================================================
--- Function: refresh_empl_terr
+-- Function: empl_terr_do_refresh
 -- Purpose : Refresh the array after add or delete operations
 -- =====================================================================
-FUNCTION refresh_empl_terr(currIdx, operation)
-   DEFINE currIdx INTEGER
-   DEFINE operation CHAR(1)
+FUNCTION empl_terr_do_refresh(currIdx INTEGER, operation CHAR(1))
    DEFINE idx INTEGER
-   DEFINE found SMALLINT
 
    CASE operation
       WHEN "A"
          CALL empl_terr_arr.appendElement()
          LET empl_terr_arr[empl_terr_arr.getLength()] = curr_empl_terr
       WHEN "D"
-         LET found = FALSE
          FOR idx = 1 TO empl_terr_arr.getLength()
             IF empl_terr_arr[idx].employeeid == curr_empl_terr.employeeid
                AND empl_terr_arr[idx].territoryid == curr_empl_terr.territoryid THEN
                CALL empl_terr_arr.deleteElement(idx)
-               LET found = TRUE
                EXIT FOR
             END IF
          END FOR
    END CASE
 
-END FUNCTION #refresh_empl_terr
+END FUNCTION #empl_terr_do_refresh
 
 -- =====================================================================
--- Function: validate_empl_terr
+-- Function: empl_terr_list_display
+-- Purpose : DISPLAY ARRAY list view for employee territories
+-- =====================================================================
+FUNCTION empl_terr_list_display() RETURNS (INTEGER, INTEGER)
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   LET selectedIdx = 0
+   LET selectedOption = 0
+   LET int_flag = FALSE
+
+   MESSAGE "Displayed ", empl_terr_arr.getLength() USING "<<<<<", " employee territories"
+
+   DISPLAY ARRAY empl_terr_arr TO empl_terr_list.*
+      ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+      ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+      ON ACTION exit
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cViewRecord
+         EXIT DISPLAY
+   END DISPLAY
+
+   RETURN selectedIdx, selectedOption
+
+END FUNCTION #empl_terr_list_display
+
+-- =====================================================================
+-- Function: empl_terr_validate
 -- Purpose : Validate the current employee territory record
 -- =====================================================================
-FUNCTION validate_empl_terr()
+FUNCTION empl_terr_validate() RETURNS (SMALLINT, CHAR(75))
    DEFINE exists_count SMALLINT
 
    IF curr_empl_terr.employeeid IS NULL THEN
@@ -482,7 +386,7 @@ FUNCTION validate_empl_terr()
 
    RETURN TRUE, "Okay"
 
-END FUNCTION #validate_empl_terr
+END FUNCTION #empl_terr_validate
 
 -- =====================================================================
 -- Function: validate_territory

@@ -1,3 +1,6 @@
+IMPORT FGL list_view_helper
+IMPORT FGL controller
+
 DATABASE northwind
 
 -- =====================================================================
@@ -19,10 +22,26 @@ TYPE t_supplier RECORD
 END RECORD
 
 -- =====================================================================
--- Global Variables
+-- Module Variables
 -- =====================================================================
 DEFINE suppliers_arr DYNAMIC ARRAY OF t_supplier
 DEFINE curr_suppliers t_supplier
+
+-- =====================================================================
+-- Controller Setup
+-- =====================================================================
+PRIVATE FUNCTION get_config() RETURNS t_controller_config
+   DEFINE cfg t_controller_config
+   LET cfg.moduleName   = "suppliers"
+   LET cfg.formName     = "suppliers"
+   LET cfg.listFormName = "suppliers_list"
+   LET cfg.windowTitle  = "Suppliers Management"
+   LET cfg.hasModify    = TRUE
+   LET cfg.hasQuery     = TRUE
+   LET cfg.hasLookup    = TRUE
+   LET cfg.entityName   = "Supplier"
+   RETURN cfg
+END FUNCTION #get_config
 
 -- =====================================================================
 -- Function: view_supplier
@@ -41,7 +60,7 @@ FUNCTION view_supplier(supp_id)
       ATTRIBUTES(STYLE="modulewindow")
 
    LET where_clause = " suppliers.supplierid = ", supp_id
-   CALL load_suppliers(where_clause)
+   CALL suppliers_do_load(where_clause)
 
    IF suppliers_arr.getLength() == 0 THEN
       CLOSE WINDOW viewSupplierWindow
@@ -49,143 +68,57 @@ FUNCTION view_supplier(supp_id)
       RETURN
    END IF
 
-   CALL load_curr_suppliers(1)
-   CALL display_curr_suppliers()
-
-   MENU "Supplier View"
-      COMMAND "Products" "View Products from this Supplier"
-         CALL view_products_for_supplier(curr_suppliers.supplierid)
-      COMMAND "Exit" "Quit operation"
-         EXIT MENU
-   END MENU
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
    CLOSE WINDOW viewSupplierWindow
 
 END FUNCTION #view_supplier
 
+-- =====================================================================
+-- Function: submenu_suppliers
+-- Purpose : Standard entry point — query then navigate using controller
+-- =====================================================================
 FUNCTION submenu_suppliers()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   CALL query_suppliers()
-   IF suppliers_arr.getLength() == 0 THEN
-      RETURN
-   END IF
-
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= suppliers_arr.getLength()
-
-       CALL load_curr_suppliers(currentIdx)
-       CALL display_curr_suppliers()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", suppliers_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Suppliers Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > suppliers_arr.getLength() THEN
-                 LET currentIdx = suppliers_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = suppliers_arr.getLength()
-              EXIT MENU
-          COMMAND "Add" "Add a new supplier"
-              CALL add_suppliers()
-              IF int_flag == FALSE THEN
-                 CALL refresh_suppliers(currentIdx, "A")
-                 LET currentIdx = suppliers_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Modify" "Edit an existing supplier"
-              CALL edit_suppliers()
-              IF int_flag == FALSE THEN
-                 CALL refresh_suppliers(currentIdx, "C")
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete a supplier"
-              CALL delete_suppliers()
-              IF int_flag == FALSE THEN
-                 CALL refresh_suppliers(currentIdx, "D")
-                 IF currentIdx > suppliers_arr.getLength() THEN
-                    LET currentIdx = suppliers_arr.getLength()
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "List" "Switch to list view"
-              CALL list_suppliers_view()
-              EXIT MENU
-          COMMAND "Products" "View Products from this Supplier"
-              CALL view_products_for_supplier(curr_suppliers.supplierid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_suppliers
 
-FUNCTION list_suppliers_view()
-   DEFINE selectedIdx INTEGER
+-- =====================================================================
+-- Dispatch Interface: Functions called by the controller via dispatch
+-- =====================================================================
 
-   OPEN WINDOW listSuppliersWindow WITH FORM "suppliers_list"
-      ATTRIBUTES(STYLE="modulewindow")
+-- Return the number of records in the result set
+FUNCTION suppliers_get_count() RETURNS INTEGER
+   RETURN suppliers_arr.getLength()
+END FUNCTION #suppliers_get_count
 
-   MESSAGE "Displayed ", suppliers_arr.getLength() USING "<<<<<", " suppliers"
+-- Load the record at index into the current record
+FUNCTION suppliers_load_at(idx INTEGER)
+   INITIALIZE curr_suppliers.* TO NULL
+   IF idx > 0 AND idx <= suppliers_arr.getLength() THEN
+      LET curr_suppliers = suppliers_arr[idx]
+   END IF
+END FUNCTION #suppliers_load_at
 
-   DISPLAY ARRAY suppliers_arr TO suppliers_list.*
-       ON ACTION add
-           CALL add_suppliers()
-           IF int_flag == FALSE THEN
-              CALL refresh_suppliers(suppliers_arr.getLength(), "A")
-           END IF
-       ON ACTION modify
-           LET selectedIdx = ARR_CURR()
-           IF selectedIdx >= 1 AND selectedIdx <= suppliers_arr.getLength() THEN
-               CALL load_curr_suppliers(selectedIdx)
-               CALL edit_suppliers()
-               IF int_flag == FALSE THEN
-                   CALL refresh_suppliers(selectedIdx, "C")
-               END IF
-           ELSE
-               ERROR "Please select a supplier"
-           END IF
-       ON ACTION delete
-           LET selectedIdx = ARR_CURR()
-           IF selectedIdx >= 1 AND selectedIdx <= suppliers_arr.getLength() THEN
-               CALL load_curr_suppliers(selectedIdx)
-               CALL delete_suppliers()
-               IF int_flag == FALSE THEN
-                   CALL refresh_suppliers(selectedIdx, "D")
-               END IF
-           ELSE
-               ERROR "Please select a supplier"
-           END IF
-       ON ACTION exit
-           EXIT DISPLAY
-       ON KEY (ESCAPE)
-           EXIT DISPLAY
-   END DISPLAY
+-- Display the current record on the form
+FUNCTION suppliers_display_curr()
+   DISPLAY BY NAME curr_suppliers.*
+END FUNCTION #suppliers_display_curr
 
-   CLOSE WINDOW listSuppliersWindow
+-- Clear the current record
+FUNCTION suppliers_clear_curr()
+   INITIALIZE curr_suppliers.* TO NULL
+END FUNCTION #suppliers_clear_curr
 
-END FUNCTION #list_suppliers_view
-
-FUNCTION query_suppliers()
+-- Query: CONSTRUCT + load
+FUNCTION suppliers_do_query()
     DEFINE where_clause VARCHAR(500)
 
     CLEAR FORM
-    CALL clear_curr_suppliers()
+    CALL suppliers_clear_curr()
     LET int_flag = FALSE
     CONSTRUCT where_clause ON suppliers.supplierid, suppliers.companyname, suppliers.contactname,
                               suppliers.contacttitle, suppliers.address, suppliers.city,
@@ -200,22 +133,21 @@ FUNCTION query_suppliers()
     END CONSTRUCT
 
     IF int_flag THEN
-       CALL clear_curr_suppliers()
-       CALL clear_suppliers()
+       CALL suppliers_clear_curr()
+       CALL suppliers_arr.clear()
        RETURN
     END IF
 
-    CALL load_suppliers(where_clause)
+    CALL suppliers_do_load(where_clause)
 
     IF suppliers_arr.getLength() == 0 THEN
         MESSAGE "No suppliers found."
-        RETURN
     END IF
 
-END FUNCTION
+END FUNCTION #suppliers_do_query
 
-FUNCTION load_suppliers(where_clause)
-    DEFINE where_clause VARCHAR(500)
+-- Load records from database into array
+FUNCTION suppliers_do_load(where_clause VARCHAR(500))
     DEFINE sql_stmt VARCHAR(1024)
     DEFINE temp_supplier t_supplier
 
@@ -224,7 +156,7 @@ FUNCTION load_suppliers(where_clause)
                    " FROM suppliers",
                    " WHERE ", where_clause CLIPPED, " ORDER BY companyname"
 
-    CALL clear_suppliers()
+    CALL suppliers_arr.clear()
 
     PREPARE p_suppliers FROM sql_stmt
     DECLARE c_suppliers CURSOR FOR p_suppliers
@@ -232,22 +164,18 @@ FUNCTION load_suppliers(where_clause)
         CALL suppliers_arr.appendElement()
         LET suppliers_arr[suppliers_arr.getLength()] = temp_supplier
     END FOREACH
-    CALL clear_curr_suppliers()
+    CALL suppliers_clear_curr()
 
-END FUNCTION
+END FUNCTION #suppliers_do_load
 
-FUNCTION clear_suppliers()
-   CALL suppliers_arr.clear()
-
-END FUNCTION #clear_suppliers
-
-FUNCTION add_suppliers()
+-- Add a new supplier
+FUNCTION suppliers_do_add()
     DEFINE suppliers_valid SMALLINT
     DEFINE valid_msg CHAR(75)
 
     CLEAR FORM
     LET int_flag = FALSE
-    CALL clear_curr_suppliers()
+    CALL suppliers_clear_curr()
     INPUT BY NAME curr_suppliers.*
         ATTRIBUTE(UNBUFFERED)
         ON ACTION accept
@@ -256,7 +184,7 @@ FUNCTION add_suppliers()
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
-            CALL validate_suppliers("A")
+            CALL suppliers_validate("A")
                RETURNING suppliers_valid, valid_msg
             IF NOT suppliers_valid THEN
                 ERROR valid_msg
@@ -269,12 +197,20 @@ FUNCTION add_suppliers()
        RETURN
     END IF
 
-    CALL insert_curr_suppliers()
+    INSERT INTO suppliers (supplierid, companyname, contactname, contacttitle,
+                           address, city, region, postalcode, country, phone, fax, homepage)
+       VALUES (DEFAULT, curr_suppliers.companyname, curr_suppliers.contactname,
+               curr_suppliers.contacttitle, curr_suppliers.address, curr_suppliers.city,
+               curr_suppliers.region, curr_suppliers.postalcode, curr_suppliers.country,
+               curr_suppliers.phone, curr_suppliers.fax, curr_suppliers.homepage)
+    LET curr_suppliers.supplierid = sqlca.sqlerrd[2]
+    CALL suppliers_display_curr()
     MESSAGE "Supplier record added"
 
-END FUNCTION
+END FUNCTION #suppliers_do_add
 
-FUNCTION edit_suppliers()
+-- Edit an existing supplier
+FUNCTION suppliers_do_edit()
     DEFINE suppliers_valid SMALLINT
     DEFINE valid_msg CHAR(75)
 
@@ -290,7 +226,7 @@ FUNCTION edit_suppliers()
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
-            CALL validate_suppliers("C")
+            CALL suppliers_validate("C")
                RETURNING suppliers_valid, valid_msg
             IF NOT suppliers_valid THEN
                 ERROR valid_msg
@@ -303,12 +239,25 @@ FUNCTION edit_suppliers()
        RETURN
     END IF
 
-    CALL update_curr_suppliers()
+    UPDATE suppliers
+       SET companyname = curr_suppliers.companyname,
+           contactname = curr_suppliers.contactname,
+           contacttitle = curr_suppliers.contacttitle,
+           address = curr_suppliers.address,
+           city = curr_suppliers.city,
+           region = curr_suppliers.region,
+           postalcode = curr_suppliers.postalcode,
+           country = curr_suppliers.country,
+           phone = curr_suppliers.phone,
+           fax = curr_suppliers.fax,
+           homepage = curr_suppliers.homepage
+     WHERE supplierid = curr_suppliers.supplierid
     MESSAGE "Supplier record updated"
 
-END FUNCTION
+END FUNCTION #suppliers_do_edit
 
-FUNCTION delete_suppliers()
+-- Delete a supplier
+FUNCTION suppliers_do_delete()
 
     LET int_flag = FALSE
     IF NOT confirm_delete() THEN
@@ -317,74 +266,14 @@ FUNCTION delete_suppliers()
         RETURN
     END IF
 
-    CALL delete_curr_suppliers()
+    DELETE FROM suppliers
+     WHERE supplierid = curr_suppliers.supplierid
     MESSAGE "Supplier record deleted"
 
-END FUNCTION
+END FUNCTION #suppliers_do_delete
 
-FUNCTION load_curr_suppliers(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_suppliers()
-   IF currIdx > 0 AND currIdx <= suppliers_arr.getLength() THEN
-      LET curr_suppliers = suppliers_arr[currIdx]
-   END IF
-
-END FUNCTION
-
-FUNCTION display_curr_suppliers()
-
-   DISPLAY BY NAME curr_suppliers.*
-
-END FUNCTION
-
-FUNCTION clear_curr_suppliers()
-
-   INITIALIZE curr_suppliers.* TO NULL
-
-END FUNCTION
-
-FUNCTION insert_curr_suppliers()
-
-   INSERT INTO suppliers (supplierid, companyname, contactname, contacttitle,
-                          address, city, region, postalcode, country, phone, fax, homepage)
-      VALUES (DEFAULT, curr_suppliers.companyname, curr_suppliers.contactname,
-              curr_suppliers.contacttitle, curr_suppliers.address, curr_suppliers.city,
-              curr_suppliers.region, curr_suppliers.postalcode, curr_suppliers.country,
-              curr_suppliers.phone, curr_suppliers.fax, curr_suppliers.homepage)
-   LET curr_suppliers.supplierid = sqlca.sqlerrd[2]
-   CALL display_curr_suppliers()
-
-END FUNCTION
-
-FUNCTION update_curr_suppliers()
-
-   UPDATE suppliers
-      SET companyname = curr_suppliers.companyname,
-          contactname = curr_suppliers.contactname,
-          contacttitle = curr_suppliers.contacttitle,
-          address = curr_suppliers.address,
-          city = curr_suppliers.city,
-          region = curr_suppliers.region,
-          postalcode = curr_suppliers.postalcode,
-          country = curr_suppliers.country,
-          phone = curr_suppliers.phone,
-          fax = curr_suppliers.fax,
-          homepage = curr_suppliers.homepage
-    WHERE supplierid = curr_suppliers.supplierid
-
-END FUNCTION
-
-FUNCTION delete_curr_suppliers()
-
-   DELETE FROM suppliers
-    WHERE supplierid = curr_suppliers.supplierid
-
-END FUNCTION
-
-FUNCTION refresh_suppliers(currIdx, operation)
-   DEFINE currIdx INTEGER
-   DEFINE operation CHAR(1)
+-- Refresh the array after add/change/delete
+FUNCTION suppliers_do_refresh(currIdx INTEGER, operation CHAR(1))
    DEFINE idx INTEGER
 
    CASE operation
@@ -402,10 +291,10 @@ FUNCTION refresh_suppliers(currIdx, operation)
          END FOR
    END CASE
 
-END FUNCTION #refresh_suppliers
+END FUNCTION #suppliers_do_refresh
 
-FUNCTION validate_suppliers(mode)
-   DEFINE mode CHAR(1)
+-- Validate the current record
+FUNCTION suppliers_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
    DEFINE supplierExists SMALLINT
 
    IF mode == "C" THEN
@@ -419,7 +308,40 @@ FUNCTION validate_suppliers(mode)
    END IF
 
    RETURN TRUE, "Okay"
-END FUNCTION
+END FUNCTION #suppliers_validate
+
+-- DISPLAY ARRAY for list view (called by controller via dispatch)
+FUNCTION suppliers_list_display() RETURNS (INTEGER, INTEGER)
+   DEFINE selectedIdx    INTEGER
+   DEFINE selectedOption INTEGER
+
+   LET selectedIdx = 0
+   LET selectedOption = 0
+
+   DISPLAY ARRAY suppliers_arr TO suppliers_list.*
+       ON ACTION add
+           LET selectedOption = cAddRecord
+           EXIT DISPLAY
+       ON ACTION modify
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cEditRecord
+           EXIT DISPLAY
+       ON ACTION delete
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cDeleteRecord
+           EXIT DISPLAY
+       ON ACTION exit
+           LET int_flag = TRUE
+           EXIT DISPLAY
+       ON ACTION accept
+           LET selectedIdx = ARR_CURR()
+           LET selectedOption = cViewRecord
+           EXIT DISPLAY
+   END DISPLAY
+
+   RETURN selectedIdx, selectedOption
+
+END FUNCTION #suppliers_list_display
 
 -- =====================================================================
 -- Function: supplier_lookup
@@ -446,7 +368,7 @@ FUNCTION supplier_lookup_menu()
    DEFINE statusMessage CHAR(60)
    DEFINE selectedIdx INTEGER
 
-   CALL query_suppliers()
+   CALL suppliers_do_query()
    IF suppliers_arr.getLength() == 0 THEN
       RETURN 0, ""
    END IF
@@ -455,8 +377,8 @@ FUNCTION supplier_lookup_menu()
    LET selectedIdx = 0
    WHILE currentIdx > 0 AND currentIdx <= suppliers_arr.getLength() AND selectedIdx == 0
 
-       CALL load_curr_suppliers(currentIdx)
-       CALL display_curr_suppliers()
+       CALL suppliers_load_at(currentIdx)
+       CALL suppliers_display_curr()
        LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", suppliers_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
@@ -481,7 +403,7 @@ FUNCTION supplier_lookup_menu()
               EXIT MENU
           COMMAND "Select" "Select the current supplier"
               LET selectedIdx = currentIdx
-              CALL load_curr_suppliers(selectedIdx)
+              CALL suppliers_load_at(selectedIdx)
               EXIT MENU
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0

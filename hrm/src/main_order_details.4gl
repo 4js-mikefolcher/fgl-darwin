@@ -9,8 +9,6 @@ MAIN
     MENU "Order Details Maintenance"
         COMMAND "Query" "Search for Order Details"
             CALL submenu_order_details()
-        COMMAND "Add" "Add a new Order Detail"
-            CALL add_order_details()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

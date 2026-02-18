@@ -1,8 +1,8 @@
 IMPORT FGL list_view_helper
-
+IMPORT FGL controller
 DATABASE northwind
 
-DEFINE order_details_arr ARRAY[10000] OF RECORD
+DEFINE order_details_arr DYNAMIC ARRAY OF RECORD
    orderid LIKE order_details.orderid,
    productid LIKE order_details.productid,
    productname LIKE products.productname,
@@ -28,12 +28,33 @@ DEFINE curr_order_details RECORD
    discount LIKE order_details.discount
 END RECORD
 
-DEFINE arr_size INTEGER
-DEFINE arr_max INTEGER
-
 DEFINE skip_query SMALLINT
 DEFINE default_order_id LIKE order_details.orderid
 
+-- =====================================================================
+-- Function: get_config (PRIVATE)
+-- Purpose : Return controller configuration for order_details module
+-- =====================================================================
+PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
+   DEFINE cfg t_controller_config
+
+   LET cfg.moduleName = "order_details"
+   LET cfg.formName = "order_details"
+   LET cfg.listFormName = "order_details_list"
+   LET cfg.windowTitle = "Order Details Management"
+   LET cfg.hasModify = TRUE
+   LET cfg.hasQuery = TRUE
+   LET cfg.hasLookup = FALSE
+   LET cfg.entityName = "Order Detail"
+
+   RETURN cfg
+
+END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: view_details_for_order
+-- Purpose : View order details for a specific order (with auto-add loop)
+-- =====================================================================
 FUNCTION view_details_for_order(order_id)
    DEFINE order_id LIKE order_details.orderid
    DEFINE where_clause VARCHAR(500)
@@ -44,116 +65,324 @@ FUNCTION view_details_for_order(order_id)
    LET skip_query = TRUE
    LET default_order_id = order_id
    LET where_clause = " order_details.orderid = ", order_id
-   LET arr_size = 0
 
-   WHILE arr_size == 0
+   CALL order_details_do_load(where_clause)
 
-      CALL load_order_details(where_clause)
-      IF arr_size == 0 THEN
-         CALL add_order_details()
-      END IF
+   WHILE order_details_arr.getLength() == 0
+
+      CALL order_details_do_add()
       IF int_flag == TRUE THEN
          EXIT WHILE
       END IF
+      CALL order_details_do_load(where_clause)
 
    END WHILE
 
-    IF arr_size > 0 THEN
-      CALL submenu_order_details()
-    END IF
-
-    CLOSE WINDOW subWindow
-
-END FUNCTION #view_details_for_order
-
-FUNCTION submenu_order_details()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-
-   LET arr_max = 10000
-   IF NOT skip_query THEN
-      CALL query_order_details()
-      IF arr_size == 0 THEN
-         RETURN
+   IF order_details_arr.getLength() > 0 THEN
+      CALL controller_init(get_config())
+      IF skip_query THEN
+         CALL controller_navigate()
+      ELSE
+         CALL controller_query_then_navigate()
       END IF
    END IF
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= arr_size
+   LET skip_query = FALSE
+   LET default_order_id = 0
+   CLOSE WINDOW subWindow
 
-       CALL load_curr_order_details(currentIdx)
-       CALL display_curr_order_details()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", arr_size USING "<<<<"
-       MESSAGE statusMessage
+END FUNCTION #view_details_for_order
 
-       MENU "Order Details Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > arr_size THEN
-                 LET currentIdx = arr_size
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = arr_size
-              EXIT MENU
-          COMMAND "Add" "Add a new order detail"
-              CALL add_order_details()
-              IF int_flag == FALSE THEN
-                 CALL refresh_order_details(currentIdx, "A")
-                 LET currentIdx = arr_size
-              END IF
-              EXIT MENU
-          COMMAND "Modify" "Edit an existing order detail"
-              CALL edit_order_details()
-              IF int_flag == FALSE THEN
-                 CALL refresh_order_details(currentIdx, "C")
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete an order detail"
-              CALL delete_order_details()
-              IF int_flag == FALSE THEN
-                 CALL refresh_order_details(currentIdx, "D")
-                 IF currentIdx > arr_size THEN
-                    LET currentIdx = arr_size
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "List" "Switch to list view"
-              CALL list_order_details_view()
-              EXIT MENU
-          COMMAND "Order" "View Order"
-              CALL view_order(curr_order_details.orderid)
-          COMMAND "Product" "View Product"
-              CALL view_product(curr_order_details.productid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
+-- =====================================================================
+-- Function: submenu_order_details
+-- Purpose : Main entry point for order details management
+-- =====================================================================
+FUNCTION submenu_order_details()
 
-   END WHILE
+   LET skip_query = FALSE
+   LET default_order_id = 0
+   CALL controller_init(get_config())
+   CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_order_details
 
 -- =====================================================================
--- Function: list_order_details_view
--- Purpose : Display order details in a list/table view
+-- Dispatch interface: order_details_get_count
 -- =====================================================================
-FUNCTION list_order_details_view()
+FUNCTION order_details_get_count()
+
+   RETURN order_details_arr.getLength()
+
+END FUNCTION #order_details_get_count
+
+-- =====================================================================
+-- Dispatch interface: order_details_load_at
+-- =====================================================================
+FUNCTION order_details_load_at(idx)
+   DEFINE idx INTEGER
+
+   INITIALIZE curr_order_details.* TO NULL
+   IF default_order_id IS NOT NULL AND default_order_id > 0 THEN
+      LET curr_order_details.orderid = default_order_id
+   END IF
+   IF idx >= 1 AND idx <= order_details_arr.getLength() THEN
+      LET curr_order_details = order_details_arr[idx]
+   END IF
+
+END FUNCTION #order_details_load_at
+
+-- =====================================================================
+-- Dispatch interface: order_details_display_curr
+-- =====================================================================
+FUNCTION order_details_display_curr()
+
+   DISPLAY BY NAME curr_order_details.*
+
+END FUNCTION #order_details_display_curr
+
+-- =====================================================================
+-- Dispatch interface: order_details_clear_curr
+-- =====================================================================
+FUNCTION order_details_clear_curr()
+
+   INITIALIZE curr_order_details.* TO NULL
+   IF default_order_id IS NOT NULL AND default_order_id > 0 THEN
+      LET curr_order_details.orderid = default_order_id
+   END IF
+
+END FUNCTION #order_details_clear_curr
+
+-- =====================================================================
+-- Dispatch interface: order_details_do_query
+-- =====================================================================
+FUNCTION order_details_do_query()
+   DEFINE where_clause VARCHAR(500)
+
+   CLEAR FORM
+   CALL order_details_clear_curr()
+   LET int_flag = FALSE
+   CONSTRUCT where_clause ON order_details.orderid, order_details.productid,
+                             order_details.unitprice, order_details.quantity, order_details.discount
+      FROM s_order_details.orderid, s_order_details.productid,
+           s_order_details.unitprice, s_order_details.quantity, s_order_details.discount
+      ON ACTION accept
+         ACCEPT CONSTRUCT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT CONSTRUCT
+   END CONSTRUCT
+
+   IF int_flag THEN
+      CALL order_details_clear_curr()
+      CALL order_details_arr.clear()
+      RETURN
+   END IF
+
+   CALL order_details_do_load(where_clause)
+
+   IF order_details_arr.getLength() == 0 THEN
+      MESSAGE "No order details found."
+      RETURN
+   END IF
+
+END FUNCTION #order_details_do_query
+
+-- =====================================================================
+-- Function: order_details_do_load (PRIVATE)
+-- Purpose : Load order details into dynamic array based on WHERE clause
+-- =====================================================================
+PRIVATE FUNCTION order_details_do_load(where_clause)
+   DEFINE where_clause VARCHAR(500)
+   DEFINE sql_stmt VARCHAR(1024)
+
+   LET sql_stmt = " SELECT order_details.orderid, order_details.productid, products.productname,",
+                  " order_details.unitprice, order_details.quantity, order_details.discount",
+                  " FROM order_details",
+                  " LEFT OUTER JOIN products ON products.productid = order_details.productid",
+                  " WHERE ", where_clause CLIPPED, " ORDER BY order_details.orderid, order_details.productid"
+
+   CALL order_details_arr.clear()
+
+   PREPARE p_order_details FROM sql_stmt
+   DECLARE c_order_details CURSOR FOR p_order_details
+   FOREACH c_order_details INTO curr_order_details.*
+      CALL order_details_arr.appendElement()
+      LET order_details_arr[order_details_arr.getLength()] = curr_order_details
+   END FOREACH
+   CALL order_details_clear_curr()
+
+END FUNCTION #order_details_do_load
+
+-- =====================================================================
+-- Dispatch interface: order_details_do_add
+-- =====================================================================
+FUNCTION order_details_do_add()
+   DEFINE order_details_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+   DEFINE selected_order_id LIKE orders.orderid
+   DEFINE selected_product_id LIKE products.productid
+   DEFINE selected_product_name LIKE products.productname
+
+   CLEAR FORM
+   LET int_flag = FALSE
+   CALL order_details_clear_curr()
+   INPUT BY NAME curr_order_details.*
+      ATTRIBUTE(UNBUFFERED)
+      BEFORE INPUT
+         IF curr_order_details.orderid > 0 THEN
+            NEXT FIELD productid
+         END IF
+      ON ACTION accept
+         ACCEPT INPUT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT INPUT
+      ON ACTION zoom_order
+         CALL order_lookup()
+            RETURNING selected_order_id
+         IF selected_order_id > 0 THEN
+            LET curr_order_details.orderid = selected_order_id
+         END IF
+      ON ACTION zoom_product
+         CALL product_lookup()
+            RETURNING selected_product_id, selected_product_name
+         IF selected_product_id > 0 THEN
+            LET curr_order_details.productid = selected_product_id
+            LET curr_order_details.productname = selected_product_name
+         END IF
+
+      AFTER FIELD orderid
+         CALL validate_orderid_field()
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            NEXT FIELD orderid
+         END IF
+
+      AFTER FIELD productid
+         CALL validate_productid_field()
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            NEXT FIELD productid
+         END IF
+
+      AFTER INPUT
+         CALL validate_order_details("A")
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            CONTINUE INPUT
+         END IF
+   END INPUT
+
+   IF int_flag THEN
+      ERROR "Order detail add canceled"
+      RETURN
+   END IF
+
+   INSERT INTO order_details (orderid, productid, unitprice, quantity, discount)
+      VALUES (curr_order_details.orderid, curr_order_details.productid,
+              curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount)
+   CALL order_details_display_curr()
+   MESSAGE "Order detail record added"
+
+END FUNCTION #order_details_do_add
+
+-- =====================================================================
+-- Dispatch interface: order_details_do_edit
+-- =====================================================================
+FUNCTION order_details_do_edit()
+   DEFINE order_details_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+
+   LET int_flag = FALSE
+   INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
+      ON ACTION accept
+         ACCEPT INPUT
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT INPUT
+      AFTER INPUT
+         CALL validate_order_details("C")
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            CONTINUE INPUT
+         END IF
+   END INPUT
+
+   IF int_flag THEN
+      ERROR "Order detail update canceled"
+      RETURN
+   END IF
+
+   UPDATE order_details
+      SET unitprice = curr_order_details.unitprice,
+          quantity = curr_order_details.quantity,
+          discount = curr_order_details.discount
+    WHERE orderid = curr_order_details.orderid
+      AND productid = curr_order_details.productid
+   MESSAGE "Order detail record updated"
+
+END FUNCTION #order_details_do_edit
+
+-- =====================================================================
+-- Dispatch interface: order_details_do_delete
+-- =====================================================================
+FUNCTION order_details_do_delete()
+
+   LET int_flag = FALSE
+   IF NOT confirm_delete() THEN
+      ERROR "Order detail delete canceled"
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
+   DELETE FROM order_details
+    WHERE orderid = curr_order_details.orderid
+      AND productid = curr_order_details.productid
+   MESSAGE "Order detail record deleted"
+
+END FUNCTION #order_details_do_delete
+
+-- =====================================================================
+-- Dispatch interface: order_details_do_refresh
+-- =====================================================================
+FUNCTION order_details_do_refresh(currIdx, operation)
+   DEFINE currIdx INTEGER
+   DEFINE operation CHAR(1)
+   DEFINE idx INTEGER
+
+   CASE operation
+      WHEN "A"
+         CALL order_details_arr.appendElement()
+         LET order_details_arr[order_details_arr.getLength()] = curr_order_details
+      WHEN "C"
+         LET order_details_arr[currIdx] = curr_order_details
+      WHEN "D"
+         FOR idx = 1 TO order_details_arr.getLength()
+            IF order_details_arr[idx].orderid = curr_order_details.orderid
+               AND order_details_arr[idx].productid = curr_order_details.productid THEN
+               CALL order_details_arr.deleteElement(idx)
+               EXIT FOR
+            END IF
+         END FOR
+   END CASE
+
+END FUNCTION #order_details_do_refresh
+
+-- =====================================================================
+-- Dispatch interface: order_details_list_display
+-- =====================================================================
+FUNCTION order_details_list_display()
    DEFINE selectedIdx INTEGER
    DEFINE selectedOption INTEGER
    DEFINE list_arr DYNAMIC ARRAY OF t_order_detail_list
    DEFINE idx INTEGER
 
-   FOR idx = 1 TO arr_size
+   FOR idx = 1 TO order_details_arr.getLength()
       CALL list_arr.appendElement()
       LET list_arr[idx].orderid = order_details_arr[idx].orderid
       LET list_arr[idx].productname = order_details_arr[idx].productname
@@ -162,365 +391,37 @@ FUNCTION list_order_details_view()
       LET list_arr[idx].discount = order_details_arr[idx].discount
    END FOR
 
-   OPEN WINDOW listOrderDetailsWindow WITH FORM "order_details_list"
-      ATTRIBUTES(STYLE="modulewindow")
-
    MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " order details"
 
    DISPLAY ARRAY list_arr TO order_details_list.*
-       ON ACTION add
+      ON ACTION add
          LET selectedOption = cAddRecord
          EXIT DISPLAY
-       ON ACTION modify
+      ON ACTION modify
          LET selectedOption = cEditRecord
          LET selectedIdx = ARR_CURR()
          EXIT DISPLAY
-       ON ACTION delete
+      ON ACTION delete
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cDeleteRecord
          EXIT DISPLAY
-       ON ACTION exit
-           LET int_flag = TRUE
-           EXIT DISPLAY
-       ON ACTION accept
-           LET selectedIdx = ARR_CURR()
-           LET selectedOption = cViewRecord
-           EXIT DISPLAY
+      ON ACTION exit
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cViewRecord
+         EXIT DISPLAY
    END DISPLAY
 
-   CLOSE WINDOW listOrderDetailsWindow
+   RETURN selectedIdx, selectedOption
 
-   IF int_flag THEN
-      RETURN
-   END IF
-
-   CASE selectedOption
-      WHEN cAddRecord
-         CALL add_order_details()
-         IF int_flag == FALSE THEN
-            CALL refresh_order_details(arr_size, "A")
-         END IF
-      WHEN cEditRecord
-         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
-            CALL load_curr_order_details(selectedIdx)
-            CALL edit_order_details()
-            IF int_flag == FALSE THEN
-                  CALL refresh_order_details(selectedIdx, "C")
-            END IF
-         ELSE
-            ERROR "Please select an order detail"
-         END IF
-      WHEN cDeleteRecord
-         IF selectedIdx >= 1 AND selectedIdx <= arr_size THEN
-            CALL load_curr_order_details(selectedIdx)
-            CALL delete_order_details()
-            IF int_flag == FALSE THEN
-                  CALL refresh_order_details(selectedIdx, "D")
-            END IF
-         ELSE
-            ERROR "Please select an order detail"
-         END IF
-      WHEN cViewRecord
-         CALL load_curr_order_details(selectedIdx)
-         CALL display_curr_order_details()
-   END CASE
-
-END FUNCTION #list_order_details_view
+END FUNCTION #order_details_list_display
 
 -- =====================================================================
--- Function: query_order_details
--- Purpose : Search and display order details using CONSTRUCT, store in array
+-- Function: validate_order_details (PRIVATE)
 -- =====================================================================
-FUNCTION query_order_details()
-    DEFINE where_clause VARCHAR(500)
-
-    CLEAR FORM
-    CALL clear_curr_order_details()
-    LET int_flag = FALSE
-    CONSTRUCT where_clause ON order_details.orderid, order_details.productid,
-                              order_details.unitprice, order_details.quantity, order_details.discount
-       FROM s_order_details.orderid, s_order_details.productid,
-            s_order_details.unitprice, s_order_details.quantity, s_order_details.discount
-        ON ACTION accept
-            ACCEPT CONSTRUCT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT CONSTRUCT
-    END CONSTRUCT
-
-    IF int_flag THEN
-       CALL clear_curr_order_details()
-       CALL clear_order_details()
-       RETURN
-    END IF
-
-    CALL load_order_details(where_clause)
-
-    IF arr_size == 0 THEN
-        MESSAGE "No order details found."
-        RETURN
-    END IF
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: load_order_details
--- Purpose : Load order details into dynamic array based on WHERE clause
--- =====================================================================
-FUNCTION load_order_details(where_clause)
-    DEFINE where_clause VARCHAR(500)
-    DEFINE sql_stmt VARCHAR(1024)
-    DEFINE idx INTEGER
-
-    LET sql_stmt = " SELECT order_details.orderid, order_details.productid, products.productname,",
-                   " order_details.unitprice, order_details.quantity, order_details.discount",
-                   " FROM order_details",
-                   " LEFT OUTER JOIN products ON products.productid = order_details.productid",
-                   " WHERE ", where_clause CLIPPED, " ORDER BY order_details.orderid, order_details.productid"
-
-    CALL clear_order_details()
-
-    LET idx = 0
-    PREPARE p_order_details FROM sql_stmt
-    DECLARE c_order_details CURSOR FOR p_order_details
-    FOREACH c_order_details INTO curr_order_details.*
-        LET idx = idx + 1
-        LET order_details_arr[idx] = curr_order_details
-    END FOREACH
-    CALL clear_curr_order_details()
-    LET arr_size = idx
-
-END FUNCTION
-
-FUNCTION clear_order_details()
-   DEFINE idx INTEGER
-
-   FOR idx = 1 TO arr_max
-      INITIALIZE order_details_arr[idx].* TO NULL
-   END FOR
-   LET arr_size = 0
-
-END FUNCTION #clear_order_details
-
--- =====================================================================
--- Function: add_order_details
--- Purpose : Add a new order detail record
--- =====================================================================
-FUNCTION add_order_details()
-    DEFINE order_details_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-    DEFINE selected_order_id LIKE orders.orderid
-    DEFINE selected_product_id LIKE products.productid
-    DEFINE selected_product_name LIKE products.productname
-
-    CLEAR FORM
-    LET int_flag = FALSE
-    CALL clear_curr_order_details()
-    INPUT BY NAME curr_order_details.*
-        ATTRIBUTE(UNBUFFERED)
-        BEFORE INPUT
-           IF curr_order_details.orderid > 0 THEN
-               NEXT FIELD productid
-           END IF
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        ON ACTION zoom_order
-            CALL order_lookup()
-               RETURNING selected_order_id
-            IF selected_order_id > 0 THEN
-               LET curr_order_details.orderid = selected_order_id
-            END IF
-        ON ACTION zoom_product
-            CALL product_lookup()
-               RETURNING selected_product_id, selected_product_name
-            IF selected_product_id > 0 THEN
-               LET curr_order_details.productid = selected_product_id
-               LET curr_order_details.productname = selected_product_name
-            END IF
-
-        AFTER FIELD orderid
-            CALL validate_orderid_field()
-               RETURNING order_details_valid, valid_msg
-            IF NOT order_details_valid THEN
-               ERROR valid_msg
-               NEXT FIELD orderid
-            END IF
-
-        AFTER FIELD productid
-            CALL validate_productid_field()
-               RETURNING order_details_valid, valid_msg
-            IF NOT order_details_valid THEN
-               ERROR valid_msg
-               NEXT FIELD productid
-            END IF
-
-        AFTER INPUT
-            CALL validate_order_details("A")
-               RETURNING order_details_valid, valid_msg
-            IF NOT order_details_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Order detail add canceled"
-       RETURN
-    END IF
-
-    CALL insert_curr_order_details()
-    MESSAGE "Order detail record added"
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: edit_order_details
--- Purpose : Edit an existing order detail record
--- =====================================================================
-FUNCTION edit_order_details()
-    DEFINE order_details_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-
-    LET int_flag = FALSE
-    INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            CALL validate_order_details("C")
-               RETURNING order_details_valid, valid_msg
-            IF NOT order_details_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Order detail update canceled"
-       RETURN
-    END IF
-
-    CALL update_curr_order_details()
-    MESSAGE "Order detail record updated"
-
-END FUNCTION
-
-
--- =====================================================================
--- Function: delete_order_details
--- Purpose : Delete an existing order detail record
--- =====================================================================
-FUNCTION delete_order_details()
-
-    LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
-        ERROR "Order detail delete canceled"
-        LET int_flag = TRUE
-        RETURN
-    END IF
-
-    CALL delete_curr_order_details()
-    MESSAGE "Order detail record deleted"
-
-END FUNCTION
-
-FUNCTION load_curr_order_details(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_order_details()
-   IF currIdx > 0 AND currIdx <= arr_size THEN
-      LET curr_order_details = order_details_arr[currIdx]
-   END IF
-
-END FUNCTION
-
-FUNCTION display_curr_order_details()
-
-   DISPLAY BY NAME curr_order_details.*
-
-END FUNCTION
-
-FUNCTION clear_curr_order_details()
-
-   INITIALIZE curr_order_details.* TO NULL
-   IF default_order_id IS NOT NULL AND default_order_id > 0 THEN
-      LET curr_order_details.orderid = default_order_id
-   END IF
-
-END FUNCTION
-
-FUNCTION insert_curr_order_details()
-
-   INSERT INTO order_details (orderid, productid, unitprice, quantity, discount)
-      VALUES (curr_order_details.orderid, curr_order_details.productid,
-              curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount)
-
-END FUNCTION
-
-FUNCTION update_curr_order_details()
-
-   UPDATE order_details
-      SET unitprice = curr_order_details.unitprice,
-          quantity = curr_order_details.quantity,
-          discount = curr_order_details.discount
-    WHERE orderid = curr_order_details.orderid
-      AND productid = curr_order_details.productid
-
-END FUNCTION
-
-FUNCTION delete_curr_order_details()
-
-   DELETE FROM order_details
-    WHERE orderid = curr_order_details.orderid
-      AND productid = curr_order_details.productid
-
-END FUNCTION
-
-FUNCTION refresh_order_details(currIdx, operation)
-   DEFINE currIdx INTEGER
-   DEFINE operation CHAR(1)
-   DEFINE newIdx INTEGER
-   DEFINE idx INTEGER
-   DEFINE replaceRec SMALLINT
-
-   CASE operation
-      WHEN "A"
-         LET newIdx = arr_size + 1
-         LET order_details_arr[newIdx] = curr_order_details
-         LET arr_size = newIdx
-      WHEN "C"
-         LET order_details_arr[currIdx] = curr_order_details
-      WHEN "D"
-           LET newIdx = 0
-           LET replaceRec = FALSE
-
-           FOR idx = 1 TO arr_size
-              IF order_details_arr[idx].orderid = curr_order_details.orderid
-                 AND order_details_arr[idx].productid = curr_order_details.productid THEN
-                 LET replaceRec = TRUE
-                 CONTINUE FOR
-              END IF
-              LET newIdx = newIdx + 1
-              LET order_details_arr[newIdx] = order_details_arr[idx]
-           END FOR
-
-           IF replaceRec THEN
-              INITIALIZE order_details_arr[arr_size].* TO NULL
-              LET arr_size = arr_size - 1
-           END IF
-   END CASE
-
-END FUNCTION #refresh_order_details
-
-FUNCTION validate_order_details(mode)
+PRIVATE FUNCTION validate_order_details(mode)
    DEFINE mode CHAR(1)
    DEFINE detailExists SMALLINT
    DEFINE product_name LIKE products.productname
@@ -579,9 +480,13 @@ FUNCTION validate_order_details(mode)
    END IF
 
    RETURN TRUE, "Okay"
-END FUNCTION
 
-FUNCTION validate_orderid_field()
+END FUNCTION #validate_order_details
+
+-- =====================================================================
+-- Function: validate_orderid_field (PRIVATE)
+-- =====================================================================
+PRIVATE FUNCTION validate_orderid_field()
 
    IF curr_order_details.orderid IS NOT NULL THEN
       SELECT 1 FROM orders WHERE orders.orderid = curr_order_details.orderid
@@ -593,7 +498,10 @@ FUNCTION validate_orderid_field()
 
 END FUNCTION #validate_orderid_field
 
-FUNCTION validate_productid_field()
+-- =====================================================================
+-- Function: validate_productid_field (PRIVATE)
+-- =====================================================================
+PRIVATE FUNCTION validate_productid_field()
    DEFINE product_name LIKE products.productname
 
    IF curr_order_details.productid IS NOT NULL THEN

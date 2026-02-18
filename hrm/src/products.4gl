@@ -1,4 +1,6 @@
 IMPORT FGL list_view_helper
+IMPORT FGL controller
+
 DATABASE northwind
 
 TYPE t_product RECORD
@@ -16,6 +18,23 @@ END RECORD
 
 DEFINE products_arr DYNAMIC ARRAY OF t_product
 DEFINE curr_products t_product
+
+-- =====================================================================
+-- Function: get_config
+-- Purpose : Return the controller configuration for products
+-- =====================================================================
+PRIVATE FUNCTION get_config() RETURNS t_controller_config
+   DEFINE cfg t_controller_config
+   LET cfg.moduleName   = "products"
+   LET cfg.formName     = "products"
+   LET cfg.listFormName = "products_list"
+   LET cfg.windowTitle  = "Products Management"
+   LET cfg.hasModify    = TRUE
+   LET cfg.hasQuery     = TRUE
+   LET cfg.hasLookup    = TRUE
+   LET cfg.entityName   = "Product"
+   RETURN cfg
+END FUNCTION #get_config
 
 -- =====================================================================
 -- Function: view_product
@@ -36,7 +55,7 @@ FUNCTION view_product(prod_id)
    CALL populate_supplier_combo()
    CALL populate_category_combo()
    LET where_clause = " products.productid = ", prod_id
-   CALL load_products(where_clause)
+   CALL products_do_load(where_clause)
 
    IF products_arr.getLength() == 0 THEN
       CLOSE WINDOW viewProductWindow
@@ -44,8 +63,8 @@ FUNCTION view_product(prod_id)
       RETURN
    END IF
 
-   CALL load_curr_products(1)
-   CALL display_curr_products()
+   CALL products_load_at(1)
+   CALL products_display_curr()
 
    MENU "Product View"
       COMMAND "Supplier" "View Supplier"
@@ -78,8 +97,8 @@ FUNCTION view_products_for_supplier(supp_id)
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
-   LET where_clause = " p.supplierid = ", supp_id
-   CALL load_products(where_clause)
+   LET where_clause = " products.supplierid = ", supp_id
+   CALL products_do_load(where_clause)
 
    IF products_arr.getLength() == 0 THEN
       CLOSE WINDOW viewProductsWindow
@@ -111,8 +130,8 @@ FUNCTION view_products_for_category(cat_id)
 
    CALL populate_supplier_combo()
    CALL populate_category_combo()
-   LET where_clause = " categoryid = ", cat_id
-   CALL load_products(where_clause)
+   LET where_clause = " products.categoryid = ", cat_id
+   CALL products_do_load(where_clause)
 
    IF products_arr.getLength() == 0 THEN
       CLOSE WINDOW viewProductsWindow
@@ -128,7 +147,7 @@ END FUNCTION #view_products_for_category
 
 -- =====================================================================
 -- Function: submenu_products_view
--- Purpose : View-only submenu for products (no add/modify/delete)
+-- Purpose : View-only navigation for products (called from view_products_for_*)
 -- =====================================================================
 FUNCTION submenu_products_view()
    DEFINE currentIdx INTEGER
@@ -137,8 +156,8 @@ FUNCTION submenu_products_view()
    LET currentIdx = 1
    WHILE currentIdx > 0 AND currentIdx <= products_arr.getLength()
 
-       CALL load_curr_products(currentIdx)
-       CALL display_curr_products()
+       CALL products_load_at(currentIdx)
+       CALL products_display_curr()
        LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", products_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
@@ -174,315 +193,141 @@ FUNCTION submenu_products_view()
 
 END FUNCTION #submenu_products_view
 
+-- =====================================================================
+-- Function: submenu_products
+-- Purpose : Standard entry point — query then navigate using controller
+-- =====================================================================
 FUNCTION submenu_products()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   CALL query_products()
-   IF products_arr.getLength() == 0 THEN
-      RETURN
-   END IF
-
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= products_arr.getLength()
-
-       CALL load_curr_products(currentIdx)
-       CALL display_curr_products()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", products_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Products Management"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > products_arr.getLength() THEN
-                 LET currentIdx = products_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = products_arr.getLength()
-              EXIT MENU
-          COMMAND "Add" "Add a new product"
-              CALL add_products()
-              IF int_flag == FALSE THEN
-                 CALL refresh_products(currentIdx, "A")
-                 LET currentIdx = products_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Modify" "Edit an existing product"
-              CALL edit_products()
-              IF int_flag == FALSE THEN
-                 CALL refresh_products(currentIdx, "C")
-              END IF
-              EXIT MENU
-          COMMAND "Delete" "Delete a product"
-              CALL delete_products()
-              IF int_flag == FALSE THEN
-                 CALL refresh_products(currentIdx, "D")
-                 IF currentIdx > products_arr.getLength() THEN
-                    LET currentIdx = products_arr.getLength()
-                 END IF
-              END IF
-              EXIT MENU
-          COMMAND "List" "Switch to list view"
-              CALL list_products_view()
-              EXIT MENU
-          COMMAND "Supplier" "View Supplier"
-              CALL view_supplier(curr_products.supplierid)
-          COMMAND "Category" "View Category"
-              CALL view_category(curr_products.categoryid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_products
 
-FUNCTION list_products_view()
-   DEFINE selectedIdx INTEGER
-   DEFINE selectedOption INTEGER
+-- =====================================================================
+-- Dispatch Interface: Functions called by the controller via dispatch
+-- =====================================================================
 
-   OPEN WINDOW listProductsWindow WITH FORM "products_list"
-      ATTRIBUTES(STYLE="modulewindow")
+-- Return the number of records in the result set
+FUNCTION products_get_count() RETURNS INTEGER
+   RETURN products_arr.getLength()
+END FUNCTION #products_get_count
 
-   MESSAGE "Displayed ", products_arr.getLength() USING "<<<<<", " products"
+-- Load the record at index into the current record
+FUNCTION products_load_at(idx INTEGER)
+   INITIALIZE curr_products.* TO NULL
+   IF idx > 0 AND idx <= products_arr.getLength() THEN
+      LET curr_products = products_arr[idx]
+   END IF
+END FUNCTION #products_load_at
 
-   DISPLAY ARRAY products_arr TO products_list.*
-       ON ACTION add
-         LET selectedOption = cAddRecord
-         EXIT DISPLAY
-       ON ACTION modify
-         LET selectedOption = cEditRecord
-         LET selectedIdx = ARR_CURR()
-         EXIT DISPLAY
-       ON ACTION delete
-         LET selectedIdx = ARR_CURR()
-         LET selectedOption = cDeleteRecord
-         EXIT DISPLAY
-       ON ACTION exit
-           LET int_flag = TRUE
-           EXIT DISPLAY
-       ON ACTION accept
-           LET selectedIdx = ARR_CURR()
-           LET selectedOption = cViewRecord
-           EXIT DISPLAY
-   END DISPLAY
+-- Display the current record on the form
+FUNCTION products_display_curr()
+   DISPLAY BY NAME curr_products.*
+END FUNCTION #products_display_curr
 
-   CLOSE WINDOW listProductsWindow
+-- Clear the current record and form
+FUNCTION products_clear_curr()
+   INITIALIZE curr_products.* TO NULL
+END FUNCTION #products_clear_curr
+
+-- =====================================================================
+-- Function: products_do_query
+-- Purpose : Search using CONSTRUCT and load results
+-- =====================================================================
+FUNCTION products_do_query()
+   DEFINE where_clause VARCHAR(500)
+
+   CLEAR FORM
+   CALL products_clear_curr()
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
+   LET int_flag = FALSE
+   CONSTRUCT where_clause ON products.productid, products.productname, products.supplierid,
+                             products.categoryid, products.quantityperunit, products.unitprice,
+                             products.unitsinstock, products.unitsonorder, products.reorderlevel,
+                             products.discontinued
+      FROM s_products.*
+      ON ACTION accept
+          ACCEPT CONSTRUCT
+      ON ACTION cancel
+          LET int_flag = TRUE
+          EXIT CONSTRUCT
+   END CONSTRUCT
 
    IF int_flag THEN
+      CALL products_clear_curr()
+      CALL products_arr.clear()
       RETURN
    END IF
 
-   CASE selectedOption
-      WHEN cAddRecord
-         CALL add_products()
-         IF int_flag == FALSE THEN
-            CALL refresh_products(products_arr.getLength(), "A")
-         END IF
-      WHEN cEditRecord
-         IF selectedIdx >= 1 AND selectedIdx <= products_arr.getLength() THEN
-            CALL load_curr_products(selectedIdx)
-            CALL edit_products()
-            IF int_flag == FALSE THEN
-                  CALL refresh_products(selectedIdx, "C")
-            END IF
-         ELSE
-            ERROR "Please select a product"
-         END IF
-      WHEN cDeleteRecord
-         IF selectedIdx >= 1 AND selectedIdx <= products_arr.getLength() THEN
-            CALL load_curr_products(selectedIdx)
-            CALL delete_products()
-            IF int_flag == FALSE THEN
-                  CALL refresh_products(selectedIdx, "D")
-            END IF
-         ELSE
-            ERROR "Please select a product"
-         END IF
-      WHEN cViewRecord
-         CALL load_curr_products(selectedIdx)
-         CALL display_curr_products()
-   END CASE
+   CALL products_do_load(where_clause)
 
-END FUNCTION #list_products_view
+   IF products_arr.getLength() == 0 THEN
+      MESSAGE "No products found."
+   END IF
 
-FUNCTION query_products()
-    DEFINE where_clause VARCHAR(500)
+END FUNCTION #products_do_query
 
-    CLEAR FORM
-    CALL clear_curr_products()
-    LET int_flag = FALSE
-    CONSTRUCT where_clause ON products.productid, products.productname, products.supplierid,
-                              products.categoryid, products.quantityperunit, products.unitprice,
-                              products.unitsinstock, products.unitsonorder, products.reorderlevel,
-                              products.discontinued
-       FROM s_products.*
-        ON ACTION accept
-            ACCEPT CONSTRUCT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT CONSTRUCT
-    END CONSTRUCT
+-- =====================================================================
+-- Function: products_do_load
+-- Purpose : Load products into dynamic array based on WHERE clause
+-- =====================================================================
+PRIVATE FUNCTION products_do_load(where_clause VARCHAR(500))
+   DEFINE sql_stmt VARCHAR(1024)
+   DEFINE temp_product t_product
 
-    IF int_flag THEN
-       CALL clear_curr_products()
-       CALL clear_products()
-       RETURN
-    END IF
-
-    CALL load_products(where_clause)
-
-    IF products_arr.getLength() == 0 THEN
-        MESSAGE "No products found."
-        RETURN
-    END IF
-
-END FUNCTION
-
-FUNCTION load_products(where_clause)
-    DEFINE where_clause VARCHAR(500)
-    DEFINE sql_stmt VARCHAR(1024)
-    DEFINE temp_product t_product
-
-    LET sql_stmt = " SELECT productid, productname, supplierid,",
-                   " categoryid, quantityperunit, unitprice,",
-                   " unitsinstock, unitsonorder, reorderlevel, discontinued",
-                   " FROM products",
-                   " WHERE ", where_clause CLIPPED, " ORDER BY productname"
-
-    CALL clear_products()
-
-    PREPARE p_products FROM sql_stmt
-    DECLARE c_products CURSOR FOR p_products
-    FOREACH c_products INTO temp_product.*
-        CALL products_arr.appendElement()
-        LET products_arr[products_arr.getLength()] = temp_product
-    END FOREACH
-    CALL clear_curr_products()
-
-END FUNCTION
-
-FUNCTION clear_products()
+   LET sql_stmt = " SELECT productid, productname, supplierid,",
+                  " categoryid, quantityperunit, unitprice,",
+                  " unitsinstock, unitsonorder, reorderlevel, discontinued",
+                  " FROM products",
+                  " WHERE ", where_clause CLIPPED, " ORDER BY productname"
 
    CALL products_arr.clear()
 
-END FUNCTION #clear_products
+   PREPARE p_products FROM sql_stmt
+   DECLARE c_products CURSOR FOR p_products
+   FOREACH c_products INTO temp_product.*
+      CALL products_arr.appendElement()
+      LET products_arr[products_arr.getLength()] = temp_product
+   END FOREACH
 
-FUNCTION add_products()
-    DEFINE products_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
+END FUNCTION #products_do_load
 
-    CLEAR FORM
-    LET int_flag = FALSE
-    CALL clear_curr_products()
-    LET curr_products.discontinued = 0
-    INPUT BY NAME curr_products.*
-        ATTRIBUTE(UNBUFFERED)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            CALL validate_products("A")
-               RETURNING products_valid, valid_msg
-            IF NOT products_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
+-- =====================================================================
+-- Function: products_do_add
+-- Purpose : Add a new product record
+-- =====================================================================
+FUNCTION products_do_add()
+   DEFINE products_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
 
-    IF int_flag THEN
-       ERROR "Product add canceled"
-       RETURN
-    END IF
+   CLEAR FORM
+   LET int_flag = FALSE
+   CALL products_clear_curr()
+   LET curr_products.discontinued = 0
+   CALL populate_supplier_combo()
+   CALL populate_category_combo()
+   INPUT BY NAME curr_products.*
+      ATTRIBUTES(UNBUFFERED)
+      ON ACTION accept
+          ACCEPT INPUT
+      ON ACTION cancel
+          LET int_flag = TRUE
+          EXIT INPUT
+      AFTER INPUT
+          CALL products_validate("A")
+             RETURNING products_valid, valid_msg
+          IF NOT products_valid THEN
+              ERROR valid_msg
+              CONTINUE INPUT
+          END IF
+   END INPUT
 
-    CALL insert_curr_products()
-    MESSAGE "Product record added"
-
-END FUNCTION
-
-FUNCTION edit_products()
-    DEFINE products_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
-
-    LET int_flag = FALSE
-    INPUT BY NAME curr_products.productname, curr_products.supplierid, curr_products.categoryid,
-                  curr_products.quantityperunit, curr_products.unitprice, curr_products.unitsinstock,
-                  curr_products.unitsonorder, curr_products.reorderlevel, curr_products.discontinued
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            CALL validate_products("C")
-               RETURNING products_valid, valid_msg
-            IF NOT products_valid THEN
-                ERROR valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Product update canceled"
-       RETURN
-    END IF
-
-    CALL update_curr_products()
-    MESSAGE "Product record updated"
-
-END FUNCTION
-
-FUNCTION delete_products()
-
-    LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
-        ERROR "Product delete canceled"
-        LET int_flag = TRUE
-        RETURN
-    END IF
-
-    CALL delete_curr_products()
-    MESSAGE "Product record deleted"
-
-END FUNCTION
-
-FUNCTION load_curr_products(currIdx)
-   DEFINE currIdx INTEGER
-
-   CALL clear_curr_products()
-   IF currIdx > 0 AND currIdx <= products_arr.getLength() THEN
-      LET curr_products = products_arr[currIdx]
+   IF int_flag THEN
+      ERROR "Product add canceled"
+      RETURN
    END IF
-
-END FUNCTION
-
-FUNCTION display_curr_products()
-
-   DISPLAY BY NAME curr_products.*
-
-END FUNCTION
-
-FUNCTION clear_curr_products()
-
-   INITIALIZE curr_products.* TO NULL
-
-END FUNCTION
-
-FUNCTION insert_curr_products()
 
    INSERT INTO products (productid, productname, supplierid, categoryid,
                          quantityperunit, unitprice, unitsinstock, unitsonorder,
@@ -492,11 +337,42 @@ FUNCTION insert_curr_products()
               curr_products.unitsinstock, curr_products.unitsonorder, curr_products.reorderlevel,
               curr_products.discontinued)
    LET curr_products.productid = sqlca.sqlerrd[2]
-   CALL display_curr_products()
+   CALL products_display_curr()
+   MESSAGE "Product record added"
 
-END FUNCTION
+END FUNCTION #products_do_add
 
-FUNCTION update_curr_products()
+-- =====================================================================
+-- Function: products_do_edit
+-- Purpose : Edit an existing product record
+-- =====================================================================
+FUNCTION products_do_edit()
+   DEFINE products_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
+
+   LET int_flag = FALSE
+   INPUT BY NAME curr_products.productname, curr_products.supplierid, curr_products.categoryid,
+                 curr_products.quantityperunit, curr_products.unitprice, curr_products.unitsinstock,
+                 curr_products.unitsonorder, curr_products.reorderlevel, curr_products.discontinued
+      ATTRIBUTES(UNBUFFERED, WITHOUT DEFAULTS)
+      ON ACTION accept
+          ACCEPT INPUT
+      ON ACTION cancel
+          LET int_flag = TRUE
+          EXIT INPUT
+      AFTER INPUT
+          CALL products_validate("C")
+             RETURNING products_valid, valid_msg
+          IF NOT products_valid THEN
+              ERROR valid_msg
+              CONTINUE INPUT
+          END IF
+   END INPUT
+
+   IF int_flag THEN
+      ERROR "Product update canceled"
+      RETURN
+   END IF
 
    UPDATE products
       SET productname = curr_products.productname,
@@ -509,19 +385,34 @@ FUNCTION update_curr_products()
           reorderlevel = curr_products.reorderlevel,
           discontinued = curr_products.discontinued
     WHERE productid = curr_products.productid
+   MESSAGE "Product record updated"
 
-END FUNCTION
+END FUNCTION #products_do_edit
 
-FUNCTION delete_curr_products()
+-- =====================================================================
+-- Function: products_do_delete
+-- Purpose : Delete a product record
+-- =====================================================================
+FUNCTION products_do_delete()
+
+   LET int_flag = FALSE
+   IF NOT confirm_delete() THEN
+      ERROR "Product delete canceled"
+      LET int_flag = TRUE
+      RETURN
+   END IF
 
    DELETE FROM products
     WHERE productid = curr_products.productid
+   MESSAGE "Product record deleted"
 
-END FUNCTION
+END FUNCTION #products_do_delete
 
-FUNCTION refresh_products(currIdx, operation)
-   DEFINE currIdx INTEGER
-   DEFINE operation CHAR(1)
+-- =====================================================================
+-- Function: products_do_refresh
+-- Purpose : Refresh the array after add, change, or delete
+-- =====================================================================
+FUNCTION products_do_refresh(currIdx INTEGER, operation CHAR(1))
    DEFINE idx INTEGER
 
    CASE operation
@@ -539,10 +430,52 @@ FUNCTION refresh_products(currIdx, operation)
          END FOR
    END CASE
 
-END FUNCTION #refresh_products
+END FUNCTION #products_do_refresh
 
-FUNCTION validate_products(mode)
-   DEFINE mode CHAR(1)
+-- =====================================================================
+-- Function: products_list_display
+-- Purpose : DISPLAY ARRAY list view for products
+-- =====================================================================
+FUNCTION products_list_display() RETURNS (INTEGER, INTEGER)
+   DEFINE selectedIdx INTEGER
+   DEFINE selectedOption INTEGER
+
+   LET selectedIdx = 0
+   LET selectedOption = 0
+   LET int_flag = FALSE
+
+   MESSAGE "Displayed ", products_arr.getLength() USING "<<<<<", " products"
+
+   DISPLAY ARRAY products_arr TO products_list.*
+      ON ACTION add
+         LET selectedOption = cAddRecord
+         EXIT DISPLAY
+      ON ACTION modify
+         LET selectedOption = cEditRecord
+         LET selectedIdx = ARR_CURR()
+         EXIT DISPLAY
+      ON ACTION delete
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cDeleteRecord
+         EXIT DISPLAY
+      ON ACTION exit
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         LET selectedIdx = ARR_CURR()
+         LET selectedOption = cViewRecord
+         EXIT DISPLAY
+   END DISPLAY
+
+   RETURN selectedIdx, selectedOption
+
+END FUNCTION #products_list_display
+
+-- =====================================================================
+-- Function: products_validate
+-- Purpose : Validate the current product record
+-- =====================================================================
+FUNCTION products_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
    DEFINE productExists SMALLINT
 
    IF mode == "C" THEN
@@ -559,7 +492,8 @@ FUNCTION validate_products(mode)
    END IF
 
    RETURN TRUE, "Okay"
-END FUNCTION
+
+END FUNCTION #products_validate
 
 -- =====================================================================
 -- Function: populate_supplier_combo
@@ -627,12 +561,16 @@ FUNCTION product_lookup()
 
 END FUNCTION #product_lookup
 
+-- =====================================================================
+-- Function: product_lookup_menu
+-- Purpose : Navigation menu for product lookup selection
+-- =====================================================================
 FUNCTION product_lookup_menu()
    DEFINE currentIdx INTEGER
    DEFINE statusMessage CHAR(60)
    DEFINE selectedIdx INTEGER
 
-   CALL query_products()
+   CALL products_do_query()
    IF products_arr.getLength() == 0 THEN
       RETURN 0, ""
    END IF
@@ -641,8 +579,8 @@ FUNCTION product_lookup_menu()
    LET selectedIdx = 0
    WHILE currentIdx > 0 AND currentIdx <= products_arr.getLength() AND selectedIdx == 0
 
-       CALL load_curr_products(currentIdx)
-       CALL display_curr_products()
+       CALL products_load_at(currentIdx)
+       CALL products_display_curr()
        LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", products_arr.getLength() USING "<<<<"
        MESSAGE statusMessage
 
@@ -667,7 +605,7 @@ FUNCTION product_lookup_menu()
               EXIT MENU
           COMMAND "Select" "Select the current product"
               LET selectedIdx = currentIdx
-              CALL load_curr_products(selectedIdx)
+              CALL products_load_at(selectedIdx)
               EXIT MENU
           COMMAND "Exit" "Quit operation"
               LET currentIdx = 0
