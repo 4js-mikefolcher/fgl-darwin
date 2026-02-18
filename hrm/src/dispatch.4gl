@@ -396,3 +396,40 @@ PUBLIC FUNCTION dispatch_list_display(moduleName STRING)
    END CASE
 
 END FUNCTION #dispatch_list_display
+
+-- =====================================================================
+-- Function: dispatch_command
+-- Purpose : Route a view command to the correct module's do_command
+-- =====================================================================
+PUBLIC FUNCTION dispatch_command(moduleName STRING, commandName STRING)
+
+   CASE moduleName
+      WHEN "suppliers"
+         CALL suppliers_do_command(commandName)
+      WHEN "categories"
+         CALL categories_do_command(commandName)
+      WHEN "customers"
+         CALL customers_do_command(commandName)
+      WHEN "employees"
+         CALL employees_do_command(commandName)
+      WHEN "empl_terr"
+         CALL empl_terr_do_command(commandName)
+      WHEN "orders"
+         CALL orders_do_command(commandName)
+      WHEN "order_details"
+         CALL order_details_do_command(commandName)
+      WHEN "products"
+         CALL products_do_command(commandName)
+      WHEN "region"
+         CALL region_do_command(commandName)
+      WHEN "shippers"
+         CALL shippers_do_command(commandName)
+      WHEN "territories"
+         CALL territories_do_command(commandName)
+      WHEN "usstates"
+         CALL usstates_do_command(commandName)
+      OTHERWISE
+         ERROR "Unknown module: ", moduleName
+   END CASE
+
+END FUNCTION #dispatch_command

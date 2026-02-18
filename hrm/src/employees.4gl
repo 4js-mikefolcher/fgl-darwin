@@ -68,10 +68,27 @@ PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
    LET cfg.hasQuery = TRUE
    LET cfg.hasLookup = TRUE
    LET cfg.entityName = "Employee"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
 
    RETURN cfg
 
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for employees
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "territories"
+   LET cmds[1].commandLabel = "Territories"
+   LET cmds[1].commandComment = "View Employee Territories"
+   LET cmds[2].commandName  = "orders"
+   LET cmds[2].commandLabel = "Orders"
+   LET cmds[2].commandComment = "View Orders for this Employee"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: submenu_employee
@@ -450,6 +467,25 @@ FUNCTION employees_list_display()
 END FUNCTION #employees_list_display
 
 -- =====================================================================
+-- Function: employees_do_command
+-- Purpose : Execute a view command for employees
+-- =====================================================================
+FUNCTION employees_do_command(commandName STRING)
+   CASE commandName
+      WHEN "territories"
+         CALL terr_by_empl(currentRec.employeeid)
+      WHEN "orders"
+         CALL view_orders_for_employee(currentRec.employeeid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #employees_do_command
+
+-- =====================================================================
 -- Function: employee_lookup
 -- Purpose : Open employee lookup window, return selected employee
 -- =====================================================================
@@ -567,48 +603,12 @@ END FUNCTION #get_employees_count
 -- =====================================================================
 -- Function: submenu_employees_view
 -- Purpose : View-only submenu for employees (no add/modify/delete)
+--           Now delegates to the generic controller_navigate_view()
 -- =====================================================================
 FUNCTION submenu_employees_view()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= employeeList.getLength()
-
-      CALL employees_load_at(currentIdx)
-      CALL employees_display_curr()
-      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", employeeList.getLength() USING "<<<<"
-      MESSAGE statusMessage
-
-      MENU "Employees View"
-         COMMAND "First" "View first record in result set"
-            LET currentIdx = 1
-            EXIT MENU
-         COMMAND "Previous" "View previous record in result set"
-            LET currentIdx = currentIdx - 1
-            IF currentIdx < 1 THEN
-               LET currentIdx = 1
-            END IF
-            EXIT MENU
-         COMMAND "Next" "View next record in result set"
-            LET currentIdx = currentIdx + 1
-            IF currentIdx > employeeList.getLength() THEN
-               LET currentIdx = employeeList.getLength()
-            END IF
-            EXIT MENU
-         COMMAND "Last" "View last record in result set"
-            LET currentIdx = employeeList.getLength()
-            EXIT MENU
-         COMMAND "Territories" "Employee Territories"
-            CALL terr_by_empl(currentRec.employeeid)
-         COMMAND "Orders" "View Orders for this Employee"
-            CALL view_orders_for_employee(currentRec.employeeid)
-         COMMAND "Exit" "Quit operation"
-            LET currentIdx = 0
-            EXIT MENU
-      END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
 END FUNCTION #submenu_employees_view
 

@@ -26,10 +26,27 @@ PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
    LET cfg.hasQuery = TRUE
    LET cfg.hasLookup = TRUE
    LET cfg.entityName = "Territory"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
 
    RETURN cfg
 
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for territories
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "region"
+   LET cmds[1].commandLabel = "Region"
+   LET cmds[1].commandComment = "View Region for this Territory"
+   LET cmds[2].commandName  = "employees"
+   LET cmds[2].commandLabel = "Employees"
+   LET cmds[2].commandComment = "View Employees in this Territory"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: submenu_territories
@@ -141,48 +158,12 @@ END FUNCTION #empl_by_terr
 -- =====================================================================
 -- Function: submenu_territories_view
 -- Purpose : View-only submenu for territories (no add/modify/delete)
+--           Now delegates to the generic controller_navigate_view()
 -- =====================================================================
 FUNCTION submenu_territories_view()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= territories_arr.getLength()
-
-      CALL territories_load_at(currentIdx)
-      CALL territories_display_curr()
-      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", territories_arr.getLength() USING "<<<<"
-      MESSAGE statusMessage
-
-      MENU "Territories View"
-         COMMAND "First" "View first record in result set"
-            LET currentIdx = 1
-            EXIT MENU
-         COMMAND "Previous" "View previous record in result set"
-            LET currentIdx = currentIdx - 1
-            IF currentIdx < 1 THEN
-               LET currentIdx = 1
-            END IF
-            EXIT MENU
-         COMMAND "Next" "View next record in result set"
-            LET currentIdx = currentIdx + 1
-            IF currentIdx > territories_arr.getLength() THEN
-               LET currentIdx = territories_arr.getLength()
-            END IF
-            EXIT MENU
-         COMMAND "Last" "View last record in result set"
-            LET currentIdx = territories_arr.getLength()
-            EXIT MENU
-         COMMAND "Region" "View Region"
-            CALL view_region(curr_territories.regionid)
-         COMMAND "Employees" "View Employees in this Territory"
-            CALL empl_by_terr(curr_territories.territoryid)
-         COMMAND "Exit" "Quit operation"
-            LET currentIdx = 0
-            EXIT MENU
-      END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
 END FUNCTION #submenu_territories_view
 
@@ -439,6 +420,25 @@ FUNCTION territories_list_display()
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #territories_list_display
+
+-- =====================================================================
+-- Function: territories_do_command
+-- Purpose : Execute a view command for territories
+-- =====================================================================
+FUNCTION territories_do_command(commandName STRING)
+   CASE commandName
+      WHEN "region"
+         CALL view_region(curr_territories.regionid)
+      WHEN "employees"
+         CALL empl_by_terr(curr_territories.territoryid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #territories_do_command
 
 -- =====================================================================
 -- Function: territories_lookup

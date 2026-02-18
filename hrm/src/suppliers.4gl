@@ -344,6 +344,18 @@ FUNCTION suppliers_list_display() RETURNS (INTEGER, INTEGER)
 END FUNCTION #suppliers_list_display
 
 -- =====================================================================
+-- Function: suppliers_do_command
+-- Purpose : Execute a view command for suppliers (none available)
+-- =====================================================================
+FUNCTION suppliers_do_command(commandName STRING)
+   ERROR "Unknown command: ", commandName
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #suppliers_do_command
+
+-- =====================================================================
 -- Function: supplier_lookup
 -- Purpose : Open a lookup window for supplier selection
 -- =====================================================================

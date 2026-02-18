@@ -64,10 +64,24 @@ PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
    LET cfg.hasQuery = TRUE
    LET cfg.hasLookup = TRUE
    LET cfg.entityName = "Order"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
 
    RETURN cfg
 
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for orders
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "details"
+   LET cmds[1].commandLabel = "Details"
+   LET cmds[1].commandComment = "View Order Details"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: submenu_orders
@@ -180,46 +194,12 @@ END FUNCTION #view_orders_for_employee
 -- =====================================================================
 -- Function: submenu_orders_view
 -- Purpose : View-only submenu for orders (no add/modify/delete)
+--           Now delegates to the generic controller_navigate_view()
 -- =====================================================================
 FUNCTION submenu_orders_view()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= orders_arr.getLength()
-
-      CALL orders_load_at(currentIdx)
-      CALL orders_display_curr()
-      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", orders_arr.getLength() USING "<<<<"
-      MESSAGE statusMessage
-
-      MENU "Orders View"
-         COMMAND "First" "View first record in result set"
-            LET currentIdx = 1
-            EXIT MENU
-         COMMAND "Previous" "View previous record in result set"
-            LET currentIdx = currentIdx - 1
-            IF currentIdx < 1 THEN
-               LET currentIdx = 1
-            END IF
-            EXIT MENU
-         COMMAND "Next" "View next record in result set"
-            LET currentIdx = currentIdx + 1
-            IF currentIdx > orders_arr.getLength() THEN
-               LET currentIdx = orders_arr.getLength()
-            END IF
-            EXIT MENU
-         COMMAND "Last" "View last record in result set"
-            LET currentIdx = orders_arr.getLength()
-            EXIT MENU
-         COMMAND "Details" "View Order Details"
-            CALL view_details_for_order(curr_orders.orderid)
-         COMMAND "Exit" "Quit operation"
-            LET currentIdx = 0
-            EXIT MENU
-      END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
 END FUNCTION #submenu_orders_view
 
@@ -608,6 +588,23 @@ FUNCTION orders_list_display()
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #orders_list_display
+
+-- =====================================================================
+-- Function: orders_do_command
+-- Purpose : Execute a view command for orders
+-- =====================================================================
+FUNCTION orders_do_command(commandName STRING)
+   CASE commandName
+      WHEN "details"
+         CALL view_details_for_order(curr_orders.orderid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #orders_do_command
 
 -- =====================================================================
 -- Function: order_lookup

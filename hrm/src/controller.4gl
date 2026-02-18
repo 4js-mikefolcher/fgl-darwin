@@ -9,17 +9,27 @@ IMPORT FGL list_view_helper
 IMPORT FGL dispatch
 
 -- =====================================================================
+-- View Command Configuration
+-- =====================================================================
+PUBLIC TYPE t_view_command RECORD
+   commandName    STRING,       -- action name (e.g. "orders")
+   commandLabel   STRING,       -- display text (e.g. "Orders")
+   commandComment STRING        -- tooltip/description
+END RECORD
+
+-- =====================================================================
 -- Controller Configuration
 -- =====================================================================
 PUBLIC TYPE t_controller_config RECORD
-   moduleName    STRING,        -- dispatch key (e.g. "suppliers")
-   formName      STRING,        -- detail form name (e.g. "suppliers")
-   listFormName  STRING,        -- list form name  (e.g. "suppliers_list")
-   windowTitle   STRING,        -- MENU title text
-   hasModify     BOOLEAN,       -- TRUE if module supports edit/modify
-   hasQuery      BOOLEAN,       -- TRUE if module supports CONSTRUCT query
-   hasLookup     BOOLEAN,       -- TRUE if module has a lookup function
-   entityName    STRING         -- display name (e.g. "Supplier")
+   moduleName        STRING,        -- dispatch key (e.g. "suppliers")
+   formName          STRING,        -- detail form name (e.g. "suppliers")
+   listFormName      STRING,        -- list form name  (e.g. "suppliers_list")
+   windowTitle       STRING,        -- MENU title text
+   hasModify         BOOLEAN,       -- TRUE if module supports edit/modify
+   hasQuery          BOOLEAN,       -- TRUE if module supports CONSTRUCT query
+   hasLookup         BOOLEAN,       -- TRUE if module has a lookup function
+   entityName        STRING,        -- display name (e.g. "Supplier")
+   availableCommands DYNAMIC ARRAY OF t_view_command  -- view-related commands
 END RECORD
 
 PRIVATE DEFINE m_config   t_controller_config
@@ -33,6 +43,22 @@ PUBLIC FUNCTION controller_init(cfg t_controller_config)
    LET m_config = cfg
    LET m_idx = 0
 END FUNCTION #controller_init
+
+-- =====================================================================
+-- Function: has_command (PRIVATE)
+-- Purpose : Check if a command name exists in the availableCommands array
+-- =====================================================================
+PRIVATE FUNCTION has_command(cmdName STRING) RETURNS BOOLEAN
+   DEFINE i INTEGER
+
+   FOR i = 1 TO m_config.availableCommands.getLength()
+      IF m_config.availableCommands[i].commandName == cmdName THEN
+         RETURN TRUE
+      END IF
+   END FOR
+   RETURN FALSE
+
+END FUNCTION #has_command
 
 -- =====================================================================
 -- Function: controller_navigate
@@ -52,6 +78,20 @@ PUBLIC FUNCTION controller_navigate()
        MESSAGE statusMessage
 
        MENU m_config.windowTitle
+
+          BEFORE MENU
+             -- Hide view commands that are not available for this module
+             CALL DIALOG.setActionHidden("cmd_orders",      NOT has_command("orders"))
+             CALL DIALOG.setActionHidden("cmd_products",    NOT has_command("products"))
+             CALL DIALOG.setActionHidden("cmd_territories", NOT has_command("territories"))
+             CALL DIALOG.setActionHidden("cmd_customer",    NOT has_command("customer"))
+             CALL DIALOG.setActionHidden("cmd_employee",    NOT has_command("employee"))
+             CALL DIALOG.setActionHidden("cmd_shipper",     NOT has_command("shipper"))
+             CALL DIALOG.setActionHidden("cmd_details",     NOT has_command("details"))
+             CALL DIALOG.setActionHidden("cmd_supplier",    NOT has_command("supplier"))
+             CALL DIALOG.setActionHidden("cmd_category",    NOT has_command("category"))
+             CALL DIALOG.setActionHidden("cmd_region",      NOT has_command("region"))
+             CALL DIALOG.setActionHidden("cmd_employees",   NOT has_command("employees"))
 
           ON ACTION first
               LET m_idx = 1
@@ -114,6 +154,30 @@ PUBLIC FUNCTION controller_navigate()
               END IF
               EXIT MENU
 
+          -- View-related commands (hidden/shown per module)
+          ON ACTION cmd_orders ATTRIBUTES(TEXT="Orders", IMAGE="fa-shopping-cart", COMMENT="View Orders")
+              CALL dispatch_command(m_config.moduleName, "orders")
+          ON ACTION cmd_products ATTRIBUTES(TEXT="Products", IMAGE="fa-list", COMMENT="View Products")
+              CALL dispatch_command(m_config.moduleName, "products")
+          ON ACTION cmd_territories ATTRIBUTES(TEXT="Territories", IMAGE="fa-map-marker", COMMENT="View Territories")
+              CALL dispatch_command(m_config.moduleName, "territories")
+          ON ACTION cmd_customer ATTRIBUTES(TEXT="Customer", IMAGE="fa-user", COMMENT="View Customer")
+              CALL dispatch_command(m_config.moduleName, "customer")
+          ON ACTION cmd_employee ATTRIBUTES(TEXT="Employee", IMAGE="fa-id-card", COMMENT="View Employee")
+              CALL dispatch_command(m_config.moduleName, "employee")
+          ON ACTION cmd_shipper ATTRIBUTES(TEXT="Shipper", IMAGE="fa-ship", COMMENT="View Shipper")
+              CALL dispatch_command(m_config.moduleName, "shipper")
+          ON ACTION cmd_details ATTRIBUTES(TEXT="Details", IMAGE="fa-list-alt", COMMENT="View Order Details")
+              CALL dispatch_command(m_config.moduleName, "details")
+          ON ACTION cmd_supplier ATTRIBUTES(TEXT="Supplier", IMAGE="fa-truck", COMMENT="View Supplier")
+              CALL dispatch_command(m_config.moduleName, "supplier")
+          ON ACTION cmd_category ATTRIBUTES(TEXT="Category", IMAGE="fa-tag", COMMENT="View Category")
+              CALL dispatch_command(m_config.moduleName, "category")
+          ON ACTION cmd_region ATTRIBUTES(TEXT="Region", IMAGE="fa-globe", COMMENT="View Region")
+              CALL dispatch_command(m_config.moduleName, "region")
+          ON ACTION cmd_employees ATTRIBUTES(TEXT="Employees", IMAGE="fa-users", COMMENT="View Employees")
+              CALL dispatch_command(m_config.moduleName, "employees")
+
           ON ACTION exit
               LET m_idx = 0
               EXIT MENU
@@ -161,11 +225,9 @@ PUBLIC FUNCTION controller_navigate_view()
           ON ACTION last
               LET m_idx = dispatch_get_count(m_config.moduleName)
               EXIT MENU
-
           ON ACTION exit
               LET m_idx = 0
               EXIT MENU
-
        END MENU
 
    END WHILE

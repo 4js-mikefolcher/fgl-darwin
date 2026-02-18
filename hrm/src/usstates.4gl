@@ -286,6 +286,18 @@ FUNCTION usstates_list_display() RETURNS (INTEGER, INTEGER)
 END FUNCTION #usstates_list_display
 
 -- =====================================================================
+-- Function: usstates_do_command
+-- Purpose : Execute a view command for US states (none available)
+-- =====================================================================
+FUNCTION usstates_do_command(commandName STRING)
+   ERROR "Unknown command: ", commandName
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #usstates_do_command
+
+-- =====================================================================
 -- Function: usstates_validate
 -- Purpose : Validate the current state record
 -- =====================================================================

@@ -362,6 +362,18 @@ FUNCTION empl_terr_list_display() RETURNS (INTEGER, INTEGER)
 END FUNCTION #empl_terr_list_display
 
 -- =====================================================================
+-- Function: empl_terr_do_command
+-- Purpose : Execute a view command for employee territories (none available)
+-- =====================================================================
+FUNCTION empl_terr_do_command(commandName STRING)
+   ERROR "Unknown command: ", commandName
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #empl_terr_do_command
+
+-- =====================================================================
 -- Function: empl_terr_validate
 -- Purpose : Validate the current employee territory record
 -- =====================================================================

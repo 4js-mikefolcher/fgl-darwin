@@ -48,10 +48,24 @@ PRIVATE FUNCTION get_config() RETURNS (t_controller_config)
    LET cfg.hasQuery = TRUE
    LET cfg.hasLookup = TRUE
    LET cfg.entityName = "Customer"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
 
    RETURN cfg
 
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for customers
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "orders"
+   LET cmds[1].commandLabel = "Orders"
+   LET cmds[1].commandComment = "View Orders for this Customer"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: submenu_customers
@@ -374,6 +388,23 @@ FUNCTION customers_list_display()
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #customers_list_display
+
+-- =====================================================================
+-- Function: customers_do_command
+-- Purpose : Execute a view command for customers
+-- =====================================================================
+FUNCTION customers_do_command(commandName STRING)
+   CASE commandName
+      WHEN "orders"
+         CALL view_orders_for_customer(curr_customers.customerid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #customers_do_command
 
 -- =====================================================================
 -- Function: customer_lookup

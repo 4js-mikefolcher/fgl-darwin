@@ -33,8 +33,25 @@ PRIVATE FUNCTION get_config() RETURNS t_controller_config
    LET cfg.hasQuery     = TRUE
    LET cfg.hasLookup    = TRUE
    LET cfg.entityName   = "Product"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
    RETURN cfg
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for products
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "supplier"
+   LET cmds[1].commandLabel = "Supplier"
+   LET cmds[1].commandComment = "View Supplier for this Product"
+   LET cmds[2].commandName  = "category"
+   LET cmds[2].commandLabel = "Category"
+   LET cmds[2].commandComment = "View Category for this Product"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: view_product
@@ -63,17 +80,8 @@ FUNCTION view_product(prod_id)
       RETURN
    END IF
 
-   CALL products_load_at(1)
-   CALL products_display_curr()
-
-   MENU "Product View"
-      COMMAND "Supplier" "View Supplier"
-         CALL view_supplier(curr_products.supplierid)
-      COMMAND "Category" "View Category"
-         CALL view_category(curr_products.categoryid)
-      COMMAND "Exit" "Quit operation"
-         EXIT MENU
-   END MENU
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
    CLOSE WINDOW viewProductWindow
 
@@ -148,48 +156,12 @@ END FUNCTION #view_products_for_category
 -- =====================================================================
 -- Function: submenu_products_view
 -- Purpose : View-only navigation for products (called from view_products_for_*)
+--           Now delegates to the generic controller_navigate_view()
 -- =====================================================================
 FUNCTION submenu_products_view()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
 
-   LET currentIdx = 1
-   WHILE currentIdx > 0 AND currentIdx <= products_arr.getLength()
-
-       CALL products_load_at(currentIdx)
-       CALL products_display_curr()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", products_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Products View"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > products_arr.getLength() THEN
-                 LET currentIdx = products_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = products_arr.getLength()
-              EXIT MENU
-          COMMAND "Supplier" "View Supplier"
-              CALL view_supplier(curr_products.supplierid)
-          COMMAND "Category" "View Category"
-              CALL view_category(curr_products.categoryid)
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
 END FUNCTION #submenu_products_view
 
@@ -470,6 +442,25 @@ FUNCTION products_list_display() RETURNS (INTEGER, INTEGER)
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #products_list_display
+
+-- =====================================================================
+-- Function: products_do_command
+-- Purpose : Execute a view command for products
+-- =====================================================================
+FUNCTION products_do_command(commandName STRING)
+   CASE commandName
+      WHEN "supplier"
+         CALL view_supplier(curr_products.supplierid)
+      WHEN "category"
+         CALL view_category(curr_products.categoryid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #products_do_command
 
 -- =====================================================================
 -- Function: products_validate

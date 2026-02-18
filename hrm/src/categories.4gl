@@ -26,8 +26,22 @@ PRIVATE FUNCTION get_config() RETURNS t_controller_config
    LET cfg.hasQuery     = TRUE
    LET cfg.hasLookup    = TRUE
    LET cfg.entityName   = "Category"
+   -- View commands available for this module
+   LET cfg.availableCommands = init_view_commands()
    RETURN cfg
 END FUNCTION #get_config
+
+-- =====================================================================
+-- Function: init_view_commands (PRIVATE)
+-- Purpose : Define which view commands are available for categories
+-- =====================================================================
+PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
+   DEFINE cmds DYNAMIC ARRAY OF t_view_command
+   LET cmds[1].commandName  = "products"
+   LET cmds[1].commandLabel = "Products"
+   LET cmds[1].commandComment = "View Products in this Category"
+   RETURN cmds
+END FUNCTION #init_view_commands
 
 -- =====================================================================
 -- Function: view_category
@@ -54,15 +68,8 @@ FUNCTION view_category(cat_id)
       RETURN
    END IF
 
-   CALL categories_load_at(1)
-   CALL categories_display_curr()
-
-   MENU "Category View"
-      COMMAND "Products" "View Products in this Category"
-         CALL view_products_for_category(curr_categories.categoryid)
-      COMMAND "Exit" "Quit operation"
-         EXIT MENU
-   END MENU
+   CALL controller_init(get_config())
+   CALL controller_navigate_view()
 
    CLOSE WINDOW viewCategoryWindow
 
@@ -325,6 +332,23 @@ FUNCTION categories_list_display() RETURNS (INTEGER, INTEGER)
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #categories_list_display
+
+-- =====================================================================
+-- Function: categories_do_command
+-- Purpose : Execute a view command for categories
+-- =====================================================================
+FUNCTION categories_do_command(commandName STRING)
+   CASE commandName
+      WHEN "products"
+         CALL view_products_for_category(curr_categories.categoryid)
+      OTHERWISE
+         ERROR "Unknown command: ", commandName
+   END CASE
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #categories_do_command
 
 -- =====================================================================
 -- Function: categories_validate

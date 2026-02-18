@@ -312,6 +312,18 @@ FUNCTION shippers_list_display() RETURNS (INTEGER, INTEGER)
 END FUNCTION #shippers_list_display
 
 -- =====================================================================
+-- Function: shippers_do_command
+-- Purpose : Execute a view command for shippers (none available)
+-- =====================================================================
+FUNCTION shippers_do_command(commandName STRING)
+   ERROR "Unknown command: ", commandName
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #shippers_do_command
+
+-- =====================================================================
 -- Function: shippers_validate
 -- Purpose : Validate the current shipper record
 -- =====================================================================

@@ -419,6 +419,18 @@ FUNCTION order_details_list_display()
 END FUNCTION #order_details_list_display
 
 -- =====================================================================
+-- Function: order_details_do_command
+-- Purpose : Execute a view command for order details (none available)
+-- =====================================================================
+FUNCTION order_details_do_command(commandName STRING)
+   ERROR "Unknown command: ", commandName
+
+   #Re-initialize the right config to the controller
+   CALL controller_init(get_config())
+
+END FUNCTION #order_details_do_command
+
+-- =====================================================================
 -- Function: validate_order_details (PRIVATE)
 -- =====================================================================
 PRIVATE FUNCTION validate_order_details(mode)
