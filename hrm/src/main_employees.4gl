@@ -11,6 +11,8 @@ MAIN
     MENU "Employee Management"
         ON ACTION query
             CALL submenu_employee()
+        ON ACTION add
+            CALL root_add_employee()
         ON ACTION exit
             EXIT MENU
     END MENU

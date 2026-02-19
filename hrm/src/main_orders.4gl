@@ -10,6 +10,8 @@ MAIN
     MENU "Order Maintenance"
         COMMAND "Query" "Search for Orders"
             CALL submenu_orders()
+        COMMAND "Add" "Add a new Order"
+            CALL root_add_orders()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

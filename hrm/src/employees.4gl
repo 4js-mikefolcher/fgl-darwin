@@ -1,5 +1,6 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_employees
 DATABASE northwind
 
 TYPE t_employee_list RECORD
@@ -11,47 +12,8 @@ TYPE t_employee_list RECORD
    country LIKE employees.country
 END RECORD
 
-DEFINE employeeList DYNAMIC ARRAY OF RECORD
-   employeeid LIKE employees.employeeid,
-   lastname LIKE employees.lastname,
-   firstname LIKE employees.firstname,
-   title LIKE employees.title,
-   titleofcourtesy LIKE employees.titleofcourtesy,
-   birthdate LIKE employees.birthdate,
-   hiredate LIKE employees.hiredate,
-   address LIKE employees.address,
-   city LIKE employees.city,
-   region LIKE employees.region,
-   postalcode LIKE employees.postalcode,
-   country LIKE employees.country,
-   homephone LIKE employees.homephone,
-   extension LIKE employees.extension,
-   reportsto LIKE employees.reportsto,
-   fullname VARCHAR(32),
-   photopath LIKE employees.photopath,
-   notes LIKE employees.notes
-END RECORD
-
-DEFINE currentRec RECORD
-   employeeid LIKE employees.employeeid,
-   lastname LIKE employees.lastname,
-   firstname LIKE employees.firstname,
-   title LIKE employees.title,
-   titleofcourtesy LIKE employees.titleofcourtesy,
-   birthdate LIKE employees.birthdate,
-   hiredate LIKE employees.hiredate,
-   address LIKE employees.address,
-   city LIKE employees.city,
-   region LIKE employees.region,
-   postalcode LIKE employees.postalcode,
-   country LIKE employees.country,
-   homephone LIKE employees.homephone,
-   extension LIKE employees.extension,
-   reportsto LIKE employees.reportsto,
-   fullname VARCHAR(32),
-   photopath LIKE employees.photopath,
-   notes LIKE employees.notes
-END RECORD
+DEFINE employeeList DYNAMIC ARRAY OF t_employee
+DEFINE currentRec t_employee
 
 -- =====================================================================
 -- Function: get_config (PRIVATE)
@@ -100,6 +62,17 @@ FUNCTION submenu_employee()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_employee
+
+-- =====================================================================
+-- Function: root_add_employee
+-- Purpose : Entry point for employee add from root menu
+-- =====================================================================
+FUNCTION root_add_employee()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_employee
 
 -- =====================================================================
 -- Function: view_employee
@@ -257,8 +230,6 @@ END FUNCTION #employees_do_load_sql
 -- Dispatch interface: employees_do_add
 -- =====================================================================
 FUNCTION employees_do_add()
-   DEFINE isValid SMALLINT
-   DEFINE validMessage CHAR(60)
 
    CLEAR FORM
    CALL employees_clear_curr()
@@ -272,10 +243,9 @@ FUNCTION employees_do_add()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL employeeValidation('A')
-            RETURNING isValid, validMessage
-         IF isValid == FALSE THEN
-            ERROR validMessage
+         VAR valid_status = currentRec.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -285,45 +255,14 @@ FUNCTION employees_do_add()
       RETURN
    END IF
 
-   INSERT INTO employees
-      (employeeid,
-      lastname,
-      firstname,
-      title,
-      titleofcourtesy,
-      birthdate,
-      hiredate,
-      address,
-      city,
-      region,
-      postalcode,
-      country,
-      homephone,
-      extension,
-      reportsto,
-      photopath,
-      notes)
-   VALUES
-      (DEFAULT,
-      currentRec.lastname,
-      currentRec.firstname,
-      currentRec.title,
-      currentRec.titleofcourtesy,
-      currentRec.birthdate,
-      currentRec.hiredate,
-      currentRec.address,
-      currentRec.city,
-      currentRec.region,
-      currentRec.postalcode,
-      currentRec.country,
-      currentRec.homephone,
-      currentRec.extension,
-      currentRec.reportsto,
-      currentRec.photopath,
-      currentRec.notes)
-   LET currentRec.employeeid = sqlca.sqlerrd[2]
-   CALL employees_display_curr()
-   MESSAGE "Employee record added"
+   VAR ins_status = currentRec.insertRec()
+   IF ins_status.valid_status THEN
+      CALL employees_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #employees_do_add
 
@@ -331,8 +270,6 @@ END FUNCTION #employees_do_add
 -- Dispatch interface: employees_do_edit
 -- =====================================================================
 FUNCTION employees_do_edit()
-   DEFINE isValid SMALLINT
-   DEFINE validMessage CHAR(60)
 
    CALL populate_courtesy_combo()
    LET int_flag = FALSE
@@ -343,10 +280,9 @@ FUNCTION employees_do_edit()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL employeeValidation('C')
-            RETURNING isValid, validMessage
-         IF isValid == FALSE THEN
-            ERROR validMessage
+         VAR valid_status = currentRec.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -356,25 +292,13 @@ FUNCTION employees_do_edit()
       RETURN
    END IF
 
-   UPDATE employees
-      SET lastname = currentRec.lastname,
-          firstname = currentRec.firstname,
-          title = currentRec.title,
-          titleofcourtesy = currentRec.titleofcourtesy,
-          birthdate = currentRec.birthdate,
-          hiredate = currentRec.hiredate,
-          address = currentRec.address,
-          city = currentRec.city,
-          region = currentRec.region,
-          postalcode = currentRec.postalcode,
-          country = currentRec.country,
-          homephone = currentRec.homephone,
-          extension = currentRec.extension,
-          notes = currentRec.notes,
-          reportsto = currentRec.reportsto,
-          photopath = currentRec.photopath
-    WHERE employeeid = currentRec.employeeid
-   MESSAGE "Employee record updated"
+   VAR upd_status = currentRec.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #employees_do_edit
 
@@ -390,8 +314,13 @@ FUNCTION employees_do_delete()
       RETURN
    END IF
 
-   DELETE FROM employees WHERE employeeid = currentRec.employeeid
-   MESSAGE "Employee record deleted"
+   VAR del_status = currentRec.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #employees_do_delete
 
@@ -631,51 +560,4 @@ FUNCTION populate_courtesy_combo()
 
 END FUNCTION #populate_courtesy_combo
 
--- =====================================================================
--- Function: employeeValidation (PRIVATE)
--- Purpose : Validate employee data
--- =====================================================================
-PRIVATE FUNCTION employeeValidation(mode)
-   DEFINE mode CHAR(1)
-   DEFINE employeeExists SMALLINT
-   DEFINE fullname VARCHAR(32)
 
-   IF mode == "C" THEN
-      SELECT 1 INTO employeeExists FROM employees WHERE employees.employeeid = currentRec.employeeid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Employee ID is not found"
-      END IF
-   END IF
-
-   IF currentRec.firstname IS NULL OR LENGTH(currentRec.firstname) == 0 THEN
-      RETURN FALSE, "First name is missing"
-   END IF
-
-   IF currentRec.lastname IS NULL OR LENGTH(currentRec.lastname) == 0 THEN
-      RETURN FALSE, "Last name is missing"
-   END IF
-
-   IF currentRec.birthdate IS NULL THEN
-      RETURN FALSE, "Birth date is missing"
-   END IF
-
-   IF currentRec.hiredate IS NULL THEN
-      RETURN FALSE, "Hire date name is missing"
-   END IF
-
-   IF currentRec.hiredate <= currentRec.birthdate THEN
-      RETURN FALSE, "Hire date is before birth date"
-   END IF
-
-   IF currentRec.reportsto IS NOT NULL AND currentRec.reportsto > 0 THEN
-      SELECT RTRIM(firstname) || ' ' || RTRIM(lastname) INTO fullname
-        FROM employees WHERE employees.employeeid = currentRec.reportsto
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Invalid reports to employee id value"
-      END IF
-      LET currentRec.fullname = fullname
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #employeeValidation

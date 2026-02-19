@@ -1,13 +1,8 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_categories
 
 DATABASE northwind
-
-TYPE t_category RECORD
-   categoryid LIKE categories.categoryid,
-   categoryname LIKE categories.categoryname,
-   description LIKE categories.description
-END RECORD
 
 DEFINE categories_arr DYNAMIC ARRAY OF t_category
 DEFINE curr_categories t_category
@@ -85,6 +80,17 @@ FUNCTION submenu_categories()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_categories
+
+-- =====================================================================
+-- Function: root_add_categories
+-- Purpose : Entry point for categories add from root menu
+-- =====================================================================
+FUNCTION root_add_categories()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_categories
 
 -- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
@@ -174,8 +180,6 @@ END FUNCTION #categories_do_load
 -- Purpose : Add a new category record
 -- =====================================================================
 FUNCTION categories_do_add()
-   DEFINE categories_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -190,10 +194,9 @@ FUNCTION categories_do_add()
       AFTER FIELD description
           DISPLAY SFMT("Description = (%1)", curr_categories.description)
       AFTER INPUT
-          CALL categories_validate("A")
-             RETURNING categories_valid, valid_msg
-          IF NOT categories_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_categories.validateRec("A")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -203,11 +206,15 @@ FUNCTION categories_do_add()
       RETURN
    END IF
 
-   INSERT INTO categories (categoryid, categoryname, description)
-      VALUES (DEFAULT, curr_categories.categoryname, curr_categories.description)
-   LET curr_categories.categoryid = sqlca.sqlerrd[2]
+   VAR ins_status = curr_categories.insertRec()
+   IF NOT ins_status.valid_status THEN
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
    CALL categories_display_curr()
-   MESSAGE "Category record added"
+   MESSAGE ins_status.valid_msg
 
 END FUNCTION #categories_do_add
 
@@ -216,8 +223,6 @@ END FUNCTION #categories_do_add
 -- Purpose : Edit an existing category record
 -- =====================================================================
 FUNCTION categories_do_edit()
-   DEFINE categories_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT curr_categories.* WITHOUT DEFAULTS FROM s_categories.*
@@ -230,10 +235,9 @@ FUNCTION categories_do_edit()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL categories_validate("C")
-             RETURNING categories_valid, valid_msg
-          IF NOT categories_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_categories.validateRec("C")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -243,11 +247,14 @@ FUNCTION categories_do_edit()
       RETURN
    END IF
 
-   UPDATE categories
-      SET categoryname = curr_categories.categoryname,
-          description = curr_categories.description
-    WHERE categoryid = curr_categories.categoryid
-   MESSAGE "Category record updated"
+   VAR upd_status = curr_categories.updateRec()
+   IF NOT upd_status.valid_status THEN
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
+   MESSAGE upd_status.valid_msg
 
 END FUNCTION #categories_do_edit
 
@@ -264,9 +271,14 @@ FUNCTION categories_do_delete()
       RETURN
    END IF
 
-   DELETE FROM categories
-    WHERE categoryid = curr_categories.categoryid
-   MESSAGE "Category record deleted"
+   VAR del_status = curr_categories.deleteRec()
+   IF NOT del_status.valid_status THEN
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
+   MESSAGE del_status.valid_msg
 
 END FUNCTION #categories_do_delete
 
@@ -349,27 +361,6 @@ FUNCTION categories_do_command(commandName STRING)
    CALL controller_init(get_config())
 
 END FUNCTION #categories_do_command
-
--- =====================================================================
--- Function: categories_validate
--- Purpose : Validate the current category record
--- =====================================================================
-FUNCTION categories_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
-   DEFINE categoryExists SMALLINT
-
-   IF mode == "C" THEN
-      SELECT 1 INTO categoryExists FROM categories WHERE categories.categoryid = curr_categories.categoryid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Category ID is not found"
-      END IF
-   END IF
-   IF curr_categories.categoryname IS NULL OR LENGTH(curr_categories.categoryname) == 0 THEN
-      RETURN FALSE, "Category Name is required"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #categories_validate
 
 -- =====================================================================
 -- Function: category_lookup

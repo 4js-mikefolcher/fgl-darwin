@@ -1,14 +1,8 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_usstates
 
 DATABASE northwind
-
-TYPE t_usstate RECORD
-   stateid SMALLINT,
-   statename VARCHAR(100),
-   stateabbr VARCHAR(2),
-   stateregion VARCHAR(50)
-END RECORD
 
 DEFINE usstates_arr DYNAMIC ARRAY OF t_usstate
 DEFINE curr_usstates t_usstate
@@ -40,6 +34,17 @@ FUNCTION submenu_usstates()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_usstates
+
+-- =====================================================================
+-- Function: root_add_usstates
+-- Purpose : Entry point for US states add from root menu
+-- =====================================================================
+FUNCTION root_add_usstates()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_usstates
 
 -- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
@@ -129,8 +134,6 @@ END FUNCTION #usstates_do_load
 -- Purpose : Add a new state record
 -- =====================================================================
 FUNCTION usstates_do_add()
-   DEFINE usstates_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -143,10 +146,9 @@ FUNCTION usstates_do_add()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL usstates_validate("A")
-             RETURNING usstates_valid, valid_msg
-          IF NOT usstates_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_usstates.validateRec("A")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -156,11 +158,14 @@ FUNCTION usstates_do_add()
       RETURN
    END IF
 
-   INSERT INTO usstates (stateid, statename, stateabbr, stateregion)
-      VALUES (DEFAULT, curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion)
-   LET curr_usstates.stateid = sqlca.sqlerrd[2]
-   CALL usstates_display_curr()
-   MESSAGE "State record added"
+   VAR ins_status = curr_usstates.insertRec()
+   IF ins_status.valid_status THEN
+      CALL usstates_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #usstates_do_add
 
@@ -169,8 +174,6 @@ END FUNCTION #usstates_do_add
 -- Purpose : Edit an existing state record
 -- =====================================================================
 FUNCTION usstates_do_edit()
-   DEFINE usstates_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion
@@ -181,10 +184,9 @@ FUNCTION usstates_do_edit()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL usstates_validate("C")
-             RETURNING usstates_valid, valid_msg
-          IF NOT usstates_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_usstates.validateRec("C")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -194,12 +196,13 @@ FUNCTION usstates_do_edit()
       RETURN
    END IF
 
-   UPDATE usstates
-      SET statename = curr_usstates.statename,
-          stateabbr = curr_usstates.stateabbr,
-          stateregion = curr_usstates.stateregion
-    WHERE stateid = curr_usstates.stateid
-   MESSAGE "State record updated"
+   VAR upd_status = curr_usstates.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #usstates_do_edit
 
@@ -216,9 +219,13 @@ FUNCTION usstates_do_delete()
       RETURN
    END IF
 
-   DELETE FROM usstates
-    WHERE stateid = curr_usstates.stateid
-   MESSAGE "State record deleted"
+   VAR del_status = curr_usstates.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #usstates_do_delete
 
@@ -297,20 +304,4 @@ FUNCTION usstates_do_command(commandName STRING)
 
 END FUNCTION #usstates_do_command
 
--- =====================================================================
--- Function: usstates_validate
--- Purpose : Validate the current state record
--- =====================================================================
-FUNCTION usstates_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
-   DEFINE stateExists SMALLINT
 
-   IF mode == "C" THEN
-      SELECT 1 INTO stateExists FROM usstates WHERE usstates.stateid = curr_usstates.stateid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "State ID is not found"
-      END IF
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #usstates_validate

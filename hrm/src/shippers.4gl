@@ -1,13 +1,8 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_shippers
 
 DATABASE northwind
-
-TYPE t_shipper RECORD
-   shipperid SMALLINT,
-   companyname VARCHAR(40),
-   phone VARCHAR(24)
-END RECORD
 
 DEFINE shippers_arr DYNAMIC ARRAY OF t_shipper
 DEFINE curr_shippers t_shipper
@@ -71,6 +66,17 @@ FUNCTION submenu_shippers()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_shippers
+
+-- =====================================================================
+-- Function: root_add_shippers
+-- Purpose : Entry point for shippers add from root menu
+-- =====================================================================
+FUNCTION root_add_shippers()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_shippers
 
 -- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
@@ -160,8 +166,6 @@ END FUNCTION #shippers_do_load
 -- Purpose : Add a new shipper record
 -- =====================================================================
 FUNCTION shippers_do_add()
-   DEFINE shippers_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -172,10 +176,9 @@ FUNCTION shippers_do_add()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL shippers_validate("A")
-             RETURNING shippers_valid, valid_msg
-          IF NOT shippers_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_shippers.validateRec("A")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -185,11 +188,15 @@ FUNCTION shippers_do_add()
       RETURN
    END IF
 
-   INSERT INTO shippers (shipperid, companyname, phone)
-      VALUES (DEFAULT, curr_shippers.companyname, curr_shippers.phone)
-   LET curr_shippers.shipperid = sqlca.sqlerrd[2]
+   VAR ins_status = curr_shippers.insertRec()
+   IF NOT ins_status.valid_status THEN
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
    CALL shippers_display_curr()
-   MESSAGE "Shipper record added"
+   MESSAGE ins_status.valid_msg
 
 END FUNCTION #shippers_do_add
 
@@ -198,8 +205,6 @@ END FUNCTION #shippers_do_add
 -- Purpose : Edit an existing shipper record
 -- =====================================================================
 FUNCTION shippers_do_edit()
-   DEFINE shippers_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_shippers.companyname, curr_shippers.phone
@@ -208,10 +213,9 @@ FUNCTION shippers_do_edit()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL shippers_validate("C")
-             RETURNING shippers_valid, valid_msg
-          IF NOT shippers_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_shippers.validateRec("C")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -221,11 +225,14 @@ FUNCTION shippers_do_edit()
       RETURN
    END IF
 
-   UPDATE shippers
-      SET companyname = curr_shippers.companyname,
-          phone = curr_shippers.phone
-    WHERE shipperid = curr_shippers.shipperid
-   MESSAGE "Shipper record updated"
+   VAR upd_status = curr_shippers.updateRec()
+   IF NOT upd_status.valid_status THEN
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
+   MESSAGE upd_status.valid_msg
 
 END FUNCTION #shippers_do_edit
 
@@ -242,9 +249,14 @@ FUNCTION shippers_do_delete()
       RETURN
    END IF
 
-   DELETE FROM shippers
-    WHERE shipperid = curr_shippers.shipperid
-   MESSAGE "Shipper record deleted"
+   VAR del_status = curr_shippers.deleteRec()
+   IF NOT del_status.valid_status THEN
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+      RETURN
+   END IF
+
+   MESSAGE del_status.valid_msg
 
 END FUNCTION #shippers_do_delete
 
@@ -322,31 +334,6 @@ FUNCTION shippers_do_command(commandName STRING)
    CALL controller_init(get_config())
 
 END FUNCTION #shippers_do_command
-
--- =====================================================================
--- Function: shippers_validate
--- Purpose : Validate the current shipper record
--- =====================================================================
-FUNCTION shippers_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
-   DEFINE shipperExists SMALLINT
-
-   IF mode == "C" THEN
-      SELECT 1 INTO shipperExists FROM shippers WHERE shippers.shipperid = curr_shippers.shipperid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Shipper ID is not found"
-      END IF
-   END IF
-   IF curr_shippers.companyname IS NULL OR LENGTH(curr_shippers.companyname) == 0 THEN
-      RETURN FALSE, "Company Name is required"
-   END IF
-
-   IF NVL(curr_shippers.phone, "NULL") == "NULL" THEN
-      RETURN FALSE, "Phone number is required"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #shippers_validate
 
 -- =====================================================================
 -- Function: shipper_lookup

@@ -1,5 +1,6 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_orders
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -11,43 +12,8 @@ TYPE t_order_list RECORD
    freight LIKE orders.freight
 END RECORD
 
-DEFINE orders_arr DYNAMIC ARRAY OF RECORD
-   orderid LIKE orders.orderid,
-   customerid LIKE orders.customerid,
-   customername LIKE customers.companyname,
-   employeeid LIKE orders.employeeid,
-   employeename VARCHAR(30),
-   orderdate LIKE orders.orderdate,
-   requireddate LIKE orders.requireddate,
-   shippeddate LIKE orders.shippeddate,
-   shipvia LIKE orders.shipvia,
-   freight LIKE orders.freight,
-   shipname LIKE orders.shipname,
-   shipaddress LIKE orders.shipaddress,
-   shipcity LIKE orders.shipcity,
-   shipregion LIKE orders.shipregion,
-   shippostalcode LIKE orders.shippostalcode,
-   shipcountry LIKE orders.shipcountry
-END RECORD
-
-DEFINE curr_orders RECORD
-   orderid LIKE orders.orderid,
-   customerid LIKE orders.customerid,
-   customername LIKE customers.companyname,
-   employeeid LIKE orders.employeeid,
-   employeename VARCHAR(30),
-   orderdate LIKE orders.orderdate,
-   requireddate LIKE orders.requireddate,
-   shippeddate LIKE orders.shippeddate,
-   shipvia LIKE orders.shipvia,
-   freight LIKE orders.freight,
-   shipname LIKE orders.shipname,
-   shipaddress LIKE orders.shipaddress,
-   shipcity LIKE orders.shipcity,
-   shipregion LIKE orders.shipregion,
-   shippostalcode LIKE orders.shippostalcode,
-   shipcountry LIKE orders.shipcountry
-END RECORD
+DEFINE orders_arr DYNAMIC ARRAY OF t_order
+DEFINE curr_orders t_order
 
 -- =====================================================================
 -- Function: get_config (PRIVATE)
@@ -93,6 +59,17 @@ FUNCTION submenu_orders()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_orders
+
+-- =====================================================================
+-- Function: root_add_orders
+-- Purpose : Entry point for orders add from root menu
+-- =====================================================================
+FUNCTION root_add_orders()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_orders
 
 -- =====================================================================
 -- Function: view_order
@@ -377,10 +354,9 @@ FUNCTION orders_do_add()
          END IF
 
       AFTER INPUT
-         CALL validate_orders("A")
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_orders.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -390,17 +366,14 @@ FUNCTION orders_do_add()
       RETURN
    END IF
 
-   INSERT INTO orders (orderid, customerid, employeeid, orderdate, requireddate, shippeddate,
-                       shipvia, freight, shipname, shipaddress, shipcity, shipregion,
-                       shippostalcode, shipcountry)
-      VALUES (DEFAULT, curr_orders.customerid, curr_orders.employeeid,
-              curr_orders.orderdate, curr_orders.requireddate, curr_orders.shippeddate,
-              curr_orders.shipvia, curr_orders.freight, curr_orders.shipname,
-              curr_orders.shipaddress, curr_orders.shipcity, curr_orders.shipregion,
-              curr_orders.shippostalcode, curr_orders.shipcountry)
-   LET curr_orders.orderid = sqlca.sqlerrd[2]
-   CALL orders_display_curr()
-   MESSAGE "Order record added"
+   VAR ins_status = curr_orders.insertRec()
+   IF ins_status.valid_status THEN
+      CALL orders_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #orders_do_add
 
@@ -468,10 +441,9 @@ FUNCTION orders_do_edit()
          END IF
 
       AFTER INPUT
-         CALL validate_orders("C")
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_orders.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -481,22 +453,13 @@ FUNCTION orders_do_edit()
       RETURN
    END IF
 
-   UPDATE orders
-      SET customerid = curr_orders.customerid,
-          employeeid = curr_orders.employeeid,
-          orderdate = curr_orders.orderdate,
-          requireddate = curr_orders.requireddate,
-          shippeddate = curr_orders.shippeddate,
-          shipvia = curr_orders.shipvia,
-          freight = curr_orders.freight,
-          shipname = curr_orders.shipname,
-          shipaddress = curr_orders.shipaddress,
-          shipcity = curr_orders.shipcity,
-          shipregion = curr_orders.shipregion,
-          shippostalcode = curr_orders.shippostalcode,
-          shipcountry = curr_orders.shipcountry
-    WHERE orderid = curr_orders.orderid
-   MESSAGE "Order record updated"
+   VAR upd_status = curr_orders.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #orders_do_edit
 
@@ -512,9 +475,13 @@ FUNCTION orders_do_delete()
       RETURN
    END IF
 
-   DELETE FROM orders
-    WHERE orderid = curr_orders.orderid
-   MESSAGE "Order record deleted"
+   VAR del_status = curr_orders.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #orders_do_delete
 
@@ -687,45 +654,7 @@ FUNCTION order_lookup_menu()
 
 END FUNCTION #order_lookup_menu
 
--- =====================================================================
--- Function: validate_orders (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_orders(mode)
-   DEFINE mode CHAR(1)
-   DEFINE ordersExists SMALLINT
-   DEFINE validateStatus SMALLINT
-   DEFINE errorMessage CHAR(60)
 
-   IF mode == "C" THEN
-      SELECT 1 INTO ordersExists FROM orders WHERE orders.orderid = curr_orders.orderid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Order ID is not found"
-      END IF
-   END IF
-   IF curr_orders.orderdate IS NULL THEN
-      RETURN FALSE, "Order Date is required"
-   END IF
-   IF curr_orders.customerid IS NOT NULL AND LENGTH(curr_orders.customerid) > 0 THEN
-      CALL validate_customer_field()
-         RETURNING validateStatus, errorMessage
-      IF NOT validateStatus THEN
-         RETURN validateStatus, errorMessage
-      END IF
-   ELSE
-      RETURN FALSE, "Customer ID is missing"
-   END IF
-   IF curr_orders.employeeid IS NOT NULL THEN
-      CALL validate_employee_field()
-         RETURNING validateStatus, errorMessage
-      IF NOT validateStatus THEN
-         RETURN validateStatus, errorMessage
-      END IF
-   ELSE
-      RETURN FALSE, "Employee ID is missing"
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_orders
 
 -- =====================================================================
 -- Function: validate_employee_field (PRIVATE)

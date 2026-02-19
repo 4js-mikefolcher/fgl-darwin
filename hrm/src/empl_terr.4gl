@@ -1,15 +1,9 @@
+IMPORT FGL model_helper
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_empl_terr
 
 DATABASE northwind
-
-TYPE t_empl_terr RECORD
-   employeeid LIKE employees.employeeid,
-   fullname VARCHAR(32),
-   territoryid LIKE territories.territoryid,
-   territorydescription LIKE territories.territorydescription,
-   regiondescription LIKE region.regiondescription
-END RECORD
 
 DEFINE empl_terr_arr DYNAMIC ARRAY OF t_empl_terr
 DEFINE curr_empl_terr t_empl_terr
@@ -182,8 +176,7 @@ FUNCTION empl_terr_do_add()
    DEFINE selected_fullname VARCHAR(32)
    DEFINE selected_territory_id LIKE territories.territoryid
    DEFINE selected_territory_desc LIKE territories.territorydescription
-   DEFINE empl_terr_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
+   DEFINE empl_terr_valid t_valid_rec
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -192,11 +185,7 @@ FUNCTION empl_terr_do_add()
    -- Pre-fill employee id when launched from employee context
    IF contrl_empl_id > 0 THEN
       LET curr_empl_terr.employeeid = contrl_empl_id
-      CALL validate_empl_id(contrl_empl_id)
-         RETURNING empl_terr_valid, valid_msg
-      IF empl_terr_valid THEN
-         LET curr_empl_terr.fullname = valid_msg
-      END IF
+      LET empl_terr_valid = curr_empl_terr.validateEmployee()
       CALL empl_terr_display_curr()
    END IF
 
@@ -223,29 +212,24 @@ FUNCTION empl_terr_do_add()
 
       AFTER FIELD employeeid
          IF curr_empl_terr.employeeid IS NOT NULL THEN
-            CALL validate_empl_id(curr_empl_terr.employeeid)
-               RETURNING empl_terr_valid, valid_msg
-            IF empl_terr_valid THEN
-               LET curr_empl_terr.fullname = valid_msg
+            LET empl_terr_valid = curr_empl_terr.validateEmployee()
+            IF empl_terr_valid.valid_status THEN
                DISPLAY BY NAME curr_empl_terr.fullname
             ELSE
-               ERROR valid_msg
+               ERROR empl_terr_valid.valid_msg
                NEXT FIELD employeeid
             END IF
          END IF
 
       AFTER FIELD territoryid
          IF curr_empl_terr.territoryid IS NOT NULL THEN
-            CALL validate_territory(curr_empl_terr.territoryid)
-               RETURNING empl_terr_valid, valid_msg,
-                         curr_empl_terr.territorydescription,
-                         curr_empl_terr.regiondescription
-            IF NOT empl_terr_valid THEN
-               ERROR valid_msg
-               NEXT FIELD territoryid
+            LET empl_terr_valid = curr_empl_terr.validateTerritory()
+            IF empl_terr_valid.valid_status THEN
+               DISPLAY BY NAME curr_empl_terr.territorydescription
+               DISPLAY BY NAME curr_empl_terr.regiondescription
             ELSE
-               DISPLAY BY NAME curr_empl_terr.territorydescription,
-                               curr_empl_terr.regiondescription
+               ERROR empl_terr_valid.valid_msg
+               NEXT FIELD territoryid
             END IF
          END IF
 
@@ -256,10 +240,9 @@ FUNCTION empl_terr_do_add()
           EXIT INPUT
 
       AFTER INPUT
-         CALL empl_terr_validate()
-            RETURNING empl_terr_valid, valid_msg
-         IF NOT empl_terr_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_empl_terr.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -269,9 +252,13 @@ FUNCTION empl_terr_do_add()
       RETURN
    END IF
 
-   INSERT INTO employeeterritories (employeeid, territoryid)
-      VALUES (curr_empl_terr.employeeid, curr_empl_terr.territoryid)
-   MESSAGE "Employee territory record added"
+   VAR ins_status = curr_empl_terr.insertRec()
+   IF ins_status.valid_status THEN
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #empl_terr_do_add
 
@@ -296,10 +283,13 @@ FUNCTION empl_terr_do_delete()
       RETURN
    END IF
 
-   DELETE FROM employeeterritories
-    WHERE employeeid = curr_empl_terr.employeeid
-      AND territoryid = curr_empl_terr.territoryid
-   MESSAGE "Employee territory record deleted"
+   VAR del_status = curr_empl_terr.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #empl_terr_do_delete
 
@@ -372,75 +362,3 @@ FUNCTION empl_terr_do_command(commandName STRING)
    CALL controller_init(get_config())
 
 END FUNCTION #empl_terr_do_command
-
--- =====================================================================
--- Function: empl_terr_validate
--- Purpose : Validate the current employee territory record
--- =====================================================================
-FUNCTION empl_terr_validate() RETURNS (SMALLINT, CHAR(75))
-   DEFINE exists_count SMALLINT
-
-   IF curr_empl_terr.employeeid IS NULL THEN
-      RETURN FALSE, "Employee ID is required"
-   END IF
-   IF curr_empl_terr.territoryid IS NULL OR LENGTH(curr_empl_terr.territoryid) == 0 THEN
-      RETURN FALSE, "Territory ID is required"
-   END IF
-
-   -- Check for duplicate assignment
-   SELECT COUNT(*) INTO exists_count
-      FROM employeeterritories
-      WHERE employeeid = curr_empl_terr.employeeid
-        AND territoryid = curr_empl_terr.territoryid
-   IF exists_count > 0 THEN
-      RETURN FALSE, "This employee is already assigned to this territory"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #empl_terr_validate
-
--- =====================================================================
--- Function: validate_territory
--- Purpose : Validate a territory ID and return its description and region
--- =====================================================================
-FUNCTION validate_territory(p_territory_id)
-   DEFINE p_territory_id LIKE territories.territoryid
-   DEFINE l_terr_desc LIKE territories.territorydescription
-   DEFINE l_region_desc LIKE region.regiondescription
-
-   SELECT territorydescription INTO l_terr_desc
-      FROM territories
-      WHERE territories.territoryid = p_territory_id
-   IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Territory ID is not found", NULL, NULL
-   END IF
-
-   SELECT regiondescription INTO l_region_desc
-      FROM region
-      INNER JOIN territories ON territories.regionid = region.regionid
-      WHERE territories.territoryid = p_territory_id
-
-   RETURN TRUE, "Okay", l_terr_desc, l_region_desc
-
-END FUNCTION #validate_territory
-
--- =====================================================================
--- Function: validate_empl_id
--- Purpose : Validate an employee ID and return the full name
--- =====================================================================
-FUNCTION validate_empl_id(p_employee_id)
-   DEFINE p_employee_id LIKE employees.employeeid
-   DEFINE employeeName VARCHAR(30)
-
-   SELECT RTRIM(employees.firstname) || ' ' || RTRIM(employees.lastname) as fullname
-      INTO employeeName
-      FROM employees
-      WHERE employeeid = p_employee_id
-   IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Employee ID is not found"
-   END IF
-
-   RETURN TRUE, employeeName
-
-END FUNCTION #validate_empl_id

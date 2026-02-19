@@ -12,6 +12,8 @@ MAIN
     MENU "Products Maintenance"
         COMMAND "Query" "Search for Products"
             CALL submenu_products()
+        COMMAND "Add" "Add a new Product"
+            CALL root_add_products()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

@@ -1,12 +1,7 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_territories
 DATABASE northwind
-
-TYPE t_territory RECORD
-   territoryid VARCHAR(20),
-   territorydescription VARCHAR(20),
-   regionid SMALLINT
-END RECORD
 
 DEFINE territories_arr DYNAMIC ARRAY OF t_territory
 DEFINE curr_territories t_territory
@@ -58,6 +53,17 @@ FUNCTION submenu_territories()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_territories
+
+-- =====================================================================
+-- Function: root_add_territories
+-- Purpose : Entry point for territories add from root menu
+-- =====================================================================
+FUNCTION root_add_territories()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_territories
 
 -- =====================================================================
 -- Function: view_territory
@@ -271,8 +277,6 @@ END FUNCTION #territories_do_load
 -- Dispatch interface: territories_do_add
 -- =====================================================================
 FUNCTION territories_do_add()
-   DEFINE territories_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -286,10 +290,9 @@ FUNCTION territories_do_add()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_territories("A")
-            RETURNING territories_valid, valid_msg
-         IF NOT territories_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_territories.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -299,10 +302,14 @@ FUNCTION territories_do_add()
       RETURN
    END IF
 
-   INSERT INTO territories (territoryid, territorydescription, regionid)
-      VALUES (curr_territories.territoryid, curr_territories.territorydescription, curr_territories.regionid)
-   CALL territories_display_curr()
-   MESSAGE "Territory record added"
+   VAR ins_status = curr_territories.insertRec()
+   IF ins_status.valid_status THEN
+      CALL territories_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #territories_do_add
 
@@ -310,8 +317,6 @@ END FUNCTION #territories_do_add
 -- Dispatch interface: territories_do_edit
 -- =====================================================================
 FUNCTION territories_do_edit()
-   DEFINE territories_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CALL populate_region_combo()
    LET int_flag = FALSE
@@ -323,10 +328,9 @@ FUNCTION territories_do_edit()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_territories("C")
-            RETURNING territories_valid, valid_msg
-         IF NOT territories_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_territories.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -336,11 +340,13 @@ FUNCTION territories_do_edit()
       RETURN
    END IF
 
-   UPDATE territories
-      SET territorydescription = curr_territories.territorydescription,
-          regionid = curr_territories.regionid
-    WHERE territoryid = curr_territories.territoryid
-   MESSAGE "Territory record updated"
+   VAR upd_status = curr_territories.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #territories_do_edit
 
@@ -356,9 +362,13 @@ FUNCTION territories_do_delete()
       RETURN
    END IF
 
-   DELETE FROM territories
-    WHERE territoryid = curr_territories.territoryid
-   MESSAGE "Territory record deleted"
+   VAR del_status = curr_territories.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #territories_do_delete
 
@@ -520,32 +530,7 @@ FUNCTION territories_lookup_menu()
 
 END FUNCTION #territories_lookup_menu
 
--- =====================================================================
--- Function: validate_territories (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_territories(mode)
-   DEFINE mode CHAR(1)
-   DEFINE territoriesExists SMALLINT
 
-   SELECT 1 INTO territoriesExists FROM territories WHERE territories.territoryid = curr_territories.territoryid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Territory ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Territory ID already exists"
-   END IF
-   IF curr_territories.territoryid IS NULL OR LENGTH(curr_territories.territoryid) == 0 THEN
-      RETURN FALSE, "Territory ID is required"
-   END IF
-   IF curr_territories.territorydescription IS NULL OR LENGTH(curr_territories.territorydescription) == 0 THEN
-      RETURN FALSE, "Territory Description is required"
-   END IF
-   IF curr_territories.regionid IS NULL THEN
-      RETURN FALSE, "Region is required"
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_territories
 
 -- =====================================================================
 -- Function: populate_region_combo

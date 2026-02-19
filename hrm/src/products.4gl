@@ -1,20 +1,8 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_products
 
 DATABASE northwind
-
-TYPE t_product RECORD
-   productid SMALLINT,
-   productname VARCHAR(40),
-   supplierid SMALLINT,
-   categoryid SMALLINT,
-   quantityperunit VARCHAR(20),
-   unitprice FLOAT,
-   unitsinstock SMALLINT,
-   unitsonorder SMALLINT,
-   reorderlevel SMALLINT,
-   discontinued INTEGER
-END RECORD
 
 DEFINE products_arr DYNAMIC ARRAY OF t_product
 DEFINE curr_products t_product
@@ -177,6 +165,17 @@ FUNCTION submenu_products()
 END FUNCTION #submenu_products
 
 -- =====================================================================
+-- Function: root_add_products
+-- Purpose : Entry point for products add from root menu
+-- =====================================================================
+FUNCTION root_add_products()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_products
+
+-- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
 -- =====================================================================
 
@@ -271,8 +270,6 @@ END FUNCTION #products_do_load
 -- Purpose : Add a new product record
 -- =====================================================================
 FUNCTION products_do_add()
-   DEFINE products_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -288,10 +285,9 @@ FUNCTION products_do_add()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL products_validate("A")
-             RETURNING products_valid, valid_msg
-          IF NOT products_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_products.validateRec("A")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -301,16 +297,14 @@ FUNCTION products_do_add()
       RETURN
    END IF
 
-   INSERT INTO products (productid, productname, supplierid, categoryid,
-                         quantityperunit, unitprice, unitsinstock, unitsonorder,
-                         reorderlevel, discontinued)
-      VALUES (DEFAULT, curr_products.productname, curr_products.supplierid,
-              curr_products.categoryid, curr_products.quantityperunit, curr_products.unitprice,
-              curr_products.unitsinstock, curr_products.unitsonorder, curr_products.reorderlevel,
-              curr_products.discontinued)
-   LET curr_products.productid = sqlca.sqlerrd[2]
-   CALL products_display_curr()
-   MESSAGE "Product record added"
+   VAR ins_status = curr_products.insertRec()
+   IF ins_status.valid_status THEN
+      CALL products_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #products_do_add
 
@@ -319,8 +313,6 @@ END FUNCTION #products_do_add
 -- Purpose : Edit an existing product record
 -- =====================================================================
 FUNCTION products_do_edit()
-   DEFINE products_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_products.productname, curr_products.supplierid, curr_products.categoryid,
@@ -333,10 +325,9 @@ FUNCTION products_do_edit()
           LET int_flag = TRUE
           EXIT INPUT
       AFTER INPUT
-          CALL products_validate("C")
-             RETURNING products_valid, valid_msg
-          IF NOT products_valid THEN
-              ERROR valid_msg
+          VAR valid_status = curr_products.validateRec("C")
+          IF NOT valid_status.valid_status THEN
+              ERROR valid_status.valid_msg
               CONTINUE INPUT
           END IF
    END INPUT
@@ -346,18 +337,13 @@ FUNCTION products_do_edit()
       RETURN
    END IF
 
-   UPDATE products
-      SET productname = curr_products.productname,
-          supplierid = curr_products.supplierid,
-          categoryid = curr_products.categoryid,
-          quantityperunit = curr_products.quantityperunit,
-          unitprice = curr_products.unitprice,
-          unitsinstock = curr_products.unitsinstock,
-          unitsonorder = curr_products.unitsonorder,
-          reorderlevel = curr_products.reorderlevel,
-          discontinued = curr_products.discontinued
-    WHERE productid = curr_products.productid
-   MESSAGE "Product record updated"
+   VAR upd_status = curr_products.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #products_do_edit
 
@@ -374,9 +360,13 @@ FUNCTION products_do_delete()
       RETURN
    END IF
 
-   DELETE FROM products
-    WHERE productid = curr_products.productid
-   MESSAGE "Product record deleted"
+   VAR del_status = curr_products.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #products_do_delete
 
@@ -462,29 +452,7 @@ FUNCTION products_do_command(commandName STRING)
 
 END FUNCTION #products_do_command
 
--- =====================================================================
--- Function: products_validate
--- Purpose : Validate the current product record
--- =====================================================================
-FUNCTION products_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
-   DEFINE productExists SMALLINT
 
-   IF mode == "C" THEN
-      SELECT 1 INTO productExists FROM products WHERE products.productid = curr_products.productid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Product ID is not found"
-      END IF
-   END IF
-   IF curr_products.productname IS NULL OR LENGTH(curr_products.productname) == 0 THEN
-      RETURN FALSE, "Product Name is required"
-   END IF
-   IF curr_products.discontinued IS NULL THEN
-      RETURN FALSE, "Discontinued flag is required"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #products_validate
 
 -- =====================================================================
 -- Function: populate_supplier_combo

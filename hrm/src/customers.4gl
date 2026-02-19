@@ -1,5 +1,6 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_customers
 DATABASE northwind
 
 -- =====================================================================
@@ -11,20 +12,6 @@ TYPE t_customer_list RECORD
    contactname LIKE customers.contactname,
    contacttitle LIKE customers.contacttitle,
    phone LIKE customers.phone
-END RECORD
-
-TYPE t_customer RECORD
-   customerid LIKE customers.customerid,
-   companyname LIKE customers.companyname,
-   contactname LIKE customers.contactname,
-   contacttitle LIKE customers.contacttitle,
-   address LIKE customers.address,
-   city LIKE customers.city,
-   region LIKE customers.region,
-   postalcode LIKE customers.postalcode,
-   country LIKE customers.country,
-   phone LIKE customers.phone,
-   fax LIKE customers.fax
 END RECORD
 
 -- =====================================================================
@@ -77,6 +64,17 @@ FUNCTION submenu_customers()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_customers
+
+-- =====================================================================
+-- Function: root_add_customers
+-- Purpose : Entry point for customers add from root menu
+-- =====================================================================
+FUNCTION root_add_customers()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_customers
 
 -- =====================================================================
 -- Function: view_customer
@@ -216,8 +214,6 @@ END FUNCTION #customers_do_load
 -- Dispatch interface: customers_do_add
 -- =====================================================================
 FUNCTION customers_do_add()
-   DEFINE customers_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -230,10 +226,9 @@ FUNCTION customers_do_add()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_customers("A")
-            RETURNING customers_valid, valid_msg
-         IF NOT customers_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_customers.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -243,14 +238,14 @@ FUNCTION customers_do_add()
       RETURN
    END IF
 
-   INSERT INTO customers (customerid, companyname, contactname, contacttitle,
-                          address, city, region, postalcode, country, phone, fax)
-      VALUES (curr_customers.customerid, curr_customers.companyname, curr_customers.contactname,
-              curr_customers.contacttitle, curr_customers.address, curr_customers.city,
-              curr_customers.region, curr_customers.postalcode, curr_customers.country,
-              curr_customers.phone, curr_customers.fax)
-   CALL customers_display_curr()
-   MESSAGE "Customer record added"
+   VAR ins_status = curr_customers.insertRec()
+   IF ins_status.valid_status THEN
+      CALL customers_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #customers_do_add
 
@@ -258,8 +253,6 @@ END FUNCTION #customers_do_add
 -- Dispatch interface: customers_do_edit
 -- =====================================================================
 FUNCTION customers_do_edit()
-   DEFINE customers_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_customers.companyname, curr_customers.contactname, curr_customers.contacttitle,
@@ -272,10 +265,9 @@ FUNCTION customers_do_edit()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_customers("C")
-            RETURNING customers_valid, valid_msg
-         IF NOT customers_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_customers.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -285,19 +277,13 @@ FUNCTION customers_do_edit()
       RETURN
    END IF
 
-   UPDATE customers
-      SET companyname = curr_customers.companyname,
-          contactname = curr_customers.contactname,
-          contacttitle = curr_customers.contacttitle,
-          address = curr_customers.address,
-          city = curr_customers.city,
-          region = curr_customers.region,
-          postalcode = curr_customers.postalcode,
-          country = curr_customers.country,
-          phone = curr_customers.phone,
-          fax = curr_customers.fax
-    WHERE customerid = curr_customers.customerid
-   MESSAGE "Customer record updated"
+   VAR upd_status = curr_customers.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #customers_do_edit
 
@@ -313,9 +299,13 @@ FUNCTION customers_do_delete()
       RETURN
    END IF
 
-   DELETE FROM customers
-    WHERE customerid = curr_customers.customerid
-   MESSAGE "Customer record deleted"
+   VAR del_status = curr_customers.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #customers_do_delete
 
@@ -487,27 +477,4 @@ FUNCTION customer_lookup_menu()
 
 END FUNCTION #customer_lookup_menu
 
--- =====================================================================
--- Function: validate_customers (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_customers(mode)
-   DEFINE mode CHAR(1)
-   DEFINE customerExists SMALLINT
 
-   SELECT 1 INTO customerExists FROM customers WHERE customers.customerid = curr_customers.customerid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Customer ID is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Customer ID already exists"
-   END IF
-   IF curr_customers.customerid IS NULL OR LENGTH(curr_customers.customerid) == 0 THEN
-      RETURN FALSE, "Customer ID is required"
-   END IF
-   IF curr_customers.companyname IS NULL OR LENGTH(curr_customers.companyname) == 0 THEN
-      RETURN FALSE, "Company Name is required"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_customers

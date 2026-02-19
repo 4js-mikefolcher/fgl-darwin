@@ -9,6 +9,8 @@ MAIN
     MENU "Region Maintenance"
         ON ACTION query
             CALL submenu_region()
+        ON ACTION add
+            CALL root_add_region()
         ON ACTION exit
             EXIT MENU
     END MENU

@@ -1,15 +1,9 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_order_details
 DATABASE northwind
 
-DEFINE order_details_arr DYNAMIC ARRAY OF RECORD
-   orderid LIKE order_details.orderid,
-   productid LIKE order_details.productid,
-   productname LIKE products.productname,
-   unitprice LIKE order_details.unitprice,
-   quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount
-END RECORD
+DEFINE order_details_arr DYNAMIC ARRAY OF t_order_detail
 
 TYPE t_order_detail_list RECORD
    orderid LIKE order_details.orderid,
@@ -19,14 +13,7 @@ TYPE t_order_detail_list RECORD
    discount LIKE order_details.discount
 END RECORD
 
-DEFINE curr_order_details RECORD
-   orderid LIKE order_details.orderid,
-   productid LIKE order_details.productid,
-   productname LIKE products.productname,
-   unitprice LIKE order_details.unitprice,
-   quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount
-END RECORD
+DEFINE curr_order_details t_order_detail
 
 DEFINE skip_query SMALLINT
 DEFINE default_order_id LIKE order_details.orderid
@@ -105,6 +92,19 @@ FUNCTION submenu_order_details()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_order_details
+
+-- =====================================================================
+-- Function: root_add_order_details
+-- Purpose : Entry point for order details add from root menu
+-- =====================================================================
+FUNCTION root_add_order_details()
+
+   LET skip_query = FALSE
+   LET default_order_id = 0
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_order_details
 
 -- =====================================================================
 -- Dispatch interface: order_details_get_count
@@ -268,10 +268,9 @@ FUNCTION order_details_do_add()
          END IF
 
       AFTER INPUT
-         CALL validate_order_details("A")
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_order_details.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -281,11 +280,14 @@ FUNCTION order_details_do_add()
       RETURN
    END IF
 
-   INSERT INTO order_details (orderid, productid, unitprice, quantity, discount)
-      VALUES (curr_order_details.orderid, curr_order_details.productid,
-              curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount)
-   CALL order_details_display_curr()
-   MESSAGE "Order detail record added"
+   VAR ins_status = curr_order_details.insertRec()
+   IF ins_status.valid_status THEN
+      CALL order_details_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #order_details_do_add
 
@@ -293,8 +295,6 @@ END FUNCTION #order_details_do_add
 -- Dispatch interface: order_details_do_edit
 -- =====================================================================
 FUNCTION order_details_do_edit()
-   DEFINE order_details_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount
@@ -305,10 +305,9 @@ FUNCTION order_details_do_edit()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_order_details("C")
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_order_details.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -318,13 +317,13 @@ FUNCTION order_details_do_edit()
       RETURN
    END IF
 
-   UPDATE order_details
-      SET unitprice = curr_order_details.unitprice,
-          quantity = curr_order_details.quantity,
-          discount = curr_order_details.discount
-    WHERE orderid = curr_order_details.orderid
-      AND productid = curr_order_details.productid
-   MESSAGE "Order detail record updated"
+   VAR upd_status = curr_order_details.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #order_details_do_edit
 
@@ -340,10 +339,13 @@ FUNCTION order_details_do_delete()
       RETURN
    END IF
 
-   DELETE FROM order_details
-    WHERE orderid = curr_order_details.orderid
-      AND productid = curr_order_details.productid
-   MESSAGE "Order detail record deleted"
+   VAR del_status = curr_order_details.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #order_details_do_delete
 
@@ -430,70 +432,7 @@ FUNCTION order_details_do_command(commandName STRING)
 
 END FUNCTION #order_details_do_command
 
--- =====================================================================
--- Function: validate_order_details (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_order_details(mode)
-   DEFINE mode CHAR(1)
-   DEFINE detailExists SMALLINT
-   DEFINE product_name LIKE products.productname
 
-   # Check composite key exists for change or doesn't exist for add
-   SELECT 1 INTO detailExists FROM order_details
-    WHERE order_details.orderid = curr_order_details.orderid
-      AND order_details.productid = curr_order_details.productid
-   IF sqlca.sqlcode == NOTFOUND AND mode == "C" THEN
-      RETURN FALSE, "Order detail record is not found"
-   END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
-      RETURN FALSE, "Order detail record already exists for this order/product"
-   END IF
-
-   # Validate required fields
-   IF curr_order_details.orderid IS NULL THEN
-      RETURN FALSE, "Order ID is required"
-   END IF
-   IF curr_order_details.productid IS NULL THEN
-      RETURN FALSE, "Product ID is required"
-   END IF
-   IF curr_order_details.unitprice IS NULL THEN
-      RETURN FALSE, "Unit Price is required"
-   END IF
-   IF curr_order_details.quantity IS NULL THEN
-      RETURN FALSE, "Quantity is required"
-   END IF
-   IF curr_order_details.discount IS NULL THEN
-      RETURN FALSE, "Discount is required"
-   END IF
-
-   # Validate foreign keys
-   IF mode == "A" THEN
-      SELECT 1 INTO detailExists FROM orders WHERE orders.orderid = curr_order_details.orderid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Order ID does not exist in orders table"
-      END IF
-   END IF
-
-   SELECT productname INTO product_name FROM products WHERE products.productid = curr_order_details.productid
-   IF sqlca.sqlcode == NOTFOUND THEN
-      RETURN FALSE, "Product ID does not exist in products table"
-   END IF
-   LET curr_order_details.productname = product_name
-
-   # Validate data ranges
-   IF curr_order_details.unitprice < 0 THEN
-      RETURN FALSE, "Unit Price cannot be negative"
-   END IF
-   IF curr_order_details.quantity < 1 THEN
-      RETURN FALSE, "Quantity must be at least 1"
-   END IF
-   IF curr_order_details.discount < 0 OR curr_order_details.discount > 1 THEN
-      RETURN FALSE, "Discount must be between 0 and 1"
-   END IF
-
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_order_details
 
 -- =====================================================================
 -- Function: validate_orderid_field (PRIVATE)

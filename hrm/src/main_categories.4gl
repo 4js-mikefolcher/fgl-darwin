@@ -9,6 +9,8 @@ MAIN
     MENU "Categories Maintenance"
         COMMAND "Query" "Search for Categories"
             CALL submenu_categories()
+        COMMAND "Add" "Add a new Category"
+            CALL root_add_categories()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

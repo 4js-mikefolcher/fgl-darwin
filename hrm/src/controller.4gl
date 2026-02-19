@@ -312,6 +312,16 @@ PUBLIC FUNCTION controller_query_then_navigate()
 END FUNCTION #controller_query_then_navigate
 
 -- =====================================================================
+-- Function: controller_add
+-- Purpose : Convenience entry point: Single add at the root menu level.
+-- =====================================================================
+PUBLIC FUNCTION controller_add()
+
+   CALL dispatch_add(m_config.moduleName)
+
+END FUNCTION #controller_add
+
+-- =====================================================================
 -- Function: controller_get_index
 -- Purpose : Return the current navigation index
 -- =====================================================================

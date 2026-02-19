@@ -1,25 +1,8 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_suppliers
 
 DATABASE northwind
-
--- =====================================================================
--- Record Type Definitions
--- =====================================================================
-TYPE t_supplier RECORD
-   supplierid LIKE suppliers.supplierid,
-   companyname LIKE suppliers.companyname,
-   contactname LIKE suppliers.contactname,
-   contacttitle LIKE suppliers.contacttitle,
-   address LIKE suppliers.address,
-   city LIKE suppliers.city,
-   region LIKE suppliers.region,
-   postalcode LIKE suppliers.postalcode,
-   country LIKE suppliers.country,
-   phone LIKE suppliers.phone,
-   fax LIKE suppliers.fax,
-   homepage LIKE suppliers.homepage
-END RECORD
 
 -- =====================================================================
 -- Module Variables
@@ -85,6 +68,17 @@ FUNCTION submenu_suppliers()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_suppliers
+
+-- =====================================================================
+-- Function: root_add_suppliers
+-- Purpose : Entry point for suppliers add from root menu
+-- =====================================================================
+FUNCTION root_add_suppliers()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_suppliers
 
 -- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
@@ -170,8 +164,6 @@ END FUNCTION #suppliers_do_load
 
 -- Add a new supplier
 FUNCTION suppliers_do_add()
-    DEFINE suppliers_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
 
     CLEAR FORM
     LET int_flag = FALSE
@@ -184,10 +176,9 @@ FUNCTION suppliers_do_add()
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
-            CALL suppliers_validate("A")
-               RETURNING suppliers_valid, valid_msg
-            IF NOT suppliers_valid THEN
-                ERROR valid_msg
+            VAR valid_status = curr_suppliers.validateRec("A")
+            IF NOT valid_status.valid_status THEN
+                ERROR valid_status.valid_msg
                 CONTINUE INPUT
             END IF
     END INPUT
@@ -197,22 +188,20 @@ FUNCTION suppliers_do_add()
        RETURN
     END IF
 
-    INSERT INTO suppliers (supplierid, companyname, contactname, contacttitle,
-                           address, city, region, postalcode, country, phone, fax, homepage)
-       VALUES (DEFAULT, curr_suppliers.companyname, curr_suppliers.contactname,
-               curr_suppliers.contacttitle, curr_suppliers.address, curr_suppliers.city,
-               curr_suppliers.region, curr_suppliers.postalcode, curr_suppliers.country,
-               curr_suppliers.phone, curr_suppliers.fax, curr_suppliers.homepage)
-    LET curr_suppliers.supplierid = sqlca.sqlerrd[2]
+    VAR ins_status = curr_suppliers.insertRec()
+    IF NOT ins_status.valid_status THEN
+       ERROR ins_status.valid_msg
+       LET int_flag = TRUE
+       RETURN
+    END IF
+
     CALL suppliers_display_curr()
-    MESSAGE "Supplier record added"
+    MESSAGE ins_status.valid_msg
 
 END FUNCTION #suppliers_do_add
 
 -- Edit an existing supplier
 FUNCTION suppliers_do_edit()
-    DEFINE suppliers_valid SMALLINT
-    DEFINE valid_msg CHAR(75)
 
     LET int_flag = FALSE
     INPUT BY NAME curr_suppliers.companyname, curr_suppliers.contactname, curr_suppliers.contacttitle,
@@ -226,10 +215,9 @@ FUNCTION suppliers_do_edit()
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
-            CALL suppliers_validate("C")
-               RETURNING suppliers_valid, valid_msg
-            IF NOT suppliers_valid THEN
-                ERROR valid_msg
+            VAR valid_status = curr_suppliers.validateRec("C")
+            IF NOT valid_status.valid_status THEN
+                ERROR valid_status.valid_msg
                 CONTINUE INPUT
             END IF
     END INPUT
@@ -239,20 +227,14 @@ FUNCTION suppliers_do_edit()
        RETURN
     END IF
 
-    UPDATE suppliers
-       SET companyname = curr_suppliers.companyname,
-           contactname = curr_suppliers.contactname,
-           contacttitle = curr_suppliers.contacttitle,
-           address = curr_suppliers.address,
-           city = curr_suppliers.city,
-           region = curr_suppliers.region,
-           postalcode = curr_suppliers.postalcode,
-           country = curr_suppliers.country,
-           phone = curr_suppliers.phone,
-           fax = curr_suppliers.fax,
-           homepage = curr_suppliers.homepage
-     WHERE supplierid = curr_suppliers.supplierid
-    MESSAGE "Supplier record updated"
+    VAR upd_status = curr_suppliers.updateRec()
+    IF NOT upd_status.valid_status THEN
+       ERROR upd_status.valid_msg
+       LET int_flag = TRUE
+       RETURN
+    END IF
+
+    MESSAGE upd_status.valid_msg
 
 END FUNCTION #suppliers_do_edit
 
@@ -266,9 +248,14 @@ FUNCTION suppliers_do_delete()
         RETURN
     END IF
 
-    DELETE FROM suppliers
-     WHERE supplierid = curr_suppliers.supplierid
-    MESSAGE "Supplier record deleted"
+    VAR del_status = curr_suppliers.deleteRec()
+    IF NOT del_status.valid_status THEN
+       ERROR del_status.valid_msg
+       LET int_flag = TRUE
+       RETURN
+    END IF
+
+    MESSAGE del_status.valid_msg
 
 END FUNCTION #suppliers_do_delete
 
@@ -292,23 +279,6 @@ FUNCTION suppliers_do_refresh(currIdx INTEGER, operation CHAR(1))
    END CASE
 
 END FUNCTION #suppliers_do_refresh
-
--- Validate the current record
-FUNCTION suppliers_validate(mode CHAR(1)) RETURNS (SMALLINT, CHAR(75))
-   DEFINE supplierExists SMALLINT
-
-   IF mode == "C" THEN
-      SELECT 1 INTO supplierExists FROM suppliers WHERE suppliers.supplierid = curr_suppliers.supplierid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Supplier ID is not found"
-      END IF
-   END IF
-   IF curr_suppliers.companyname IS NULL OR LENGTH(curr_suppliers.companyname) == 0 THEN
-      RETURN FALSE, "Company Name is required"
-   END IF
-
-   RETURN TRUE, "Okay"
-END FUNCTION #suppliers_validate
 
 -- DISPLAY ARRAY for list view (called by controller via dispatch)
 FUNCTION suppliers_list_display() RETURNS (INTEGER, INTEGER)

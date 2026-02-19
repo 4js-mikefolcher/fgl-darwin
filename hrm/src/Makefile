@@ -205,11 +205,19 @@ $(BINDIR)/bdl_menu.42f: bdl_menu.per
 
 # Common modules for cross-navigation
 CORE_MODULES = main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
+               model_helper.4gl \
+               model_employees.4gl model_empl_terr.4gl model_territories.4gl model_region.4gl \
+               model_orders.4gl model_order_details.4gl model_customers.4gl model_shippers.4gl \
+               model_products.4gl model_suppliers.4gl model_categories.4gl model_usstates.4gl \
                employees.4gl empl_terr.4gl territories.4gl region.4gl \
                orders.4gl order_details.4gl customers.4gl shippers.4gl \
                products.4gl suppliers.4gl categories.4gl usstates.4gl
 
 CORE_42M = main_lib.42m list_view_helper.42m controller.42m dispatch.42m \
+           model_helper.42m \
+           model_employees.42m model_empl_terr.42m model_territories.42m model_region.42m \
+           model_orders.42m model_order_details.42m model_customers.42m model_shippers.42m \
+           model_products.42m model_suppliers.42m model_categories.42m model_usstates.42m \
            employees.42m empl_terr.42m territories.42m region.42m \
            orders.42m order_details.42m customers.42m shippers.42m \
            products.42m suppliers.42m categories.42m usstates.42m

@@ -1,5 +1,6 @@
 IMPORT FGL list_view_helper
 IMPORT FGL controller
+IMPORT FGL model_region
 DATABASE northwind
 
 TYPE t_region_list RECORD
@@ -7,8 +8,8 @@ TYPE t_region_list RECORD
    regiondescription LIKE region.regiondescription
 END RECORD
 
-DEFINE region_arr DYNAMIC ARRAY OF RECORD LIKE region.*
-DEFINE curr_region RECORD LIKE region.*
+DEFINE region_arr DYNAMIC ARRAY OF t_region
+DEFINE curr_region t_region
 
 -- =====================================================================
 -- Function: get_config (PRIVATE)
@@ -86,6 +87,17 @@ FUNCTION submenu_region()
    CALL controller_query_then_navigate()
 
 END FUNCTION #submenu_region
+
+-- =====================================================================
+-- Function: root_add_region
+-- Purpose : Entry point for region add from root menu
+-- =====================================================================
+FUNCTION root_add_region()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_region
 
 -- =====================================================================
 -- Dispatch interface: region_get_count
@@ -186,8 +198,6 @@ END FUNCTION #region_do_load
 -- Dispatch interface: region_do_add
 -- =====================================================================
 FUNCTION region_do_add()
-   DEFINE region_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -200,10 +210,9 @@ FUNCTION region_do_add()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_region("A")
-            RETURNING region_valid, valid_msg
-         IF NOT region_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_region.validateRec("A")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -213,11 +222,14 @@ FUNCTION region_do_add()
       RETURN
    END IF
 
-   INSERT INTO region (regionid, regiondescription)
-      VALUES (DEFAULT, curr_region.regiondescription)
-   LET curr_region.regionid = sqlca.sqlerrd[2]
-   CALL region_display_curr()
-   MESSAGE "Region record added"
+   VAR ins_status = curr_region.insertRec()
+   IF ins_status.valid_status THEN
+      CALL region_display_curr()
+      MESSAGE ins_status.valid_msg
+   ELSE
+      ERROR ins_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #region_do_add
 
@@ -225,8 +237,6 @@ END FUNCTION #region_do_add
 -- Dispatch interface: region_do_edit
 -- =====================================================================
 FUNCTION region_do_edit()
-   DEFINE region_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
    INPUT BY NAME curr_region.regiondescription
@@ -237,10 +247,9 @@ FUNCTION region_do_edit()
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         CALL validate_region("C")
-            RETURNING region_valid, valid_msg
-         IF NOT region_valid THEN
-            ERROR valid_msg
+         VAR valid_status = curr_region.validateRec("C")
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
             CONTINUE INPUT
          END IF
    END INPUT
@@ -250,10 +259,13 @@ FUNCTION region_do_edit()
       RETURN
    END IF
 
-   UPDATE region
-      SET regiondescription = curr_region.regiondescription
-    WHERE regionid = curr_region.regionid
-   MESSAGE "Region record updated"
+   VAR upd_status = curr_region.updateRec()
+   IF upd_status.valid_status THEN
+      MESSAGE upd_status.valid_msg
+   ELSE
+      ERROR upd_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #region_do_edit
 
@@ -269,9 +281,13 @@ FUNCTION region_do_delete()
       RETURN
    END IF
 
-   DELETE FROM region
-    WHERE regionid = curr_region.regionid
-   MESSAGE "Region record deleted"
+   VAR del_status = curr_region.deleteRec()
+   IF del_status.valid_status THEN
+      MESSAGE del_status.valid_msg
+   ELSE
+      ERROR del_status.valid_msg
+      LET int_flag = TRUE
+   END IF
 
 END FUNCTION #region_do_delete
 
@@ -440,23 +456,4 @@ FUNCTION region_lookup_menu()
 
 END FUNCTION #region_lookup_menu
 
--- =====================================================================
--- Function: validate_region (PRIVATE)
--- Purpose : Validate region data
--- =====================================================================
-PRIVATE FUNCTION validate_region(mode)
-   DEFINE mode CHAR(1)
-   DEFINE regionExists SMALLINT
 
-   IF mode == "C" THEN
-      SELECT 1 INTO regionExists FROM region WHERE region.regionid = curr_region.regionid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Region ID is not found"
-      END IF
-   END IF
-   IF curr_region.regiondescription IS NULL OR LENGTH(curr_region.regiondescription) == 0 THEN
-      RETURN FALSE, "Region Description is required"
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_region
