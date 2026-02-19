@@ -15,7 +15,7 @@ FORMS = employees.per employees_list.per empl_terr.per empl_terr_list.per region
         products.per products_list.per shippers.per shippers_list.per \
         suppliers.per suppliers_list.per usstates.per usstates_list.per \
         rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
-        rpt_orders_by_daterange.per rpt_orders_generic.per report_viewer.per bdl_menu.per
+        rpt_orders_by_daterange.per rpt_orders_generic.per rpt_org_chart.per report_viewer.per bdl_menu.per
 
 # Compiled form targets
 FORM_TARGETS = $(BINDIR)/employees.42f \
@@ -47,6 +47,7 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/rpt_orders_by_product.42f \
                $(BINDIR)/rpt_orders_by_daterange.42f \
                $(BINDIR)/rpt_orders_generic.42f \
+               $(BINDIR)/rpt_org_chart.42f \
                $(BINDIR)/report_viewer.42f \
                $(BINDIR)/bdl_menu.42f
 
@@ -69,7 +70,8 @@ PROG_TARGETS = $(BINDIR)/bdl_menu.42r \
                $(BINDIR)/main_rpt_orders_by_employee.42r \
                $(BINDIR)/main_rpt_orders_by_product.42r \
                $(BINDIR)/main_rpt_orders_by_daterange.42r \
-               $(BINDIR)/main_rpt_orders_generic.42r
+               $(BINDIR)/main_rpt_orders_generic.42r \
+               $(BINDIR)/main_rpt_org_chart.42r
 
 # Default target - build everything
 all: $(BINDIR) $(FORM_TARGETS) $(PROG_TARGETS)
@@ -195,6 +197,10 @@ $(BINDIR)/rpt_orders_generic.42f: rpt_orders_generic.per
 	$(FORMCOMP) $<
 	mv rpt_orders_generic.42f $(BINDIR)/
 
+$(BINDIR)/rpt_org_chart.42f: rpt_org_chart.per
+	$(FORMCOMP) $<
+	mv rpt_org_chart.42f $(BINDIR)/
+
 $(BINDIR)/report_viewer.42f: report_viewer.per
 	$(FORMCOMP) $<
 	mv report_viewer.42f $(BINDIR)/
@@ -225,11 +231,11 @@ CORE_42M = main_lib.42m list_view_helper.42m controller.42m dispatch.42m \
 # Report modules
 RPT_MODULES = rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
               rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl \
-              rpt_orders_generic.4gl
+              rpt_orders_generic.4gl rpt_org_chart.4gl
 
 RPT_42M = rpt_orders_by_customer.42m rpt_orders_by_employee.42m \
           rpt_orders_by_product.42m rpt_orders_by_daterange.42m \
-          rpt_orders_generic.42m
+          rpt_orders_generic.42m rpt_org_chart.42m
 
 # Program compilation rules
 $(BINDIR)/bdl_menu.42r: bdl_menu.4gl main_lib.4gl
@@ -309,6 +315,10 @@ $(BINDIR)/main_rpt_orders_generic.42r: main_rpt_orders_generic.4gl main_lib.4gl 
 	$(SRCCOMP) -o main_rpt_orders_generic.42r $^
 	mv main_rpt_orders_generic.42r main_rpt_orders_generic.42m main_lib.42m report_helper.42m rpt_orders_generic.42m $(BINDIR)/
 
+$(BINDIR)/main_rpt_org_chart.42r: main_rpt_org_chart.4gl main_lib.4gl report_helper.4gl rpt_org_chart.4gl
+	$(SRCCOMP) -o main_rpt_org_chart.42r $^
+	mv main_rpt_org_chart.42r main_rpt_org_chart.42m main_lib.42m report_helper.42m rpt_org_chart.42m $(BINDIR)/
+
 # Clean compiled files
 clean:
 	rm -f *.42f *.42m *.42r
@@ -347,5 +357,6 @@ rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_
 rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
 rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
 rpt_orders_generic: $(BINDIR)/rpt_orders_generic.42f $(BINDIR)/main_rpt_orders_generic.42r
+rpt_org_chart: $(BINDIR)/rpt_org_chart.42f $(BINDIR)/main_rpt_org_chart.42r
 
-.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic ifx_menu bdl_menu
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart ifx_menu bdl_menu

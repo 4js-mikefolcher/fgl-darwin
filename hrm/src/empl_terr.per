@@ -35,9 +35,9 @@ LAYOUT (TEXT="Employee Territories")
 END
 
 ATTRIBUTES
-  BUTTONEDIT emplid = formonly.employeeid TYPE SMALLINT, NOENTRY, ACTION=zoom_employee;
+  BUTTONEDIT emplid = formonly.employeeid TYPE SMALLINT, ACTION=zoom_employee;
   fullname = formonly.fullname TYPE VARCHAR, NOENTRY;
-  BUTTONEDIT terrid = formonly.territoryid TYPE VARCHAR, NOENTRY, ACTION=zoom_territory;
+  BUTTONEDIT terrid = formonly.territoryid TYPE VARCHAR, ACTION=zoom_territory;
   territorydescription = formonly.territorydescription TYPE VARCHAR, NOENTRY;
   regiondesc = formonly.regiondescription TYPE VARCHAR, NOENTRY;
 END

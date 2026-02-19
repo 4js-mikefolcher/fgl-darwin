@@ -68,6 +68,17 @@ FUNCTION submenu_empl_terr()
 END FUNCTION #submenu_empl_terr
 
 -- =====================================================================
+-- Function: root_add_customers
+-- Purpose : Entry point for employee territory add from root menu
+-- =====================================================================
+FUNCTION root_add_empl_terr()
+
+   CALL controller_init(get_config())
+   CALL controller_add()
+
+END FUNCTION #root_add_empl_terr
+
+-- =====================================================================
 -- Dispatch Interface: Functions called by the controller via dispatch
 -- =====================================================================
 

@@ -191,6 +191,12 @@
       <File filePath="hrm/src/rpt_orders_generic.4gl"/>
       <File filePath="hrm/src/rpt_orders_generic.per"/>
     </Application>
+    <Application binaryName="main_rpt_org_chart" dependencies="-1764485507,1342077549" id="1134826711" label="main_rpt_org_chart">
+      <Configuration id="1134826712" label="main_rpt_org_chart"/>
+      <File filePath="hrm/src/main_rpt_org_chart.4gl"/>
+      <File filePath="hrm/src/rpt_org_chart.4gl"/>
+      <File filePath="hrm/src/rpt_org_chart.per"/>
+    </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
       <File filePath="hrm/src/categories.4gl"/>
       <File filePath="hrm/src/controller.4gl"/>

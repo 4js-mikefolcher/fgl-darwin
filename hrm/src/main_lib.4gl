@@ -143,6 +143,7 @@ FUNCTION build_program_icons()
     CALL add_program_icon("main_rpt_orders_by_product",   "fa-file-text")
     CALL add_program_icon("main_rpt_orders_by_daterange", "fa-file-text")
     CALL add_program_icon("main_rpt_orders_generic",      "fa-file-code-o")
+    CALL add_program_icon("main_rpt_org_chart",            "fa-sitemap")
 
 END FUNCTION #build_program_icons
 

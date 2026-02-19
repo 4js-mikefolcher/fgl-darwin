@@ -190,6 +190,12 @@ FUNCTION build_menu(p_menu)
     LET p_menu[p_menu.getLength()].description      = "Generic order report with XML output"
     LET p_menu[p_menu.getLength()].program_name     = "main_rpt_orders_generic"
 
+    LET p_menu[p_menu.getLength() + 1].id           = 65
+    LET p_menu[p_menu.getLength()].pid              = 6
+    LET p_menu[p_menu.getLength()].menu_name        = "Corporate Org Chart"
+    LET p_menu[p_menu.getLength()].description      = "Employee organization chart showing reporting structure"
+    LET p_menu[p_menu.getLength()].program_name     = "main_rpt_org_chart"
+
 END FUNCTION
 
 ###############################################################################
