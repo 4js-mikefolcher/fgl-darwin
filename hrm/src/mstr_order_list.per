@@ -1,0 +1,85 @@
+SCHEMA northwind
+TOOLBAR
+  ITEM search
+  ITEM adv_search
+  SEPARATOR
+  ITEM add
+  ITEM view
+  ITEM modify
+  ITEM delete
+  ITEM excel_export
+  SEPARATOR
+  ITEM exit
+END --TOOLBAR
+
+LAYOUT (TEXT="Order Search/List")
+   VBOX
+      GROUP (TEXT="Search Criteria Information", STYLE="box")
+         GRID
+{
+[::"Order ID: "::fld001      ::"Order Date: "::fld002         ::btn001               ::]
+[::query_label                                                                       ::]
+}
+         END --GRID
+      END --GRID
+      GROUP (TEXT="Search Results")
+         TABLE
+{
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[col001     |col002             |col003              |col004      |col005             |col006         |col007          |col008        |col009   |col010           ][img001][img002][img003]
+[tot001     ]                                                     [tot005             ]                                                         [tot010           ]
+}
+         END --TABLE
+      END --GROUP
+   END --VBOX
+END --LAYOUT
+
+TABLES
+   orders
+   customers
+   employees
+END --TABLES
+
+ATTRIBUTES
+
+   BUTTONEDIT fld001 = orders.orderid, COMMENT="Enter an order ID for search";
+   DATEEDIT fld002 = orders.orderdate, COMMENT="Enter an order date for search";
+   BUTTON btn001 : adv_search, TEXT="Advance Search";
+   LABEL query_label = formonly.query_label, SIZEPOLICY=DYNAMIC;
+
+   EDIT col001 = formonly.orderid TYPE INTEGER, TITLE="Order ID";
+   PHANTOM customers.customerid;
+   EDIT col002 = customers.companyname, SCROLL, TITLE="Customer";
+   PHANTOM employees.employeeid;
+   EDIT col003 = formonly.employeename TYPE VARCHAR, SCROLL, TITLE="Employee";
+   EDIT col004 = formonly.orderdate TYPE DATE, TITLE="Order Date";
+   EDIT col005 = orders.freight, FORMAT="$ <<<,<<<,<<&.&&", SCROLL, TITLE="Freight";
+   EDIT col006 = orders.shipname, SCROLL, TITLE="Ship to Name";
+   EDIT col007 = orders.shipcity, SCROLL, TITLE="Ship to City";
+   EDIT col008 = orders.shipcountry, SCROLL, TITLE="Ship to Country";
+   EDIT col009 = formonly.totalqty TYPE INTEGER, TITLE="Total Quantity";
+   EDIT col010 = formonly.totalamt TYPE DECIMAL, SCROLL,FORMAT="$ <<<,<<<,<<&.&&", SCROLL, TITLE="Total Amount";
+   IMAGE img001 = formonly.rowview, TITLE="View", ACTION = view;
+   IMAGE img002 = formonly.rowedit, TITLE="Modify",ACTION = modify;
+   IMAGE img003 = formonly.rowdelete, TITLE="Delete",ACTION = delete;
+
+   AGGREGATE tot001 = FORMONLY.rec_count, AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
+   AGGREGATE tot005 = FORMONLY.freight_total, AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
+   AGGREGATE tot010 = FORMONLY.amt_total, AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_search (orders.orderid, orders.orderdate, formonly.query_label);
+   SCREEN RECORD s_table (formonly.orderid THRU formonly.rowdelete);
+
+END --INSTRUCTIONS

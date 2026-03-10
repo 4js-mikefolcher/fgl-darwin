@@ -163,3 +163,25 @@ PUBLIC FUNCTION (self t_employee) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: validate_employee (PUBLIC)
+-- =====================================================================
+PUBLIC FUNCTION validate_employee(employeeid LIKE employees.employeeid) RETURNS (t_valid_rec)
+   DEFINE valid_status t_valid_rec
+   DEFINE employee_name STRING
+
+   IF employeeid IS NOT NULL THEN
+      SELECT firstname || " " || lastname INTO employee_name
+         FROM employees WHERE employees.employeeid = $employeeid
+      IF sqlca.sqlcode == 0 THEN
+         CALL valid_status.success(employee_name)
+      ELSE
+         CALL valid_status.failed("Employee ID does not exist in employees table")
+      END IF
+   ELSE
+      CALL valid_status.success("")
+   END IF
+   RETURN valid_status
+
+END FUNCTION #validate_employee

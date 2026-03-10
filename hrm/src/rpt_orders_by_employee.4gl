@@ -1,3 +1,5 @@
+IMPORT FGL main_lib
+IMPORT FGL report_helper
 DATABASE northwind
 
 -- =====================================================================
@@ -8,6 +10,8 @@ DATABASE northwind
 -- =====================================================================
 
 TYPE t_rpt_emp_rec RECORD
+   employeeid LIKE employees.employeeid,
+   employeename VARCHAR(61),
    orderid LIKE orders.orderid,
    orderdate LIKE orders.orderdate,
    productname LIKE products.productname,
@@ -81,7 +85,9 @@ FUNCTION execute_emp_report(where_clause)
    LET m_emp_count = 0
    LET rpt_file = generate_temp_filename("rpt_emp", "txt")
 
-   LET sql_stmt = "SELECT orders.orderid, orders.orderdate, products.productname,",
+   LET sql_stmt = "SELECT employees.employeeid,",
+                  " TRIM(employees.firstname) || ' ' || TRIM(employees.lastname),",
+                  " orders.orderid, orders.orderdate, products.productname,",
                   " order_details.unitprice, order_details.quantity, order_details.discount,",
                   " order_details.unitprice * order_details.quantity * (1 + order_details.discount)",
                   " FROM orders, order_details, products, employees",
@@ -89,14 +95,14 @@ FUNCTION execute_emp_report(where_clause)
                   " AND order_details.orderid = orders.orderid",
                   " AND products.productid = order_details.productid",
                   " AND ", where_clause CLIPPED,
-                  " ORDER BY orders.orderid, products.productname"
+                  " ORDER BY employees.employeeid, orders.orderid, products.productname"
 
    PREPARE p_rpt_emp FROM sql_stmt
    DECLARE c_rpt_emp CURSOR FOR p_rpt_emp
 
    START REPORT rpt_orders_employee TO FILE rpt_file
 
-   FOREACH c_rpt_emp INTO r.orderid, r.orderdate, r.productname,
+   FOREACH c_rpt_emp INTO r.employeeid, r.employeename, r.orderid, r.orderdate, r.productname,
       r.unitprice, r.quantity, r.discount, r.linetotal
       LET m_emp_count = m_emp_count + 1
       OUTPUT TO REPORT rpt_orders_employee(r)
@@ -124,7 +130,7 @@ REPORT rpt_orders_employee(r)
       PAGE LENGTH 66
       LEFT MARGIN 1
 
-   ORDER EXTERNAL BY r.orderid
+   ORDER EXTERNAL BY r.employeeid, r.orderid
 
    FORMAT
 
@@ -153,8 +159,14 @@ REPORT rpt_orders_employee(r)
                COLUMN 83, "Line Total"
          PRINT COLUMN 1, "-------------------------------------------------------------------"
 
+      BEFORE GROUP OF r.employeeid
+         SKIP 1 LINE
+         PRINT COLUMN 1, "Employee: ", r.employeename CLIPPED
+         PRINT COLUMN 1, "-------------------------------------------------------------------"
+
       BEFORE GROUP OF r.orderid
          SKIP 1 LINE
+         PRINT COLUMN 5, "Order ID: ", r.orderid USING "<<<<<", "  Date: ", r.orderdate USING "mm/dd/yyyy"
 
       ON EVERY ROW
          PRINT COLUMN 1,  r.orderid USING "<<<<<",
@@ -167,8 +179,14 @@ REPORT rpt_orders_employee(r)
 
       AFTER GROUP OF r.orderid
          PRINT COLUMN 52, "------------------------------"
-         PRINT COLUMN 52, "Order Subtotal:",
+         PRINT COLUMN 52, "Order #", r.orderid USING "<<<<< Subtotal:",
                COLUMN 83, GROUP SUM(r.linetotal) USING "$###,##&.&&"
+
+      AFTER GROUP OF r.employeeid
+         PRINT COLUMN 52, "=============================="
+         PRINT COLUMN 52, "Employee (", r.employeename CLIPPED, ") Total:",
+               COLUMN 83, GROUP SUM(r.linetotal) USING "$###,##&.&&"
+         SKIP 1 LINE
 
       ON LAST ROW
          SKIP 1 LINE

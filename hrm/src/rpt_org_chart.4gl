@@ -1,3 +1,5 @@
+IMPORT FGL main_lib
+IMPORT FGL report_helper
 DATABASE northwind
 
 -- =====================================================================

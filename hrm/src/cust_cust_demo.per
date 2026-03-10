@@ -1,0 +1,49 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM list
+  SEPARATOR
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Customer Type Assignments")
+  VBOX
+    GROUP (TEXT="Customer Type Assignment", STYLE="box")
+      GRID
+      {
+        Customer ID:        [custid                    ]
+        Company Name:       [companyname                                 ]
+        Customer Type ID:   [typeid                    ]
+        Type Description:   [customerdesc                                ]
+      }
+      END
+    END
+  END
+END
+
+ATTRIBUTES
+  BUTTONEDIT custid = formonly.customerid TYPE CHAR, ACTION=zoom_customer;
+  companyname = formonly.companyname TYPE VARCHAR, NOENTRY;
+  BUTTONEDIT typeid = formonly.customertypeid TYPE CHAR, ACTION=zoom_cust_type;
+  customerdesc = formonly.customerdesc TYPE VARCHAR, NOENTRY;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_cust_cust_demo(
+    formonly.customerid,
+    formonly.companyname,
+    formonly.customertypeid,
+    formonly.customerdesc);
+END

@@ -1,6 +1,8 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_region
+IMPORT FGL ui_territories
 DATABASE northwind
 
 TYPE t_region_list RECORD

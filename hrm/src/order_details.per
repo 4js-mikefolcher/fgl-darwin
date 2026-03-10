@@ -24,11 +24,12 @@ LAYOUT (TEXT="Order Details")
     GROUP (TEXT="Order Detail Information", STYLE="box")
       GRID
       {
-        Order ID:     [orderid   ]
-        Product ID:   [productid ][productname                         ]
-        Unit Price:   [unitprice      ]
-        Quantity:     [quantity  ]
-        Discount:     [discount       ]
+        Order ID:        [orderid   ]
+        Product ID:      [productid ][productname                         ]
+        Unit Price:      [unitprice      ]
+        Quantity:        [quantity  ]
+        Discount Factor: [discount       ]
+        Total Price:     [totalprice     ]
       }
       END
     END
@@ -39,13 +40,14 @@ ATTRIBUTES
   BUTTONEDIT orderid = formonly.orderid TYPE SMALLINT, ACTION=zoom_order;
   BUTTONEDIT productid = formonly.productid TYPE SMALLINT, ACTION=zoom_product;
   productname = formonly.productname TYPE VARCHAR, NOENTRY;
-  unitprice = formonly.unitprice TYPE FLOAT;
+  unitprice = formonly.unitprice TYPE DECIMAL(10,2), FORMAT="$###,##&.&&";
   quantity = formonly.quantity TYPE SMALLINT;
-  discount = formonly.discount TYPE FLOAT;
+  discount = formonly.discount TYPE DECIMAL(10,8);
+  totalprice = formonly.totalprice TYPE DECIMAL(10,2), FORMAT="$###,##&.&&", NOENTRY;
 END
 
 INSTRUCTIONS
   SCREEN RECORD s_order_details(formonly.orderid, formonly.productid,
     formonly.productname, formonly.unitprice,
-    formonly.quantity, formonly.discount);
+    formonly.quantity, formonly.discount, formonly.totalprice);
 END

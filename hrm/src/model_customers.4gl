@@ -121,3 +121,24 @@ PUBLIC FUNCTION (self t_customer) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: validate_customer (PUBLIC)
+-- =====================================================================
+PUBLIC FUNCTION validate_customer(customerid LIKE customers.customerid) RETURNS (t_valid_rec)
+   DEFINE customer_name STRING
+   DEFINE valid_status t_valid_rec
+
+   IF customerid IS NOT NULL AND LENGTH(customerid) > 0 THEN
+      SELECT companyname INTO customer_name FROM customers WHERE customers.customerid = $customerid
+      IF sqlca.sqlcode == 0 THEN
+         CALL valid_status.success(customer_name)
+      ELSE
+         CALL valid_status.failed("Customer ID does not exist in customers table")
+      END IF
+   ELSE
+      CALL valid_status.success("")
+   END IF
+   RETURN valid_status
+
+END FUNCTION #validate_customer

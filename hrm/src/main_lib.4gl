@@ -137,6 +137,8 @@ FUNCTION build_program_icons()
     CALL add_program_icon("main_region",       "fa-globe")
     CALL add_program_icon("main_territories",  "fa-map-marker")
     CALL add_program_icon("main_usstates",     "fa-flag")
+    CALL add_program_icon("main_cust_demo",    "fa-id-badge")
+    CALL add_program_icon("main_cust_cust_demo","fa-tags")
     CALL add_program_icon("bdl_menu",          "fa-rocket")
     CALL add_program_icon("main_rpt_orders_by_customer",  "fa-file-text")
     CALL add_program_icon("main_rpt_orders_by_employee",  "fa-file-text")
@@ -144,6 +146,7 @@ FUNCTION build_program_icons()
     CALL add_program_icon("main_rpt_orders_by_daterange", "fa-file-text")
     CALL add_program_icon("main_rpt_orders_generic",      "fa-file-code-o")
     CALL add_program_icon("main_rpt_org_chart",            "fa-sitemap")
+    CALL add_program_icon("main_rpt_products_by_category","fa-file-text")
 
 END FUNCTION #build_program_icons
 

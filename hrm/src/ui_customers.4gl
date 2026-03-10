@@ -1,6 +1,9 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_customers
+IMPORT FGL ui_orders
+IMPORT FGL ui_cust_cust_demo
 DATABASE northwind
 
 -- =====================================================================
@@ -51,6 +54,9 @@ PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
    LET cmds[1].commandName  = "orders"
    LET cmds[1].commandLabel = "Orders"
    LET cmds[1].commandComment = "View Orders for this Customer"
+   LET cmds[2].commandName  = "cust_cust_demo"
+   LET cmds[2].commandLabel = "Type Assignments"
+   LET cmds[2].commandComment = "View Demographic Types for this Customer"
    RETURN cmds
 END FUNCTION #init_view_commands
 
@@ -387,6 +393,8 @@ FUNCTION customers_do_command(commandName STRING)
    CASE commandName
       WHEN "orders"
          CALL view_orders_for_customer(curr_customers.customerid)
+      WHEN "cust_cust_demo"
+         CALL cust_demo_by_customer(curr_customers.customerid)
       OTHERWISE
          ERROR "Unknown command: ", commandName
    END CASE

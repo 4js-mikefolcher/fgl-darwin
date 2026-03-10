@@ -154,3 +154,31 @@ PUBLIC FUNCTION (self t_order) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: default_shipping_from_customer (PUBLIC)
+-- Purpose : Populate shipping fields from selected customer address info
+-- =====================================================================
+PUBLIC FUNCTION (self t_order) default_shipping_from_customer()
+   DEFINE contact_name LIKE customers.contactname
+   DEFINE address LIKE customers.address
+   DEFINE city LIKE customers.city
+   DEFINE region LIKE customers.region
+   DEFINE postalcode LIKE customers.postalcode
+   DEFINE country LIKE customers.country
+
+   SELECT c.contactname, c.address, c.city, c.region, c.postalcode, c.country
+      INTO contact_name, address, city, region, postalcode, country
+      FROM customers c
+      WHERE customerid = self.customerid
+
+   IF sqlca.sqlcode == 0 THEN
+      LET self.shipname = contact_name
+      LET self.shipaddress = address
+      LET self.shipcity = city
+      LET self.shipregion = region
+      LET self.shippostalcode = postalcode
+      LET self.shipcountry = country
+   END IF
+
+END FUNCTION #default_shipping_from_customer

@@ -7,7 +7,8 @@ PUBLIC TYPE t_order_detail RECORD
    productname LIKE products.productname,
    unitprice LIKE order_details.unitprice,
    quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount
+   discount LIKE order_details.discount,
+   totalprice DECIMAL(10,2)
 END RECORD
 
 PRIVATE CONSTANT cMessagePrefix = "Order Detail Record %1"
@@ -17,7 +18,7 @@ PRIVATE CONSTANT cMessagePrefix = "Order Detail Record %1"
 -- Purpose : Validate the current order detail record
 -- =====================================================================
 PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid_rec)
-   DEFINE detailExists SMALLINT
+   DEFINE detailExists SMALLINT = 0
    DEFINE product_name LIKE products.productname
    DEFINE valid_rec t_valid_rec
 
@@ -29,7 +30,7 @@ PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid
       CALL valid_rec.failed("Order detail record is not found")
       RETURN valid_rec
    END IF
-   IF sqlca.sqlcode == 0 AND mode == "A" THEN
+   IF detailExists == 1 AND mode == "A" THEN
       CALL valid_rec.failed("Order detail record already exists for this order/product")
       RETURN valid_rec
    END IF
@@ -81,8 +82,8 @@ PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid
       CALL valid_rec.failed("Quantity must be at least 1")
       RETURN valid_rec
    END IF
-   IF self.discount < 0 OR self.discount > 1 THEN
-      CALL valid_rec.failed("Discount must be between 0 and 1")
+   IF self.discount < 0 OR self.discount >= 1 THEN
+      CALL valid_rec.failed("Discount Factor must be between 0 and 1")
       RETURN valid_rec
    END IF
 
@@ -156,3 +157,21 @@ PUBLIC FUNCTION (self t_order_detail) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: validate_product (PUBLIC)
+-- =====================================================================
+PUBLIC FUNCTION (self t_order_detail) validate_product() RETURNS (t_valid_rec)
+   DEFINE val_status t_valid_rec
+
+   CALL val_status.success("Okay")
+   IF self.productid IS NOT NULL THEN
+      SELECT productname INTO self.productname FROM products WHERE products.productid = self.productid
+      IF sqlca.sqlcode == NOTFOUND THEN
+         CALL val_status.failed("Product ID does not exist in products table")
+      END IF
+      LET val_status.valid_msg = self.productname
+   END IF
+   RETURN val_status
+
+END FUNCTION #validate_product

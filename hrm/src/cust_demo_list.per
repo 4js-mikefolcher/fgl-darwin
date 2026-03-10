@@ -1,0 +1,39 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Customer Demographics List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     Customer Type ID     Type Description
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    [c1                  |c2                                                          ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.customertypeid TYPE CHAR, NOENTRY, SCROLL;
+  c2 = formonly.customerdesc TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD cust_demo_list[10](customertypeid, customerdesc);
+END

@@ -1,6 +1,9 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_territories
+IMPORT FGL ui_region
+IMPORT FGL ui_employees
 DATABASE northwind
 
 DEFINE territories_arr DYNAMIC ARRAY OF t_territory

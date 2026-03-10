@@ -70,7 +70,7 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="filelist:FGLPROFILE=$(FGLPROFILE);$(ProjectDir)/dbs/postgres/fglprofile.pgs,dirlist:FGLDBPATH=$(ProjectDir)/dbs" id="675791855" label="fgl-darwin" language="Genero">
+  <Group environment="filelist:FGLPROFILE=$(FGLPROFILE);$(ProjectDir)/dbs/postgres/fglprofile.pgs,dirlist:FGLDBPATH=$(ProjectDir)/dbs" id="675791855" label="fgl-darwin" language="Genero (no link)">
     <Group id="-1064080374" label="Databases">
       <Library binaryName="postgres" id="-285912247" label="postgres">
         <File filePath="dbs/postgres/fglprofile.pgs"/>
@@ -191,46 +191,102 @@
       <File filePath="hrm/src/rpt_orders_generic.4gl"/>
       <File filePath="hrm/src/rpt_orders_generic.per"/>
     </Application>
+    <Application binaryName="main_cust_demo" dependencies="-1764485507,1342077549" id="1134826713" label="main_cust_demo">
+      <Configuration id="1134826714" label="main_cust_demo"/>
+      <File filePath="hrm/src/main_cust_demo.4gl"/>
+      <File filePath="hrm/src/cust_demo.per"/>
+      <File filePath="hrm/src/cust_demo_list.per"/>
+    </Application>
+    <Application binaryName="main_cust_cust_demo" dependencies="-1764485507,1342077549" id="1134826715" label="main_cust_cust_demo">
+      <Configuration id="1134826716" label="main_cust_cust_demo"/>
+      <File filePath="hrm/src/main_cust_cust_demo.4gl"/>
+      <File filePath="hrm/src/cust_cust_demo.per"/>
+      <File filePath="hrm/src/cust_cust_demo_list.per"/>
+    </Application>
+    <Application binaryName="main_rpt_products_by_category" dependencies="-1764485507,1342077549" id="1134826717" label="main_rpt_products_by_category">
+      <Configuration id="1134826718" label="main_rpt_products_by_category"/>
+      <File filePath="hrm/src/main_rpt_products_by_category.4gl"/>
+      <File filePath="hrm/src/rpt_products_by_category.4gl"/>
+      <File filePath="hrm/src/rpt_products_by_category.per"/>
+    </Application>
+    <Application binaryName="main_rpt_employees_with_totals" dependencies="-1764485507,1342077549" id="1134826719" label="main_rpt_employees_with_totals">
+      <Configuration id="1134826720" label="main_rpt_employees_with_totals"/>
+      <File filePath="hrm/src/main_rpt_employees_with_totals.4gl"/>
+      <File filePath="hrm/src/rpt_employees_with_totals.4gl"/>
+      <File filePath="hrm/src/rpt_employees_with_totals.per"/>
+    </Application>
+    <Application binaryName="main_md_orders" dependencies="-1764485507,1342077549" id="1134826721" label="main_md_orders">
+      <Configuration id="1134826722" label="main_md_orders"/>
+      <File filePath="hrm/src/main_md_orders.4gl"/>
+      <File filePath="hrm/src/md_orders.4gl"/>
+      <File filePath="hrm/src/md_orders.per"/>
+    </Application>
     <Application binaryName="main_rpt_org_chart" dependencies="-1764485507,1342077549" id="1134826711" label="main_rpt_org_chart">
       <Configuration id="1134826712" label="main_rpt_org_chart"/>
       <File filePath="hrm/src/main_rpt_org_chart.4gl"/>
       <File filePath="hrm/src/rpt_org_chart.4gl"/>
       <File filePath="hrm/src/rpt_org_chart.per"/>
     </Application>
+    <Application binaryName="mstr_dtl_order" id="1145118413" label="mstr_dtl_order">
+      <Configuration id="-1946006971" label="mstr_dtl_order"/>
+      <File filePath="hrm/src/md_order_details.4gl"/>
+      <File filePath="hrm/src/md_order_details.per"/>
+      <File filePath="hrm/src/mstr_dtl_order.4gl"/>
+      <File filePath="hrm/src/mstr_order_list.per"/>
+    </Application>
     <Library binaryName="Shared" dependencies="1342077549" id="-1764485507" label="Shared">
-      <File filePath="hrm/src/categories.4gl"/>
-      <File filePath="hrm/src/controller.4gl"/>
-      <File filePath="hrm/src/customers.4gl"/>
-      <File filePath="hrm/src/dispatch.4gl"/>
-      <File filePath="hrm/src/empl_terr.4gl"/>
-      <File filePath="hrm/src/employees.4gl"/>
-      <File filePath="hrm/src/generic.4ad"/>
-      <File filePath="hrm/src/generic.4st"/>
-      <File filePath="hrm/src/list_view_helper.4gl"/>
-      <File filePath="hrm/src/main_lib.4gl"/>
-      <File filePath="hrm/src/model_categories.4gl"/>
-      <File filePath="hrm/src/model_customers.4gl"/>
-      <File filePath="hrm/src/model_empl_terr.4gl"/>
-      <File filePath="hrm/src/model_employees.4gl"/>
-      <File filePath="hrm/src/model_helper.4gl"/>
-      <File filePath="hrm/src/model_order_details.4gl"/>
-      <File filePath="hrm/src/model_orders.4gl"/>
-      <File filePath="hrm/src/model_products.4gl"/>
-      <File filePath="hrm/src/model_region.4gl"/>
-      <File filePath="hrm/src/model_shippers.4gl"/>
-      <File filePath="hrm/src/model_suppliers.4gl"/>
-      <File filePath="hrm/src/model_territories.4gl"/>
-      <File filePath="hrm/src/model_usstates.4gl"/>
-      <File filePath="hrm/src/order_details.4gl"/>
-      <File filePath="hrm/src/orders.4gl"/>
-      <File filePath="hrm/src/products.4gl"/>
-      <File filePath="hrm/src/region.4gl"/>
-      <File filePath="hrm/src/shippers.4gl"/>
-      <File filePath="hrm/src/suppliers.4gl"/>
-      <File filePath="hrm/src/territories.4gl"/>
-      <File filePath="hrm/src/usstates.4gl"/>
-      <File filePath="hrm/src/report_helper.4gl"/>
-      <File filePath="hrm/src/report_viewer.per"/>
+      <VirtualFolder label="advsearch">
+        <File filePath="hrm/src/advsearch_orders.4gl"/>
+        <File filePath="hrm/src/advsearch_orders.per"/>
+      </VirtualFolder>
+      <VirtualFolder label="lib">
+        <File filePath="hrm/src/controller.4gl"/>
+        <File filePath="hrm/src/dialog_prompt.4gl"/>
+        <File filePath="hrm/src/dispatch.4gl"/>
+        <File filePath="hrm/src/list_view_helper.4gl"/>
+        <File filePath="hrm/src/main_lib.4gl"/>
+        <File filePath="hrm/src/md_helper.4gl"/>
+        <File filePath="hrm/src/report_helper.4gl"/>
+        <File filePath="hrm/src/report_viewer.per"/>
+      </VirtualFolder>
+      <VirtualFolder label="MasterDetail"/>
+      <VirtualFolder label="models">
+        <File filePath="hrm/src/model_categories.4gl"/>
+        <File filePath="hrm/src/model_cust_cust_demo.4gl"/>
+        <File filePath="hrm/src/model_cust_demo.4gl"/>
+        <File filePath="hrm/src/model_customers.4gl"/>
+        <File filePath="hrm/src/model_empl_terr.4gl"/>
+        <File filePath="hrm/src/model_employees.4gl"/>
+        <File filePath="hrm/src/model_helper.4gl"/>
+        <File filePath="hrm/src/model_order_details.4gl"/>
+        <File filePath="hrm/src/model_orders.4gl"/>
+        <File filePath="hrm/src/model_products.4gl"/>
+        <File filePath="hrm/src/model_region.4gl"/>
+        <File filePath="hrm/src/model_shippers.4gl"/>
+        <File filePath="hrm/src/model_suppliers.4gl"/>
+        <File filePath="hrm/src/model_territories.4gl"/>
+        <File filePath="hrm/src/model_usstates.4gl"/>
+      </VirtualFolder>
+      <VirtualFolder label="MQVE">
+        <File filePath="hrm/src/ui_categories.4gl"/>
+        <File filePath="hrm/src/ui_cust_cust_demo.4gl"/>
+        <File filePath="hrm/src/ui_cust_demo.4gl"/>
+        <File filePath="hrm/src/ui_customers.4gl"/>
+        <File filePath="hrm/src/ui_empl_terr.4gl"/>
+        <File filePath="hrm/src/ui_employees.4gl"/>
+        <File filePath="hrm/src/ui_order_details.4gl"/>
+        <File filePath="hrm/src/ui_orders.4gl"/>
+        <File filePath="hrm/src/ui_products.4gl"/>
+        <File filePath="hrm/src/ui_region.4gl"/>
+        <File filePath="hrm/src/ui_shippers.4gl"/>
+        <File filePath="hrm/src/ui_suppliers.4gl"/>
+        <File filePath="hrm/src/ui_territories.4gl"/>
+        <File filePath="hrm/src/ui_usstates.4gl"/>
+      </VirtualFolder>
+      <VirtualFolder label="resources">
+        <File filePath="hrm/src/generic.4ad"/>
+        <File filePath="hrm/src/generic.4st"/>
+      </VirtualFolder>
     </Library>
     <Group id="-106839181" label="Tools">
       <Application binaryName="create_pgs_db" id="1819972734" label="create_pgs_db">

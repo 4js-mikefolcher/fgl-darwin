@@ -100,3 +100,23 @@ PUBLIC FUNCTION (self t_shipper) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: validate_shipvia (PUBLIC)
+-- =====================================================================
+PUBLIC FUNCTION validate_shipvia(shipperid LIKE shippers.shipperid) RETURNS (t_valid_rec)
+   DEFINE valid_status t_valid_rec
+
+   IF shipperid IS NOT NULL THEN
+      SELECT shipperid FROM shippers WHERE shippers.shipperid = $shipperid
+      IF sqlca.sqlcode == 0 THEN
+         CALL valid_status.success("Okay!")
+      ELSE
+         CALL valid_status.failed("Shipper ID does not exist in shippers table")
+      END IF
+   ELSE
+      CALL valid_status.success("Okay!")
+   END IF
+   RETURN valid_status
+
+END FUNCTION #validate_shipvia

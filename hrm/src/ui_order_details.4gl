@@ -1,6 +1,9 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_order_details
+IMPORT FGL ui_orders
+IMPORT FGL ui_products
 DATABASE northwind
 
 DEFINE order_details_arr DYNAMIC ARRAY OF t_order_detail
@@ -10,7 +13,8 @@ TYPE t_order_detail_list RECORD
    productname LIKE products.productname,
    unitprice LIKE order_details.unitprice,
    quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount
+   discount LIKE order_details.discount,
+   totalprice DECIMAL(10,2)
 END RECORD
 
 DEFINE curr_order_details t_order_detail
@@ -206,6 +210,7 @@ PRIVATE FUNCTION order_details_do_load(where_clause)
    PREPARE p_order_details FROM sql_stmt
    DECLARE c_order_details CURSOR FOR p_order_details
    FOREACH c_order_details INTO curr_order_details.*
+      LET curr_order_details.totalprice = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
       CALL order_details_arr.appendElement()
       LET order_details_arr[order_details_arr.getLength()] = curr_order_details
    END FOREACH
@@ -226,6 +231,7 @@ FUNCTION order_details_do_add()
    CLEAR FORM
    LET int_flag = FALSE
    CALL order_details_clear_curr()
+   LET curr_order_details.discount = 0
    INPUT BY NAME curr_order_details.*
       ATTRIBUTE(UNBUFFERED)
       BEFORE INPUT
@@ -249,6 +255,8 @@ FUNCTION order_details_do_add()
          IF selected_product_id > 0 THEN
             LET curr_order_details.productid = selected_product_id
             LET curr_order_details.productname = selected_product_name
+            CALL default_unitprice_from_product(selected_product_id)
+            CALL calculate_total_price()
          END IF
 
       AFTER FIELD orderid
@@ -265,6 +273,25 @@ FUNCTION order_details_do_add()
          IF NOT order_details_valid THEN
             ERROR valid_msg
             NEXT FIELD productid
+         ELSE
+            CALL default_unitprice_from_product(curr_order_details.productid)
+            CALL calculate_total_price()
+         END IF
+
+      AFTER FIELD unitprice
+         CALL calculate_total_price()
+
+      AFTER FIELD quantity
+         CALL calculate_total_price()
+
+      AFTER FIELD discount
+         CALL validate_discount_field()
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            NEXT FIELD discount
+         ELSE
+            CALL calculate_total_price()
          END IF
 
       AFTER INPUT
@@ -295,15 +322,31 @@ END FUNCTION #order_details_do_add
 -- Dispatch interface: order_details_do_edit
 -- =====================================================================
 FUNCTION order_details_do_edit()
+   DEFINE order_details_valid SMALLINT
+   DEFINE valid_msg CHAR(75)
 
    LET int_flag = FALSE
-   INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount
+   CALL calculate_total_price()
+   INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount, curr_order_details.totalprice
       ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
          LET int_flag = TRUE
          EXIT INPUT
+      AFTER FIELD unitprice
+         CALL calculate_total_price()
+      AFTER FIELD quantity
+         CALL calculate_total_price()
+      AFTER FIELD discount
+         CALL validate_discount_field()
+            RETURNING order_details_valid, valid_msg
+         IF NOT order_details_valid THEN
+            ERROR valid_msg
+            NEXT FIELD discount
+         ELSE
+            CALL calculate_total_price()
+         END IF
       AFTER INPUT
          VAR valid_status = curr_order_details.validateRec("C")
          IF NOT valid_status.valid_status THEN
@@ -391,6 +434,7 @@ FUNCTION order_details_list_display()
       LET list_arr[idx].unitprice = order_details_arr[idx].unitprice
       LET list_arr[idx].quantity = order_details_arr[idx].quantity
       LET list_arr[idx].discount = order_details_arr[idx].discount
+      LET list_arr[idx].totalprice = order_details_arr[idx].totalprice
    END FOR
 
    MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " order details"
@@ -433,6 +477,61 @@ FUNCTION order_details_do_command(commandName STRING)
 END FUNCTION #order_details_do_command
 
 
+
+-- =====================================================================
+-- Function: default_unitprice_from_product (PRIVATE)
+-- Purpose : Default unit price from the product record
+-- =====================================================================
+PRIVATE FUNCTION default_unitprice_from_product(prod_id LIKE products.productid)
+   DEFINE unit_price LIKE products.unitprice
+
+   SELECT unitprice INTO unit_price FROM products WHERE productid = prod_id
+   IF sqlca.sqlcode == 0 THEN
+      LET curr_order_details.unitprice = unit_price
+   END IF
+
+END FUNCTION #default_unitprice_from_product
+
+-- =====================================================================
+-- Function: calculate_total_price (PRIVATE)
+-- Purpose : Calculate total sell price = unitprice * quantity * (1 - discount)
+-- =====================================================================
+PRIVATE FUNCTION calculate_total_price()
+   DEFINE total DECIMAL(10,2)
+
+   IF curr_order_details.unitprice IS NULL THEN
+      LET curr_order_details.totalprice = NULL
+      RETURN
+   END IF
+   IF curr_order_details.quantity IS NULL THEN
+      LET curr_order_details.totalprice = NULL
+      RETURN
+   END IF
+   IF curr_order_details.discount IS NULL THEN
+      LET curr_order_details.discount = 0
+   END IF
+
+   LET total = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
+   LET curr_order_details.totalprice = total
+
+END FUNCTION #calculate_total_price
+
+-- =====================================================================
+-- Function: validate_discount_field (PRIVATE)
+-- Purpose : Validate that discount factor is between 0 and 0.99999999
+-- =====================================================================
+PRIVATE FUNCTION validate_discount_field()
+   DEFINE valid_flag SMALLINT
+
+   IF curr_order_details.discount IS NOT NULL THEN
+      IF curr_order_details.discount < 0 OR curr_order_details.discount > 0.99999999 THEN
+         ERROR "Discount Factor must be between 0 and 0.99999999"
+         RETURN FALSE, "Discount Factor must be between 0 and 0.99999999"
+      END IF
+   END IF
+   RETURN TRUE, "Okay"
+
+END FUNCTION #validate_discount_field
 
 -- =====================================================================
 -- Function: validate_orderid_field (PRIVATE)

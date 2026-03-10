@@ -1,3 +1,5 @@
+IMPORT FGL main_lib
+IMPORT FGL report_helper
 DATABASE northwind
 
 -- =====================================================================
@@ -153,6 +155,10 @@ REPORT rpt_orders_product(r)
          PRINT COLUMN 1, "Category: ", r.categoryname CLIPPED
          PRINT COLUMN 1, "-----------------------------------------------------------------------"
 
+      BEFORE GROUP OF r.productname
+         SKIP 1 LINE
+         PRINT COLUMN 5, "Product: ", r.productname CLIPPED
+
       ON EVERY ROW
          PRINT COLUMN 3,  r.categoryname CLIPPED,
                COLUMN 18, r.productname CLIPPED,
@@ -160,9 +166,16 @@ REPORT rpt_orders_product(r)
                COLUMN 62, r.totalqty USING "#####&",
                COLUMN 76, r.totalamt USING "###,##&.&&"
 
-      AFTER GROUP OF r.categoryname
+      AFTER GROUP OF r.productname
          PRINT COLUMN 18, "---------------------------------------"
-         PRINT COLUMN 18, "Category Subtotal:",
+         PRINT COLUMN 18, "Product (", r.productname CLIPPED, ") Subtotal:",
+               COLUMN 50, GROUP SUM(r.ordercount) USING "####&",
+               COLUMN 62, GROUP SUM(r.totalqty) USING "#####&",
+               COLUMN 76, GROUP SUM(r.totalamt) USING "$###,##&.&&"
+
+      AFTER GROUP OF r.categoryname
+         PRINT COLUMN 18, "======================================="
+         PRINT COLUMN 18, "Category (", r.categoryname CLIPPED, ") Total:",
                COLUMN 50, GROUP SUM(r.ordercount) USING "####&",
                COLUMN 62, GROUP SUM(r.totalqty) USING "#####&",
                COLUMN 76, GROUP SUM(r.totalamt) USING "$###,##&.&&"

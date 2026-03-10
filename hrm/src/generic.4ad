@@ -27,24 +27,58 @@
     image="find"
     comment="Search for records"
     acceleratorName="Control-f" />
+
+  <ActionDefault name="search"
+    text="Search"
+    image="find"
+    comment="Search for records"
+    acceleratorName="Control-f" />
+
+  <ActionDefault name="adv_search"
+    text="Advanced"
+    image="fa-search-plus"
+    comment="Advanced Search for records"
+    acceleratorName="Shift+Control-f" />
+
+  <ActionDefault name="excel_export"
+    text="Export to Excel"
+    image="fa-file-excel-o"
+    comment="Export result list to Excel" />
   
   <ActionDefault name="add"
     text="Add"
     image="fa-plus"
     comment="Add a new record"
     acceleratorName="Control-n" />
+
+  <ActionDefault name="append"
+    text="Add Item"
+    image="fa-plus-square"
+    comment="Add a new item"
+    acceleratorName="Shift-Control-n" />
   
   <ActionDefault name="modify"
     text="Modify"
     image="fa-pencil"
-    comment="Edit an existing record"
+    comment="Edit the current record"
     acceleratorName="Control-e" />
   
   <ActionDefault name="delete"
     text="Delete"
     image="fa-trash"
-    comment="Delete a record"
+    comment="Delete the current record"
     acceleratorName="Delete" />
+
+  <ActionDefault name="view"
+    text="View"
+    image="fa-eye"
+    comment="View the current record" />
+
+  <ActionDefault name="close"
+    text="Close"
+    image="fa-window-close"
+    comment="Close screen"
+    defaultView="no" />
   
   <!-- Related Data Actions -->
   <ActionDefault name="products"
@@ -122,6 +156,11 @@
     image="fa-check-circle"
     comment="Select the current record" />
   
+  <ActionDefault name="cust_cust_demo"
+    text="Customer Type"
+    image="fa-tags"
+    comment="View customer type assignments" />
+  
   <!-- Zoom/Lookup Actions -->
   <ActionDefault name="zoom_employee"
     image="zoom"
@@ -148,6 +187,11 @@
     defaultView="no"
     comment="Look up order" />
   
+  <ActionDefault name="zoom_cust_type"
+    image="zoom"
+    defaultView="no"
+    comment="Look up customer demographic type" />
+
   <ActionDefault name="zoom"
     image="zoom"
     defaultView="no"

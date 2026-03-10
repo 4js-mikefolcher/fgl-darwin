@@ -92,6 +92,7 @@ PUBLIC FUNCTION controller_navigate()
              CALL DIALOG.setActionHidden("cmd_category",    NOT has_command("category"))
              CALL DIALOG.setActionHidden("cmd_region",      NOT has_command("region"))
              CALL DIALOG.setActionHidden("cmd_employees",   NOT has_command("employees"))
+             CALL DIALOG.setActionHidden("cmd_cust_cust_demo", NOT has_command("cust_cust_demo"))
 
           ON ACTION first
               LET m_idx = 1
@@ -177,6 +178,8 @@ PUBLIC FUNCTION controller_navigate()
               CALL dispatch_command(m_config.moduleName, "region")
           ON ACTION cmd_employees ATTRIBUTES(TEXT="Employees", IMAGE="fa-users", COMMENT="View Employees")
               CALL dispatch_command(m_config.moduleName, "employees")
+          ON ACTION cmd_cust_cust_demo ATTRIBUTES(TEXT="Customer Type", IMAGE="fa-tags", COMMENT="View Customer Type Assignments")
+              CALL dispatch_command(m_config.moduleName, "cust_cust_demo")
 
           ON ACTION exit
               LET m_idx = 0

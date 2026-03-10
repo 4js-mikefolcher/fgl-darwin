@@ -29,5 +29,11 @@ region:
 territories:
 	$(MAKE) -C $(SRCDIR) territories
 
-.PHONY: all clean rebuild employees empl_terr region territories
+cust_demo:
+	$(MAKE) -C $(SRCDIR) cust_demo
+
+cust_cust_demo:
+	$(MAKE) -C $(SRCDIR) cust_cust_demo
+
+.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo
 

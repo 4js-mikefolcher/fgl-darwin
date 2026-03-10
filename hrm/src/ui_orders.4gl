@@ -1,6 +1,10 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_orders
+IMPORT FGL ui_customers
+IMPORT FGL ui_employees
+IMPORT FGL ui_order_details
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -320,6 +324,7 @@ FUNCTION orders_do_add()
          IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
             LET curr_orders.customerid = selected_customer_id
             LET curr_orders.customername = selected_customer_name
+            CALL default_shipping_from_customer(selected_customer_id)
          END IF
       ON ACTION zoom_employee
          CALL employee_lookup()
@@ -335,6 +340,8 @@ FUNCTION orders_do_add()
          IF NOT orders_valid THEN
             ERROR valid_msg
             NEXT FIELD customerid
+         ELSE
+            CALL default_shipping_from_customer(curr_orders.customerid)
          END IF
 
       AFTER FIELD employeeid
@@ -407,6 +414,7 @@ FUNCTION orders_do_edit()
          IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
             LET curr_orders.customerid = selected_customer_id
             LET curr_orders.customername = selected_customer_name
+            CALL default_shipping_from_customer(selected_customer_id)
          END IF
       ON ACTION zoom_employee
          CALL employee_lookup()
@@ -422,6 +430,8 @@ FUNCTION orders_do_edit()
          IF NOT orders_valid THEN
             ERROR valid_msg
             NEXT FIELD customerid
+         ELSE
+            CALL default_shipping_from_customer(curr_orders.customerid)
          END IF
 
       AFTER FIELD employeeid
@@ -655,6 +665,34 @@ FUNCTION order_lookup_menu()
 END FUNCTION #order_lookup_menu
 
 
+
+-- =====================================================================
+-- Function: default_shipping_from_customer (PRIVATE)
+-- Purpose : Populate shipping fields from selected customer address info
+-- =====================================================================
+PRIVATE FUNCTION default_shipping_from_customer(cust_id LIKE customers.customerid)
+   DEFINE contact_name LIKE customers.contactname
+   DEFINE address LIKE customers.address
+   DEFINE city LIKE customers.city
+   DEFINE region LIKE customers.region
+   DEFINE postalcode LIKE customers.postalcode
+   DEFINE country LIKE customers.country
+
+   SELECT c.contactname, c.address, c.city, c.region, c.postalcode, c.country
+      INTO contact_name, address, city, region, postalcode, country
+      FROM customers c
+      WHERE customerid = $cust_id
+
+   IF sqlca.sqlcode == 0 THEN
+      LET curr_orders.shipname = contact_name
+      LET curr_orders.shipaddress = address
+      LET curr_orders.shipcity = city
+      LET curr_orders.shipregion = region
+      LET curr_orders.shippostalcode = postalcode
+      LET curr_orders.shipcountry = country
+   END IF
+
+END FUNCTION #default_shipping_from_customer
 
 -- =====================================================================
 -- Function: validate_employee_field (PRIVATE)

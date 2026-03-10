@@ -1,0 +1,63 @@
+SCHEMA northwind
+
+LAYOUT (TEXT="Orders Advanced Search", STYLE="dialog")
+   VBOX
+      GROUP
+         GRID
+{
+["Order ID: "           ][orderid      ]
+["Customer ID: "        ][customerid      ]
+["Customer Name: "      ][customername                          ]
+["Employee ID: "        ][employeeid   ]
+["Employee First Name: "][firstname                           ]
+["Employee Last Name: " ][lastname                           ]
+["Order Date: "         ][orderdt      ]
+["Required Date: "      ][reqireddt    ]
+["Shipped Date: "       ][shippeddt    ]
+["Ship Via: "           ][shipvia      ]
+["Freight: "            ][freight         ]
+["Ship To: "            ][shipname                              ]
+["Address: "            ][shipaddress                                  ]
+["City: "               ][shipcity        ]
+["Region: "             ][shipregion      ]
+["Postal Code: "        ][shippostal]
+["Country: "            ][shipcountry     ]
+}
+         END --GRID
+      END --GROUP
+   END --VBOX
+END --LAYOUT
+
+TABLES
+   orders
+   employees
+   customers
+END --TABLES
+
+ATTRIBUTES
+  orderid = orders.orderid;
+  customerid = orders.customerid;
+  customername = customers.companyname;
+  employeeid = orders.employeeid;
+  firstname = employees.firstname;
+  lastname = employees.lastname;
+  DATEEDIT orderdt = orders.orderdate;
+  DATEEDIT reqireddt = orders.requireddate;
+  DATEEDIT shippeddt = orders.shippeddate;
+  shipvia = orders.shipvia;
+  freight = orders.freight;
+  shipname = orders.shipname;
+  shipaddress = orders.shipaddress;
+  shipcity = orders.shipcity;
+  shipregion = orders.shipregion;
+  shippostal = orders.shippostalcode;
+  shipcountry = orders.shipcountry;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+   SCREEN RECORD s_advsearch(orders.orderid THRU orders.shipcountry);
+
+END --INSTRUCTIONS
+
+

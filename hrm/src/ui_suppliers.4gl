@@ -1,6 +1,8 @@
+IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_suppliers
+IMPORT FGL ui_products
 
 DATABASE northwind
 

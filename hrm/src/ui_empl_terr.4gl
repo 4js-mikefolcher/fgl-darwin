@@ -1,7 +1,10 @@
+IMPORT FGL main_lib
 IMPORT FGL model_helper
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_empl_terr
+IMPORT FGL ui_employees
+IMPORT FGL ui_territories
 
 DATABASE northwind
 

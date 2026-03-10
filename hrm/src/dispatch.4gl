@@ -9,6 +9,20 @@
 --   1. Add a WHEN clause for the module name in each dispatch function
 --   2. Map it to the module's corresponding function
 -- =====================================================================
+IMPORT FGL ui_suppliers
+IMPORT FGL ui_categories
+IMPORT FGL ui_customers
+IMPORT FGL ui_employees
+IMPORT FGL ui_empl_terr
+IMPORT FGL ui_orders
+IMPORT FGL ui_order_details
+IMPORT FGL ui_products
+IMPORT FGL ui_region
+IMPORT FGL ui_shippers
+IMPORT FGL ui_territories
+IMPORT FGL ui_usstates
+IMPORT FGL ui_cust_demo
+IMPORT FGL ui_cust_cust_demo
 
 -- =====================================================================
 -- Function: dispatch_get_count
@@ -41,6 +55,10 @@ PUBLIC FUNCTION dispatch_get_count(moduleName STRING) RETURNS INTEGER
          RETURN territories_get_count()
       WHEN "usstates"
          RETURN usstates_get_count()
+      WHEN "cust_demo"
+         RETURN cust_demo_get_count()
+      WHEN "cust_cust_demo"
+         RETURN cust_cust_demo_get_count()
       OTHERWISE
          RETURN 0
    END CASE
@@ -78,6 +96,10 @@ PUBLIC FUNCTION dispatch_load_at(moduleName STRING, idx INTEGER)
          CALL territories_load_at(idx)
       WHEN "usstates"
          CALL usstates_load_at(idx)
+      WHEN "cust_demo"
+         CALL cust_demo_load_at(idx)
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_load_at(idx)
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -115,6 +137,10 @@ PUBLIC FUNCTION dispatch_display(moduleName STRING)
          CALL territories_display_curr()
       WHEN "usstates"
          CALL usstates_display_curr()
+      WHEN "cust_demo"
+         CALL cust_demo_display_curr()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_display_curr()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -152,6 +178,10 @@ PUBLIC FUNCTION dispatch_clear(moduleName STRING)
          CALL territories_clear_curr()
       WHEN "usstates"
          CALL usstates_clear_curr()
+      WHEN "cust_demo"
+         CALL cust_demo_clear_curr()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_clear_curr()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -189,6 +219,10 @@ PUBLIC FUNCTION dispatch_query(moduleName STRING)
          CALL territories_do_query()
       WHEN "usstates"
          CALL usstates_do_query()
+      WHEN "cust_demo"
+         CALL cust_demo_do_query()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_query()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -226,6 +260,10 @@ PUBLIC FUNCTION dispatch_add(moduleName STRING)
          CALL territories_do_add()
       WHEN "usstates"
          CALL usstates_do_add()
+      WHEN "cust_demo"
+         CALL cust_demo_do_add()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_add()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -263,6 +301,10 @@ PUBLIC FUNCTION dispatch_edit(moduleName STRING)
          CALL territories_do_edit()
       WHEN "usstates"
          CALL usstates_do_edit()
+      WHEN "cust_demo"
+         CALL cust_demo_do_edit()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_edit()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -300,6 +342,10 @@ PUBLIC FUNCTION dispatch_delete(moduleName STRING)
          CALL territories_do_delete()
       WHEN "usstates"
          CALL usstates_do_delete()
+      WHEN "cust_demo"
+         CALL cust_demo_do_delete()
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_delete()
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -337,6 +383,10 @@ PUBLIC FUNCTION dispatch_refresh(moduleName STRING, idx INTEGER, operation CHAR(
          CALL territories_do_refresh(idx, operation)
       WHEN "usstates"
          CALL usstates_do_refresh(idx, operation)
+      WHEN "cust_demo"
+         CALL cust_demo_do_refresh(idx, operation)
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_refresh(idx, operation)
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
@@ -390,6 +440,12 @@ PUBLIC FUNCTION dispatch_list_display(moduleName STRING)
       WHEN "usstates"
          CALL usstates_list_display() RETURNING l_idx, l_opt
          RETURN l_idx, l_opt
+      WHEN "cust_demo"
+         CALL cust_demo_list_display() RETURNING l_idx, l_opt
+         RETURN l_idx, l_opt
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_list_display() RETURNING l_idx, l_opt
+         RETURN l_idx, l_opt
       OTHERWISE
          ERROR "Unknown module: ", moduleName
          RETURN 0, 0
@@ -428,6 +484,10 @@ PUBLIC FUNCTION dispatch_command(moduleName STRING, commandName STRING)
          CALL territories_do_command(commandName)
       WHEN "usstates"
          CALL usstates_do_command(commandName)
+      WHEN "cust_demo"
+         CALL cust_demo_do_command(commandName)
+      WHEN "cust_cust_demo"
+         CALL cust_cust_demo_do_command(commandName)
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE

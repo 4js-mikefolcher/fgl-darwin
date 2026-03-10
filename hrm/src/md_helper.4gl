@@ -1,0 +1,11 @@
+PUBLIC CONSTANT cQuit = 0
+PUBLIC CONSTANT cSearch = 1
+PUBLIC CONSTANT cAdd = 2
+PUBLIC CONSTANT cEdit = 3
+PUBLIC CONSTANT cDelete = 4
+PUBLIC CONSTANT cView = 5
+PUBLIC CONSTANT cAdvSearch = 6
+
+PUBLIC CONSTANT cViewImage = "fa-eye"
+PUBLIC CONSTANT cEditImage = "fa-pencil"
+PUBLIC CONSTANT cDeleteImage = "fa-trash"

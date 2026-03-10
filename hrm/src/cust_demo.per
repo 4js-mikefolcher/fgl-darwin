@@ -1,0 +1,44 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  ITEM list
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Customer Demographics Management")
+  VBOX
+    GROUP (TEXT="Customer Demographic Information", STYLE="box")
+      GRID
+      {
+        Customer Type ID:   [customertypeid                ]
+        Type Description:   [customerdesc                                    ]
+                            [                                                ]
+                            [                                                ]
+                            [                                                ]
+      }
+      END
+    END
+  END
+END
+
+ATTRIBUTES
+  customertypeid = formonly.customertypeid TYPE CHAR;
+  TEXTEDIT customerdesc = formonly.customerdesc TYPE VARCHAR;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD s_cust_demo(formonly.customertypeid, formonly.customerdesc);
+END

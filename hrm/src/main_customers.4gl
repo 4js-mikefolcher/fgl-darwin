@@ -1,3 +1,5 @@
+IMPORT FGL main_lib
+IMPORT FGL ui_customers
 DATABASE northwind
 MAIN
 
