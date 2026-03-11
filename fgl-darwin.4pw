@@ -215,12 +215,6 @@
       <File filePath="hrm/src/rpt_employees_with_totals.4gl"/>
       <File filePath="hrm/src/rpt_employees_with_totals.per"/>
     </Application>
-    <Application binaryName="main_md_orders" dependencies="-1764485507,1342077549" id="1134826721" label="main_md_orders">
-      <Configuration id="1134826722" label="main_md_orders"/>
-      <File filePath="hrm/src/main_md_orders.4gl"/>
-      <File filePath="hrm/src/md_orders.4gl"/>
-      <File filePath="hrm/src/md_orders.per"/>
-    </Application>
     <Application binaryName="main_rpt_org_chart" dependencies="-1764485507,1342077549" id="1134826711" label="main_rpt_org_chart">
       <Configuration id="1134826712" label="main_rpt_org_chart"/>
       <File filePath="hrm/src/main_rpt_org_chart.4gl"/>
@@ -294,6 +288,26 @@
         <File filePath="dbs/northwind_pgs_84x.4gl"/>
       </Application>
       <Library binaryName="populate_db" id="6679258" label="populate_db"/>
+    </Group>
+    <Group id="1851716174" label="Web Services">
+      <Application binaryName="main_rest_server" id="2093191390" label="main_rest_server">
+        <Configuration id="-2100477127" label="main_rest_server"/>
+        <File filePath="hrm/src/main_rest_server.4gl"/>
+        <File filePath="hrm/src/rest_categories.4gl"/>
+        <File filePath="hrm/src/rest_cust_cust_demo.4gl"/>
+        <File filePath="hrm/src/rest_cust_demo.4gl"/>
+        <File filePath="hrm/src/rest_customers.4gl"/>
+        <File filePath="hrm/src/rest_empl_terr.4gl"/>
+        <File filePath="hrm/src/rest_employees.4gl"/>
+        <File filePath="hrm/src/rest_order_details.4gl"/>
+        <File filePath="hrm/src/rest_orders.4gl"/>
+        <File filePath="hrm/src/rest_products.4gl"/>
+        <File filePath="hrm/src/rest_region.4gl"/>
+        <File filePath="hrm/src/rest_shippers.4gl"/>
+        <File filePath="hrm/src/rest_suppliers.4gl"/>
+        <File filePath="hrm/src/rest_territories.4gl"/>
+        <File filePath="hrm/src/rest_usstates.4gl"/>
+      </Application>
     </Group>
   </Group>
 </Project>

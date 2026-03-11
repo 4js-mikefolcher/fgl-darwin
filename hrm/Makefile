@@ -35,5 +35,8 @@ cust_demo:
 cust_cust_demo:
 	$(MAKE) -C $(SRCDIR) cust_cust_demo
 
-.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo
+mstr_dtl_order:
+	$(MAKE) -C $(SRCDIR) mstr_dtl_order
+
+.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo mstr_dtl_order
 

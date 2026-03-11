@@ -21,23 +21,23 @@ MAIN
 
    DEFER INTERRUPT
 
-   CONNECT TO "northwind.db+driver='dbmsqt'"
+   DATABASE northwind
 
    -- Register REST service modules
-   CALL com.WebServiceEngine.RegisterRestService("rest_categories", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_customers", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_employees", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_orders", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_order_details", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_products", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_suppliers", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_shippers", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_region", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_territories", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_usstates", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_empl_terr", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_cust_demo", "api")
-   CALL com.WebServiceEngine.RegisterRestService("rest_cust_cust_demo", "api")
+   CALL com.WebServiceEngine.RegisterRestService("rest_categories", "cat")
+   CALL com.WebServiceEngine.RegisterRestService("rest_customers", "cust")
+   CALL com.WebServiceEngine.RegisterRestService("rest_employees", "emp")
+   CALL com.WebServiceEngine.RegisterRestService("rest_orders", "ord")
+   CALL com.WebServiceEngine.RegisterRestService("rest_order_details", "odtl")
+   CALL com.WebServiceEngine.RegisterRestService("rest_products", "prod")
+   CALL com.WebServiceEngine.RegisterRestService("rest_suppliers", "supp")
+   CALL com.WebServiceEngine.RegisterRestService("rest_shippers", "ship")
+   CALL com.WebServiceEngine.RegisterRestService("rest_region", "regn")
+   CALL com.WebServiceEngine.RegisterRestService("rest_territories", "terr")
+   CALL com.WebServiceEngine.RegisterRestService("rest_usstates", "st")
+   CALL com.WebServiceEngine.RegisterRestService("rest_empl_terr", "empt")
+   CALL com.WebServiceEngine.RegisterRestService("rest_cust_demo", "demo")
+   CALL com.WebServiceEngine.RegisterRestService("rest_cust_cust_demo", "cust_demo")
 
    DISPLAY "Northwind REST Server starting..."
    DISPLAY "Registered 14 REST service modules under /api"
@@ -52,7 +52,9 @@ MAIN
       LET status = com.WebServiceEngine.ProcessServices(-1)
       CASE status
          WHEN 0    -- Request processed successfully
+            DISPLAY "Processed request"
          WHEN -1   -- Timeout, continue waiting
+            DISPLAY "Request Timeout"
          WHEN -2   -- Disconnected from application server
             DISPLAY "Disconnected from application server"
             EXIT WHILE

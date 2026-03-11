@@ -23,6 +23,8 @@ PUBLIC FUNCTION getAll()
    DEFINE rec t_category
    DEFINE i INTEGER
 
+   DISPLAY "Hello World"
+
    LET i = 0
    DECLARE c_rest_categories CURSOR FOR
       SELECT categoryid, categoryname, description FROM categories

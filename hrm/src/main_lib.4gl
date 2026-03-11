@@ -147,6 +147,7 @@ FUNCTION build_program_icons()
     CALL add_program_icon("main_rpt_orders_generic",      "fa-file-code-o")
     CALL add_program_icon("main_rpt_org_chart",            "fa-sitemap")
     CALL add_program_icon("main_rpt_products_by_category","fa-file-text")
+    CALL add_program_icon("mstr_dtl_order","fa-clipboard")
 
 END FUNCTION #build_program_icons
 
