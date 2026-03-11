@@ -131,13 +131,6 @@ FUNCTION build_menu(p_menu)
 
     LET p_menu[p_menu.getLength() + 1].id           = 33
     LET p_menu[p_menu.getLength()].pid              = 3
-    LET p_menu[p_menu.getLength()].menu_name        = "Master-Detail Orders"
-    LET p_menu[p_menu.getLength()].description      = "Manage orders with order detail lines"
-    LET p_menu[p_menu.getLength()].program_name     = "main_md_orders"
-    LET p_menu[p_menu.getLength()].icon_name        = "fa-list-ul"
-
-    LET p_menu[p_menu.getLength() + 1].id           = 34
-    LET p_menu[p_menu.getLength()].pid              = 3
     LET p_menu[p_menu.getLength()].menu_name        = "Order Entry (Master-Detail)"
     LET p_menu[p_menu.getLength()].description      = "Master-detail order entry with line items"
     LET p_menu[p_menu.getLength()].program_name     = "mstr_dtl_order"

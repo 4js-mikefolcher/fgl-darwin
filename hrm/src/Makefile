@@ -18,7 +18,7 @@ FORMS = employees.per employees_list.per empl_terr.per empl_terr_list.per region
         products.per products_list.per shippers.per shippers_list.per \
         suppliers.per suppliers_list.per usstates.per usstates_list.per \
         cust_demo.per cust_demo_list.per cust_cust_demo.per cust_cust_demo_list.per \
-        md_orders.per md_order_details.per mstr_order_list.per advsearch_orders.per \
+        md_order_details.per mstr_order_list.per advsearch_orders.per \
         rpt_orders_by_customer.per rpt_orders_by_employee.per rpt_orders_by_product.per \
         rpt_orders_by_daterange.per rpt_orders_generic.per rpt_org_chart.per \
         rpt_products_by_category.per rpt_employees_with_totals.per report_viewer.per bdl_menu.per
@@ -52,7 +52,6 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/cust_demo_list.42f \
                $(BINDIR)/cust_cust_demo.42f \
                $(BINDIR)/cust_cust_demo_list.42f \
-               $(BINDIR)/md_orders.42f \
                $(BINDIR)/md_order_details.42f \
                $(BINDIR)/mstr_order_list.42f \
                $(BINDIR)/advsearch_orders.42f \
@@ -84,7 +83,6 @@ PROG_TARGETS = $(BINDIR)/bdl_menu.42r \
                $(BINDIR)/main_usstates.42r \
                $(BINDIR)/main_cust_demo.42r \
                $(BINDIR)/main_cust_cust_demo.42r \
-               $(BINDIR)/main_md_orders.42r \
                $(BINDIR)/mstr_dtl_order.42r \
                $(BINDIR)/main_rpt_orders_by_customer.42r \
                $(BINDIR)/main_rpt_orders_by_employee.42r \
@@ -252,10 +250,6 @@ $(BINDIR)/cust_cust_demo_list.42f: cust_cust_demo_list.per
 	$(FORMCOMP) $<
 	mv cust_cust_demo_list.42f $(BINDIR)/
 
-$(BINDIR)/md_orders.42f: md_orders.per
-	$(FORMCOMP) $<
-	mv md_orders.42f $(BINDIR)/
-
 $(BINDIR)/md_order_details.42f: md_order_details.per
 	$(FORMCOMP) $<
 	mv md_order_details.42f $(BINDIR)/
@@ -286,7 +280,7 @@ MODULE_SOURCES = main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
                  ui_products.4gl ui_suppliers.4gl ui_categories.4gl ui_usstates.4gl \
                  model_cust_demo.4gl model_cust_cust_demo.4gl \
                  ui_cust_demo.4gl ui_cust_cust_demo.4gl \
-                 md_orders.4gl md_order_details.4gl md_helper.4gl \
+                 md_order_details.4gl md_helper.4gl \
                  advsearch_orders.4gl dialog_prompt.4gl \
                  report_helper.4gl \
                  rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
@@ -373,10 +367,6 @@ $(BINDIR)/main_cust_cust_demo.42r: main_cust_cust_demo.4gl $(MODULE_TARGETS)
 	$(LDPATH) $(SRCCOMP) -o main_cust_cust_demo.42r main_cust_cust_demo.4gl
 	mv main_cust_cust_demo.42r main_cust_cust_demo.42m $(BINDIR)/
 
-$(BINDIR)/main_md_orders.42r: main_md_orders.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_md_orders.42r main_md_orders.4gl
-	mv main_md_orders.42r main_md_orders.42m $(BINDIR)/
-
 $(BINDIR)/mstr_dtl_order.42r: mstr_dtl_order.4gl $(MODULE_TARGETS)
 	$(LDPATH) $(SRCCOMP) -o mstr_dtl_order.42r mstr_dtl_order.4gl
 	mv mstr_dtl_order.42r mstr_dtl_order.42m $(BINDIR)/
@@ -443,7 +433,6 @@ suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
 usstates: $(BINDIR)/usstates.42f $(BINDIR)/usstates_list.42f $(BINDIR)/main_usstates.42r
 cust_demo: $(BINDIR)/cust_demo.42f $(BINDIR)/cust_demo_list.42f $(BINDIR)/main_cust_demo.42r
 cust_cust_demo: $(BINDIR)/cust_cust_demo.42f $(BINDIR)/cust_cust_demo_list.42f $(BINDIR)/main_cust_cust_demo.42r
-md_orders: $(BINDIR)/md_orders.42f $(BINDIR)/main_md_orders.42r
 mstr_dtl_order: $(BINDIR)/md_order_details.42f $(BINDIR)/mstr_order_list.42f $(BINDIR)/advsearch_orders.42f $(BINDIR)/mstr_dtl_order.42r
 
 ifx_menu: $(BINDIR)/ifx_menu.42r
@@ -461,4 +450,4 @@ rpt_employees_with_totals: $(BINDIR)/rpt_employees_with_totals.42f $(BINDIR)/mai
 
 rest_server: $(BINDIR)/main_rest_server.42r
 
-.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo md_orders mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server
+.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server
