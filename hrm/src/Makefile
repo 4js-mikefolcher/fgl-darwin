@@ -420,6 +420,50 @@ $(BINDIR)/test_rest_suppliers.42r: test_rest_suppliers.4gl $(MODULE_TARGETS)
 	$(LDPATH) $(SRCCOMP) -o test_rest_suppliers.42r test_rest_suppliers.4gl
 	mv test_rest_suppliers.42r test_rest_suppliers.42m $(BINDIR)/
 
+$(BINDIR)/test_rest_region.42r: test_rest_region.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_region.42r test_rest_region.4gl
+	mv test_rest_region.42r test_rest_region.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_usstates.42r: test_rest_usstates.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_usstates.42r test_rest_usstates.4gl
+	mv test_rest_usstates.42r test_rest_usstates.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_products.42r: test_rest_products.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_products.42r test_rest_products.4gl
+	mv test_rest_products.42r test_rest_products.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_customers.42r: test_rest_customers.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_customers.42r test_rest_customers.4gl
+	mv test_rest_customers.42r test_rest_customers.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_territories.42r: test_rest_territories.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_territories.42r test_rest_territories.4gl
+	mv test_rest_territories.42r test_rest_territories.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_employees.42r: test_rest_employees.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_employees.42r test_rest_employees.4gl
+	mv test_rest_employees.42r test_rest_employees.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_orders.42r: test_rest_orders.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_orders.42r test_rest_orders.4gl
+	mv test_rest_orders.42r test_rest_orders.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_order_details.42r: test_rest_order_details.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_order_details.42r test_rest_order_details.4gl
+	mv test_rest_order_details.42r test_rest_order_details.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_cust_demo.42r: test_rest_cust_demo.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_cust_demo.42r test_rest_cust_demo.4gl
+	mv test_rest_cust_demo.42r test_rest_cust_demo.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_empl_terr.42r: test_rest_empl_terr.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_empl_terr.42r test_rest_empl_terr.4gl
+	mv test_rest_empl_terr.42r test_rest_empl_terr.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_cust_cust_demo.42r: test_rest_cust_cust_demo.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_cust_cust_demo.42r test_rest_cust_cust_demo.4gl
+	mv test_rest_cust_cust_demo.42r test_rest_cust_cust_demo.42m $(BINDIR)/
+
 # Clean compiled files
 clean:
 	rm -f *.42f *.42m *.42r
@@ -466,6 +510,21 @@ rest_server: $(BINDIR)/main_rest_server.42r
 test_rest_shippers: $(BINDIR)/test_rest_shippers.42r
 test_rest_categories: $(BINDIR)/test_rest_categories.42r
 test_rest_suppliers: $(BINDIR)/test_rest_suppliers.42r
-test_rest: $(BINDIR)/test_rest_shippers.42r $(BINDIR)/test_rest_categories.42r $(BINDIR)/test_rest_suppliers.42r
+test_rest_region: $(BINDIR)/test_rest_region.42r
+test_rest_usstates: $(BINDIR)/test_rest_usstates.42r
+test_rest_products: $(BINDIR)/test_rest_products.42r
+test_rest_customers: $(BINDIR)/test_rest_customers.42r
+test_rest_territories: $(BINDIR)/test_rest_territories.42r
+test_rest_employees: $(BINDIR)/test_rest_employees.42r
+test_rest_orders: $(BINDIR)/test_rest_orders.42r
+test_rest_order_details: $(BINDIR)/test_rest_order_details.42r
+test_rest_cust_demo: $(BINDIR)/test_rest_cust_demo.42r
+test_rest_empl_terr: $(BINDIR)/test_rest_empl_terr.42r
+test_rest_cust_cust_demo: $(BINDIR)/test_rest_cust_cust_demo.42r
+test_rest: $(BINDIR)/test_rest_shippers.42r $(BINDIR)/test_rest_categories.42r $(BINDIR)/test_rest_suppliers.42r \
+	$(BINDIR)/test_rest_region.42r $(BINDIR)/test_rest_usstates.42r $(BINDIR)/test_rest_products.42r \
+	$(BINDIR)/test_rest_customers.42r $(BINDIR)/test_rest_territories.42r $(BINDIR)/test_rest_employees.42r \
+	$(BINDIR)/test_rest_orders.42r $(BINDIR)/test_rest_order_details.42r $(BINDIR)/test_rest_cust_demo.42r \
+	$(BINDIR)/test_rest_empl_terr.42r $(BINDIR)/test_rest_cust_cust_demo.42r
 
-.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server test_rest_shippers test_rest_categories test_rest_suppliers test_rest
+.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server test_rest_shippers test_rest_categories test_rest_suppliers test_rest_region test_rest_usstates test_rest_products test_rest_customers test_rest_territories test_rest_employees test_rest_orders test_rest_order_details test_rest_cust_demo test_rest_empl_terr test_rest_cust_cust_demo test_rest
