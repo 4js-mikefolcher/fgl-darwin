@@ -19,6 +19,14 @@ The application has been modernized with:
 - PostgreSQL `SERIAL` columns with `INSERT ... VALUES (DEFAULT, ...)` and `sqlca.sqlerrd[2]` for auto-generated IDs
 - Form initializer hook for automatic action defaults loading
 - Module window style — secondary windows open as modal dialogs via `STYLE="modulewindow"`
+- Three-layer architecture: Model (`model_*.4gl`) → UI (`ui_*.4gl`) → Main (`main_*.4gl`)
+- `IMPORT FGL` with individual `fglcomp -M` compilation replacing `fgl2p` multi-module linking
+- Controller/Dispatch pattern centralizing CRUD navigation across all modules
+- Record type methods (`validateRec`, `insertRec`, `updateRec`, `deleteRec`) with `t_valid_rec` result type
+- REST web services for all 14 data modules via `main_rest_server.4gl`
+- Comprehensive REST API test suite — 14 test programs, 141 tests, all passing
+- Master-detail order entry with combined search/results DIALOG
+- Cross-module view commands for context-sensitive navigation
 
 ## Project Structure
 
@@ -43,9 +51,15 @@ fgl-darwin/
 │   │   ├── main_lib.4gl              # Common library (init, utilities)
 │   │   ├── report_helper.4gl         # Report viewer utility
 │   │   ├── report_viewer.per         # Report viewer form (modal dialog)
-│   │   ├── <entity>.4gl              # Business logic per entity
-│   │   ├── <entity>.per              # Form definition per entity
+│   │   ├── model_*.4gl               # Model layer (types, validation, CRUD)
+│   │   ├── ui_*.4gl                  # UI layer (forms, dialogs, dispatch)
 │   │   ├── main_<entity>.4gl         # Entry point per entity
+│   │   ├── controller.4gl            # Generic CRUD navigation controller
+│   │   ├── dispatch.4gl              # Central routing for all modules
+│   │   ├── rest_*.4gl                # REST web service endpoints (14 modules)
+│   │   ├── main_rest_server.4gl      # REST server entry point
+│   │   ├── test_rest_lib.4gl         # Shared REST test library (HTTP helpers)
+│   │   ├── test_rest_*.4gl           # REST API test programs (14 modules)
 │   │   ├── rpt_<report>.4gl          # Report logic
 │   │   ├── rpt_<report>.per          # Report criteria form
 │   │   └── main_rpt_<report>.4gl     # Report entry point
@@ -120,6 +134,65 @@ Each data management module provides:
 - **BUTTONEDIT** — Lookup/zoom buttons for foreign key fields (employee, territory, customer, product, order)
 - **DATEEDIT** — Date picker for date fields (birthdate, hiredate, orderdate, etc.)
 - **TEXTEDIT** — Multi-line scrollable text (notes, description)
+
+### REST Web Services
+
+A complete REST API layer serves all 14 data modules via `main_rest_server.4gl`, which registers each service and runs the event loop on port 8899.
+
+| Module | Path Prefix | Endpoints |
+|--------|-------------|----------|
+| Categories | `/cat/categories` | GET all, GET by ID, POST, PUT, DELETE |
+| Customers | `/cust/customers` | GET all, GET by ID, POST, PUT, DELETE |
+| Employees | `/emp/employees` | GET all, GET by ID, POST, PUT, DELETE |
+| Orders | `/ord/orders` | GET all, GET by ID, POST, PUT, DELETE |
+| Order Details | `/odtl/order-details` | GET all, GET by ID, GET by order, POST, PUT, DELETE |
+| Products | `/prod/products` | GET all, GET by ID, POST, PUT, DELETE |
+| Suppliers | `/sup/suppliers` | GET all, GET by ID, POST, PUT, DELETE |
+| Shippers | `/ship/shippers` | GET all, GET by ID, POST, PUT, DELETE |
+| Region | `/regn/regions` | GET all, GET by ID, POST, PUT, DELETE |
+| Territories | `/terr/territories` | GET all, GET by ID, POST, PUT, DELETE |
+| US States | `/st/usstates` | GET all, GET by ID, POST, PUT, DELETE |
+| Employee Territories | `/empt/employee-territories` | GET all, GET by ID, GET by employee, POST, DELETE |
+| Customer Demographics | `/demo/customer-demographics` | GET all, GET by ID, POST, PUT, DELETE |
+| Customer-Customer Demo | `/cust_demo/customer-customer-demo` | GET all, GET by ID, GET by customer, POST, DELETE |
+
+### REST API Test Suite
+
+14 independent test programs validate every REST endpoint with database cross-checks. Each test program creates, verifies, and cleans up test data.
+
+| Test Program | Tests | Status |
+|-------------|-------|---------|
+| `test_rest_shippers` | 11 | PASS |
+| `test_rest_categories` | 10 | PASS |
+| `test_rest_suppliers` | 10 | PASS |
+| `test_rest_region` | 10 | PASS |
+| `test_rest_usstates` | 10 | PASS |
+| `test_rest_products` | 10 | PASS |
+| `test_rest_customers` | 10 | PASS |
+| `test_rest_territories` | 10 | PASS |
+| `test_rest_employees` | 10 | PASS |
+| `test_rest_orders` | 10 | PASS |
+| `test_rest_order_details` | 10 | PASS |
+| `test_rest_cust_demo` | 10 | PASS |
+| `test_rest_empl_terr` | 10 | PASS |
+| `test_rest_cust_cust_demo` | 10 | PASS |
+| **Total** | **141** | **ALL PASS** |
+
+Each test covers: GET all (with DB count validation), GET by ID (with DB cross-check), GET not found (404), POST create (with DB verification and cleanup), PUT update (with DB verification and cleanup), DELETE (with DB verification), full CRUD lifecycle, error cases (duplicate, missing required fields, not-found update/delete).
+
+```bash
+# Run the REST server
+cd bin
+FGL_LENGTH_SEMANTICS=CHAR FGLPROFILE=<path>/fglprofile.pgs fglrun main_rest_server.42m &
+
+# Run all REST tests
+cd hrm/src
+make test_rest
+
+# Run individual test
+cd bin
+FGL_LENGTH_SEMANTICS=CHAR FGLPROFILE=<path>/fglprofile.pgs FGLGUI=0 fglrun test_rest_suppliers.42m
+```
 
 ### Reports
 - **Flexible criteria** — CONSTRUCT BY NAME generates WHERE clauses from user input
@@ -266,7 +339,9 @@ Each report has three files:
 
 ## Documentation
 
-See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for detailed documentation of the modernization process, code patterns, technical decisions, and lessons learned.
+See [GENERO_MODERNIZATION_GUIDE.md](GENERO_MODERNIZATION_GUIDE.md) for detailed documentation of the modernization process (Phases 1-35).
+
+See [REFACTORING_CHANGELOG.md](REFACTORING_CHANGELOG.md) for post-guide changes (Phases 36-54) including list views, controller/dispatch, model/UI split, REST services, test suite, and master-detail order entry.
 
 ### Window Styles
 - **Main windows** — Use the base `Window` style (no action panels or ring menus)

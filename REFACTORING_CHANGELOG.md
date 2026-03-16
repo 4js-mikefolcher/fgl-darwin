@@ -2,7 +2,7 @@
 ## Changes Since GENERO_MODERNIZATION_GUIDE.md (Post Phase 35)
 
 **Baseline:** GENERO_MODERNIZATION_GUIDE.md — Phases 1-35, dated February 9-16, 2026  
-**This Document Covers:** February 17, 2026 — March 11, 2026  
+**This Document Covers:** February 17, 2026 — March 16, 2026  
 **Branch:** step2-refactor
 
 ---
@@ -28,8 +28,9 @@
 17. [Phase 51: New Action Defaults and Styles](#phase-51-new-action-defaults-and-styles)
 18. [Phase 52: Menu Expansion](#phase-52-menu-expansion)
 19. [Phase 53: Makefile Cleanup](#phase-53-makefile-cleanup)
-20. [New File Inventory](#new-file-inventory)
-21. [Architecture Summary](#architecture-summary)
+20. [Phase 54: REST API Test Suite](#phase-54-rest-api-test-suite)
+21. [New File Inventory](#new-file-inventory)
+22. [Architecture Summary](#architecture-summary)
 
 ---
 
@@ -46,6 +47,7 @@
 | Feb 19 | `81f2088` | Add org chart report to the project |
 | Mar 10 | `276eca5` | Major refactoring (IMPORT FGL, model/UI split, REST services, cust_demo, advanced search) |
 | Mar 11 | `1c3cfa2` | Add master/detail order entry to main structure |
+| Mar 16 | — | REST API test suite: 14 test programs, 141 tests, all passing |
 
 ---
 
@@ -988,6 +990,151 @@ These were leftover references from an earlier design that was replaced by the `
 
 ---
 
+## Phase 54: REST API Test Suite
+
+**Date:** March 16, 2026  
+**Objective:** Create a comprehensive REST API test suite covering all 14 REST service modules with database cross-validation.
+
+### Files Created
+
+**1 shared test library:**
+- `test_rest_lib.4gl` — HTTP helper functions (`http_get`, `http_post`, `http_put`, `http_delete`), test result tracking (`test_pass`, `test_fail`), and summary reporting (`test_summary`)
+
+**14 test programs:**
+- `test_rest_shippers.4gl` — 11 tests (full CRUD + validation + duplicates)
+- `test_rest_categories.4gl` — 10 tests
+- `test_rest_suppliers.4gl` — 10 tests
+- `test_rest_region.4gl` — 10 tests
+- `test_rest_usstates.4gl` — 10 tests
+- `test_rest_products.4gl` — 10 tests
+- `test_rest_customers.4gl` — 10 tests
+- `test_rest_territories.4gl` — 10 tests
+- `test_rest_employees.4gl` — 10 tests
+- `test_rest_orders.4gl` — 10 tests
+- `test_rest_order_details.4gl` — 10 tests (creates temp orders for FK references)
+- `test_rest_cust_demo.4gl` — 10 tests
+- `test_rest_empl_terr.4gl` — 10 tests (creates temp territories for FK references)
+- `test_rest_cust_cust_demo.4gl` — 10 tests (creates temp customer demographics for FK references)
+
+### Test Pattern
+
+Each test program follows a consistent pattern:
+
+```4gl
+-- test_rest_suppliers.4gl
+IMPORT FGL test_rest_lib
+
+SCHEMA northwind
+
+DEFINE m_base_url STRING
+
+TYPE t_supplier RECORD
+    supplierid   STRING,
+    companyname  STRING,
+    contactname  STRING,
+    -- ... all fields as STRING
+END RECORD
+
+MAIN
+    DATABASE northwind
+    LET m_base_url = "http://localhost:8899/sup/suppliers"
+
+    CALL test_rest_lib.test_init("REST Suppliers Service Test Suite", m_base_url)
+
+    CALL test_get_all()
+    CALL test_get_by_id()
+    CALL test_get_not_found()
+    CALL test_create()
+    CALL test_update()
+    CALL test_delete()
+    CALL test_lifecycle()
+    CALL test_update_not_found()
+    CALL test_delete_not_found()
+    CALL test_create_invalid()
+
+    CALL test_rest_lib.test_summary()
+END MAIN
+```
+
+### Test Coverage Per Module
+
+Each test program validates:
+1. **GET all** — Returns records, count matches database `SELECT COUNT(*)`
+2. **GET by ID** — Returns correct record, fields match direct SQL query
+3. **GET not found** — Returns 404 for non-existent ID
+4. **POST create** — Creates record, verifies via GET and database SELECT, cleans up
+5. **PUT update** — Creates record, updates it, verifies changes in database, cleans up
+6. **DELETE** — Creates record, deletes it, verifies 404 and database absence
+7. **Full CRUD lifecycle** — Create → Read → Update → Read → Delete → Verify gone, with database checks at each step
+8. **Update not found** — PUT to non-existent ID returns 400/404
+9. **Delete not found** — DELETE of non-existent ID returns 404
+10. **Create invalid** — POST with missing required fields returns 400
+
+Junction tables (empl_terr, cust_cust_demo) test create/delete only (no update endpoint) plus duplicate detection.
+
+### Shared Test Library
+
+```4gl
+-- test_rest_lib.4gl
+PUBLIC FUNCTION test_init(suite_name STRING, base_url STRING)
+PUBLIC FUNCTION test_pass(msg STRING)
+PUBLIC FUNCTION test_fail(msg STRING)
+PUBLIC FUNCTION test_summary()
+PUBLIC FUNCTION http_get(url STRING) RETURNS (INTEGER, STRING)
+PUBLIC FUNCTION http_post(url STRING, body STRING) RETURNS (INTEGER, STRING)
+PUBLIC FUNCTION http_put(url STRING, body STRING) RETURNS (INTEGER, STRING)
+PUBLIC FUNCTION http_delete(url STRING) RETURNS (INTEGER, STRING)
+```
+
+HTTP functions use `com.HttpRequest` / `com.HttpResponse` with JSON content type. Each returns the HTTP status code and response body.
+
+### Build and Run
+
+```bash
+# Build all test programs
+cd hrm/src
+make test_rest
+
+# Build individual test
+make test_rest_suppliers
+
+# Run (requires REST server running on port 8899)
+cd ../../bin
+FGL_LENGTH_SEMANTICS=CHAR FGLPROFILE=<path>/fglprofile.pgs FGLGUI=0 fglrun test_rest_suppliers.42m
+```
+
+Makefile targets: `test_rest` (builds all 14), plus individual targets (`test_rest_shippers`, `test_rest_categories`, etc.).
+
+### Key Technical Discoveries
+
+1. **`util.JSON.stringify()` bug with STRING records** — When all record fields are declared as `STRING`, `util.JSON.stringify()` sends `""` (empty string) for unset fields. The REST server cannot deserialize `""` into `DATE`, `INTEGER`, or `DECIMAL` model types, returning 400 errors. **Solution:** Use hand-crafted JSON string literals with proper types (unquoted numbers, only populated fields) for create and update operations.
+
+2. **`ord` is a reserved word** — Genero BDL has a built-in `ORD()` function. Using `ord` as a variable name causes compilation errors. Renamed to `l_order`.
+
+3. **Test isolation** — Each test creates its own data, verifies it against both REST responses and direct database queries, and cleans up afterwards. Junction table tests (order_details, empl_terr, cust_cust_demo) create temporary parent records via the REST API before testing.
+
+### Final Results
+
+| Test Program | Tests | Status |
+|-------------|-------|---------|
+| test_rest_shippers | 11 | PASS |
+| test_rest_categories | 10 | PASS |
+| test_rest_suppliers | 10 | PASS |
+| test_rest_region | 10 | PASS |
+| test_rest_usstates | 10 | PASS |
+| test_rest_products | 10 | PASS |
+| test_rest_customers | 10 | PASS |
+| test_rest_territories | 10 | PASS |
+| test_rest_employees | 10 | PASS |
+| test_rest_orders | 10 | PASS |
+| test_rest_order_details | 10 | PASS |
+| test_rest_cust_demo | 10 | PASS |
+| test_rest_empl_terr | 10 | PASS |
+| test_rest_cust_cust_demo | 10 | PASS |
+| **Total** | **141** | **ALL PASS** |
+
+---
+
 ## New File Inventory
 
 ### Summary by Category
@@ -1002,13 +1149,15 @@ These were leftover references from an earlier design that was replaced by the `
 | List forms (`*_list.per`) | 13 | All modules |
 | REST services | 14 | rest_*.4gl for all modules |
 | REST server | 1 | main_rest_server.4gl |
+| REST test library | 1 | test_rest_lib.4gl |
+| REST test programs | 14 | test_rest_*.4gl for all modules |
 | Advanced search | 2 | advsearch_orders.4gl, advsearch_orders.per |
 | Master-detail | 2 | mstr_dtl_order.4gl, mstr_order_list.per |
 | MD helper | 1 | md_helper.4gl |
 | New main programs | 2 | main_cust_demo.4gl, main_cust_cust_demo.4gl |
 | New detail forms | 2 | cust_demo.per, cust_cust_demo.per |
 | Documentation | 1 | LIST_VIEW_FEATURE.md |
-| **Total new files** | **~71** | |
+| **Total new files** | **~86** | |
 
 ---
 
@@ -1058,6 +1207,7 @@ rest_*.4gl ──► IMPORT FGL model_*  ◄── Reuses same model types/valid
 - **Record type methods** (`validateRec`, `insertRec`, `updateRec`, `deleteRec`)
 - **Validation result type** (`t_valid_rec`) for consistent error handling
 - **REST API layer** reusing model types and validation
+- **REST API test suite** — 14 test programs, 141 tests, all passing
 - **List views** for all 14 modules
 - **Cross-module view commands** for context-sensitive navigation
 - **Master-detail order entry** with combined search/results DIALOG
