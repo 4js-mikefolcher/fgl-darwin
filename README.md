@@ -88,6 +88,14 @@ fgl-darwin/
 | `empl_terr` | Employee-Territory relationships | TABLE container, BUTTONEDIT lookups |
 | `orders` | Order management | BUTTONEDIT (customer/employee), COMBOBOX (shipvia), DATEEDIT (dates) |
 | `order_details` | Order line items | BUTTONEDIT (order/product) |
+| `cust_demo` | Customer demographics | Customer type management |
+| `cust_cust_demo` | Customer-CustomerDemo links | Link table, BUTTONEDIT lookups |
+
+### Master-Detail Module
+
+| Module | Description | Key Controls |
+|--------|-------------|--------------|
+| `mstr_dtl_order` | Master-detail order entry | Combined search/results DIALOG, order header + line items |
 
 ### Report Modules
 
@@ -97,16 +105,10 @@ fgl-darwin/
 | `rpt_orders_by_employee` | Orders grouped by employee | Employee ID, last name, first name |
 | `rpt_orders_by_product` | Orders grouped by product/category | Category name, product name |
 | `rpt_orders_by_daterange` | Orders within a date range | Order date (DATEEDIT) |
-
-### Reports
-
-| Module | Description |
-|--------|-------------|
-| `rpt_orders_generic` | Generic order report |
-| `rpt_orders_by_customer` | Orders grouped by customer |
-| `rpt_orders_by_employee` | Orders grouped by employee |
-| `rpt_orders_by_product` | Orders grouped by product |
-| `rpt_orders_by_daterange` | Orders filtered by date range |
+| `rpt_orders_generic` | Generic order report | Flexible order criteria |
+| `rpt_org_chart` | Organization chart | Employee hierarchy |
+| `rpt_products_by_category` | Products grouped by category | Category name, product name |
+| `rpt_employees_with_totals` | Employee report with totals | Employee details with aggregates |
 
 ### GUI Menu
 
@@ -235,6 +237,8 @@ The application uses the Northwind database with the following tables:
 | `orders` | Customer orders with shipping details |
 | `order_details` | Order line items (product, quantity, price) |
 | `customers` | Customer information (CHAR-based ID) |
+| `customerdemographics` | Customer demographic types |
+| `customercustomerdemo` | Customer-demographic link table |
 | `products` | Product catalog with supplier/category references |
 | `suppliers` | Product suppliers |
 | `categories` | Product categories |
@@ -244,14 +248,13 @@ The application uses the Northwind database with the following tables:
 ## Building
 
 ### Prerequisites
-- Genero BDL 6.00.02+ (`fgl2p` compiler, `fglform` form compiler)
-- Genero Form Compiler (`fglform`)
+- Genero BDL 6.00.02+ (`fglcomp` module compiler, `fgl2p` linker, `fglform` form compiler)
 - PostgreSQL or Informix database with Northwind schema
 
 ### Create the Database
 ```bash
-cd dbs
-fglrun northwind_pgs_84x.42r
+cd bin
+fglrun create_pgs_db.42r
 ```
 
 ### Compile All Modules
@@ -271,10 +274,10 @@ make rebuild
 
 ## Running
 
-After compilation, executables are located in `hrm/bin/`. Run the GUI menu or individual modules:
+After compilation, executables are located in `bin/`. Run the GUI menu or individual modules:
 
 ```bash
-cd hrm/bin
+cd bin
 # Ensure FGLPROFILE and database are configured
 
 # GUI tree menu (recommended entry point)
@@ -284,15 +287,22 @@ fglrun bdl_menu.42r
 fglrun main_employees.42r
 fglrun main_customers.42r
 fglrun main_products.42r
-fglrun main_rpt_orders_by_customer.42r
-fglrun main_rpt_orders_by_employee.42r
-fglrun main_rpt_orders_by_product.42r
-fglrun main_rpt_orders_by_daterange.42r
+fglrun main_orders.42r
+fglrun main_order_details.42r
 # etc.
+
+# Master-detail order entry
+fglrun mstr_dtl_order.42r
 
 # Reports
 fglrun main_rpt_orders_by_customer.42r
 fglrun main_rpt_orders_by_employee.42r
+fglrun main_rpt_orders_by_product.42r
+fglrun main_rpt_orders_by_daterange.42r
+fglrun main_rpt_orders_generic.42r
+fglrun main_rpt_org_chart.42r
+fglrun main_rpt_products_by_category.42r
+fglrun main_rpt_employees_with_totals.42r
 ```
 
 ## File Types
@@ -306,16 +316,19 @@ fglrun main_rpt_orders_by_employee.42r
 | `.4pw` | Genero Studio project file |
 | `.42f` | Compiled form file |
 | `.42m` | Compiled module file |
-| `.42r` | Compiled runnable program |
+| `.42r` | Compiled runnable program (linked) |
 | `.sch` | Database schema definition |
+| `.4db` | Database entity-relationship diagram (XML) |
 
 ## Architecture
 
 ### Data Module Structure
-Each entity typically has three files:
-- `<entity>.4gl` — Business logic (CRUD operations, validation, combo population)
-- `<entity>.per` — Form layout with TOOLBAR, VBOX/GROUP/GRID containers, and modern controls
-- `main_<entity>.4gl` — Entry point that calls `init_pgm()`, opens the form, populates combos, and starts the menu
+Each entity has a three-layer architecture with separate model, UI, and entry point files, plus form definitions:
+- `model_<entity>.4gl` — Model layer: record types (`PUBLIC TYPE`), validation (`validateRec`), CRUD methods (`insertRec`, `updateRec`, `deleteRec`), query functions
+- `ui_<entity>.4gl` — UI layer: dispatch interface (`get_config`, `do_query`, `do_add`, `do_edit`, `do_delete`, `do_refresh`), dialog management, combo population
+- `main_<entity>.4gl` — Entry point: calls `init_pgm()`, opens the form, and starts the controller navigation menu
+- `<entity>.per` — Detail form layout with TOOLBAR, VBOX/GROUP/GRID containers, and modern controls
+- `<entity>_list.per` — List form layout with TABLE container for DISPLAY ARRAY
 
 ### Report Module Structure
 Each report has three files:
@@ -323,8 +336,22 @@ Each report has three files:
 - `rpt_<report>.per` — Criteria form with database column fields for CONSTRUCT
 - `main_rpt_<report>.4gl` — Entry point that calls `init_pgm()` and opens the criteria form
 
+### Master-Detail Module Structure
+The master-detail order entry has:
+- `mstr_dtl_order.4gl` — Entry point with combined search/results DIALOG
+- `md_order_details.4gl` — Order line item detail logic
+- `md_helper.4gl` — Master-detail helper functions
+- `mstr_order_list.per` — Order list form
+- `md_order_details.per` — Order detail with line items form
+- `advsearch_orders.4gl` / `advsearch_orders.per` — Advanced order search
+
 ### Shared Modules
 - `main_lib.4gl` — Common library: `init_pgm()` (styles + form initializer), `confirm_delete()`, `generate_temp_filename()`, `form_initializer()`
+- `controller.4gl` — Generic CRUD navigation controller (`controller_navigate`)
+- `dispatch.4gl` — Central routing for all modules
+- `model_helper.4gl` — Shared model utilities (`t_valid_rec` type, validation helpers)
+- `list_view_helper.4gl` — List view display helper
+- `dialog_prompt.4gl` — Dialog prompt utility
 - `report_helper.4gl` — Report viewer: `display_report_file()` reads text files and displays in modal dialog
 - `generic.4ad` — 36 action defaults with Font Awesome icons
 - `generic.4st` — Stylesheet with `Window.modulewindow`, `Window.reportviewer`, `Table.reportviewer`, `Table.MenuTree`, and base element styles
