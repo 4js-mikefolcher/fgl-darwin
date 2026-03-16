@@ -1,0 +1,45 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Customer Type Assignments List")
+  VBOX
+    TABLE
+    {
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+      [custid     |companyname                |typeid      |customerdesc                                ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  custid = formonly.customerid TYPE CHAR, TITLE="Customer ID";
+  companyname = formonly.companyname TYPE VARCHAR, SCROLL, TITLE="Company Name";
+  typeid = formonly.customertypeid TYPE CHAR, TITLE="Customer Type ID";
+  customerdesc = formonly.customerdesc TYPE VARCHAR, SCROLL, TITLE="Type Description";
+END
+
+INSTRUCTIONS
+  SCREEN RECORD cust_cust_demo_list[10](
+    formonly.customerid,
+    formonly.companyname,
+    formonly.customertypeid,
+    formonly.customerdesc);
+END

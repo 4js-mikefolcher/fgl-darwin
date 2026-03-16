@@ -1,0 +1,42 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Order Details List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     Order ID  Product                                   Unit Price Qty  Discount
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    [c1       |c2                                       |c3        |c4  |c5       ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.orderid TYPE SMALLINT, NOENTRY;
+  c2 = formonly.productname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.unitprice TYPE FLOAT, NOENTRY;
+  c4 = formonly.quantity TYPE SMALLINT, NOENTRY;
+  c5 = formonly.discount TYPE FLOAT, NOENTRY;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD order_details_list[10](orderid, productname, unitprice, quantity, discount);
+END

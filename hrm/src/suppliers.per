@@ -1,53 +1,64 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌────────────────────────────── Suppliers ──────────────────────────────┐
-  Supplier ID   : [supplierid]
-  Company Name  : [companyname                               ]
-  Contact Name  : [contactname                    ]
-  Contact Title : [contacttitle                   ]
-  Address       : [address                                              ]
-  City          : [city           ]  Region : [region         ]
-  Postal Code   : [postalcode]       Country: [country        ]
-  Phone         : [phone                  ]
-  Fax           : [fax                    ]
-  Homepage      :
-  [homepage                                                              ]
-  [                                                                      ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  ITEM products
+  ITEM list
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-└────────────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Suppliers Management")
+  VBOX
+    GROUP (TEXT="Supplier Information", STYLE="box")
+      GRID
+      {
+        Supplier ID:   [supplierid      ]
+        Company Name:  [companyname                  ]
+        Contact Name:  [contactname                 ]
+        Contact Title: [contacttitle                ]
+        Address:       [address                           ]
+        City:          [city           ]  Region: [region         ]
+        Postal Code:   [postalcode]        Country: [country        ]
+        Phone:         [phone                  ]
+        Fax:           [fax                    ]
+        Homepage:      [homepage                        ]
+                       [                                ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-supplierid = formonly.supplierid TYPE INTEGER, DEFAULT=0, NOENTRY;
-companyname = formonly.companyname TYPE VARCHAR;
-contactname = formonly.contactname TYPE VARCHAR;
-contacttitle = formonly.contacttitle TYPE VARCHAR;
-address = formonly.address TYPE VARCHAR;
-city = formonly.city TYPE VARCHAR;
-region = formonly.region TYPE VARCHAR;
-postalcode = formonly.postalcode TYPE VARCHAR;
-country = formonly.country TYPE VARCHAR;
-phone = formonly.phone TYPE VARCHAR;
-fax = formonly.fax TYPE VARCHAR;
-homepage = formonly.homepage TYPE VARCHAR;
-
+  supplierid = formonly.supplierid TYPE INTEGER, DEFAULT=0, NOENTRY;
+  companyname = formonly.companyname TYPE VARCHAR;
+  contactname = formonly.contactname TYPE VARCHAR;
+  contacttitle = formonly.contacttitle TYPE VARCHAR;
+  address = formonly.address TYPE VARCHAR;
+  city = formonly.city TYPE VARCHAR;
+  region = formonly.region TYPE VARCHAR;
+  postalcode = formonly.postalcode TYPE VARCHAR;
+  country = formonly.country TYPE VARCHAR;
+  phone = formonly.phone TYPE VARCHAR;
+  fax = formonly.fax TYPE VARCHAR;
+  TEXTEDIT homepage = formonly.homepage TYPE VARCHAR;
 END --ATTRIBUTES
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_suppliers(formonly.supplierid, formonly.companyname, formonly.contactname,
-                             formonly.contacttitle, formonly.address, formonly.city,
-                             formonly.region, formonly.postalcode, formonly.country,
-                             formonly.phone, formonly.fax, formonly.homepage);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_suppliers(formonly.supplierid, formonly.companyname, formonly.contactname,
+                            formonly.contacttitle, formonly.address, formonly.city,
+                            formonly.region, formonly.postalcode, formonly.country,
+                            formonly.phone, formonly.fax, formonly.homepage);
+END

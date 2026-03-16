@@ -53,8 +53,8 @@ suppliers:
 usstates:
 	$(MAKE) -C $(HRMDIR) usstates
 
-ifx_menu:
-	$(MAKE) -C $(HRMDIR) ifx_menu
+mstr_dtl_order:
+	$(MAKE) -C $(HRMDIR) mstr_dtl_order
 
-.PHONY: all clean rebuild ifx_menu employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates mstr_dtl_order
 

@@ -1,0 +1,136 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  ITEM modify
+  ITEM delete
+  ITEM append
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  ITEM accept
+  ITEM cancel
+  SEPARATOR
+  ITEM exit
+END --TOOLBAR
+
+LAYOUT (TEXT="Order Detail", STYLE="noaction")
+   VBOX
+      GRID
+{
+[status_label                                                                                   ]
+}
+      END --GRID
+      HBOX
+         GROUP (TEXT="Order Information", STYLE="box")
+            GRID
+{
+Order ID:       [orderid   ]
+Customer ID:    [customerid          ][customername          ]
+Employee ID:    [employeeid][employeename                    ]
+Order Date:     [orderdt   ]
+Required Date:  [reqireddt ]
+Shipped Date:   [shippeddt ]
+Ship Via:       [shipvia                                     ]
+Freight:        [freight         ]
+}
+            END --GRID
+         END --GROUP
+         GROUP (TEXT="Ship To Information", STYLE="box")
+            GRID
+{
+Ship To:        [shipname                              ]
+Address:        [shipaddress                                  ]
+City:           [shipcity        ]
+Region:         [shipregion      ]
+Postal Code:    [shippostal]
+Country:        [shipcountry     ]
+}
+            END --GRID
+         END --GROUP
+      END --HBOX
+      GROUP (TEXT="Order Items")
+         VBOX
+            TABLE
+{
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[orderid2  ][productid][productname        ][unitprice         ][quantity  ][discount       ][totalprice            ][img01][img02]
+[tot001    ]                                                                                 [tot002                ]
+}
+            END --TABLE
+         END --VBOX
+      END --GROUP
+   END --VBOX
+END --LAYOUT
+
+TABLES
+   orders
+   customers
+   employees
+   products
+   order_details
+END --TABLES
+
+ATTRIBUTES
+
+   LABEL status_label = formonly.status_label, SIZEPOLICY=DYNAMIC, STYLE="info";
+
+  -- Order Information --
+  EDIT orderid = orders.orderid, DEFAULT=0, NOENTRY;
+  BUTTONEDIT customerid = orders.customerid, ACTION=zoom_customer;
+  EDIT customername = customers.companyname, NOENTRY;
+  BUTTONEDIT employeeid = orders.employeeid, ACTION=zoom_employee;
+  EDIT employeename = formonly.employeename TYPE VARCHAR, NOENTRY;
+  DATEEDIT orderdt = orders.orderdate;
+  DATEEDIT reqireddt = orders.requireddate;
+  DATEEDIT shippeddt = orders.shippeddate;
+  COMBOBOX shipvia = orders.shipvia, INITIALIZER=load_shipvia_combo;
+  EDIT freight = orders.freight,FORMAT="$ <<<,<<<,<<&.&&";
+
+  -- Shipping Information --
+  EDIT shipname = orders.shipname;
+  EDIT shipaddress = orders.shipaddress;
+  EDIT shipcity = orders.shipcity;
+  EDIT shipregion = orders.shipregion;
+  EDIT shippostal = orders.shippostalcode;
+  EDIT shipcountry = orders.shipcountry;
+
+  -- Order Details --
+  EDIT orderid2 = order_details.orderid, NOENTRY, TITLE="Order ID";
+  BUTTONEDIT productid = order_details.productid, ACTION=zoom_product, TITLE="Product ID";
+  EDIT productname = products.productname, NOENTRY, TITLE="Product Name";
+  unitprice = order_details.unitprice, FORMAT="$ <<<,<<<,<<&.&&", TITLE="Unit Price";
+  quantity = order_details.quantity, TITLE="Quanity";
+  discount = order_details.discount, TITLE="Discount Factor";
+  totalprice = formonly.totalprice TYPE DECIMAL(10,2), FORMAT="$ <<<,<<<,<<&.&&", NOENTRY, TITLE="Total Price";
+  IMAGE img01 = formonly.rowedit, TITLE="Modify",ACTION = update;
+  IMAGE img02 = formonly.rowdelete, TITLE="Delete",ACTION = delete;
+
+  AGGREGATE tot001 = FORMONLY.rec_count, AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
+  AGGREGATE tot002 = FORMONLY.order_total, AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
+
+END --ATTRIBUTES
+
+INSTRUCTIONS
+
+  SCREEN RECORD s_orders(orders.orderid, orders.customerid,
+    customers.companyname, orders.employeeid, formonly.employeename,
+    orders.orderdate, orders.requireddate, orders.shippeddate,
+    orders.shipvia, orders.freight,
+    orders.shipname, orders.shipaddress, orders.shipcity,
+    orders.shipregion, orders.shippostalcode, orders.shipcountry);
+
+  SCREEN RECORD s_details(order_details.orderid, order_details.productid, products.productname,
+      order_details.unitprice, order_details.quantity, order_details.discount, formonly.totalprice,
+      formonly.rowedit, formonly.rowdelete);
+
+END --INSTRUCTIONS

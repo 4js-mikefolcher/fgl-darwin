@@ -1,0 +1,56 @@
+###############################################################################
+# Form:    bdl_menu.per
+# Purpose: Tree-based menu form for Northwind application launcher
+###############################################################################
+
+TOOLBAR
+  ITEM launch
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Northwind Application Menu")
+VBOX
+  GRID
+  {
+    <Tree t1                                                                                                >
+     Menu Item                                         Description                           Program
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+    [c_name                                          |c_desc                                |c_program      ]
+  }
+  END
+END
+END
+
+ATTRIBUTES
+EDIT c_name    = FORMONLY.menu_name, NOENTRY, IMAGECOLUMN = icon_name;
+EDIT c_desc    = FORMONLY.description, NOENTRY;
+EDIT c_program = FORMONLY.program_name, NOENTRY;
+PHANTOM FORMONLY.id;
+PHANTOM FORMONLY.pid;
+PHANTOM FORMONLY.icon_name;
+TREE t1: tree1, STYLE="MenuTree",
+  PARENTIDCOLUMN = pid,
+  IDCOLUMN = id,
+  DOUBLECLICK = launch;
+END
+
+INSTRUCTIONS
+SCREEN RECORD sr_menu[18](menu_name, description, program_name, id, pid, icon_name);
+END

@@ -1,0 +1,40 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Categories List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  Category Name        Description
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    [c1 |c2                  |c3                                            ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.categoryid TYPE INTEGER, NOENTRY;
+  c2 = formonly.categoryname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.description TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD categories_list[10](categoryid, categoryname, description);
+END

@@ -1,0 +1,34 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM run
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Products by Category Report")
+  VBOX
+    GROUP (TEXT="Selection Criteria", STYLE="box")
+      GRID
+      {
+        Category:     [categoryname                           ]
+        Product:      [productname                            ]
+      }
+      END
+    END
+  END
+END
+
+TABLES
+  categories,
+  products
+END
+
+ATTRIBUTES
+  EDIT categoryname = categories.categoryname;
+  EDIT productname = products.productname;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_criteria(categories.categoryname, products.productname);
+END

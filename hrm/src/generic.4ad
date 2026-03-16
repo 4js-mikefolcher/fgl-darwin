@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ActionDefaultList>
+  <!-- Navigation Actions -->
+  <ActionDefault name="first"
+    text="First"
+    image="fa-step-backward"
+    comment="View first record in result set" />
+  
+  <ActionDefault name="previous"
+    text="Previous"
+    image="fa-arrow-left"
+    comment="View previous record in result set" />
+  
+  <ActionDefault name="next"
+    text="Next"
+    image="fa-arrow-right"
+    comment="View next record in result set" />
+  
+  <ActionDefault name="last"
+    text="Last"
+    image="fa-step-forward"
+    comment="View last record in result set" />
+  
+  <!-- Data Manipulation Actions -->
+  <ActionDefault name="query"
+    text="Query"
+    image="find"
+    comment="Search for records"
+    acceleratorName="Control-f" />
+
+  <ActionDefault name="search"
+    text="Search"
+    image="find"
+    comment="Search for records"
+    acceleratorName="Control-f" />
+
+  <ActionDefault name="adv_search"
+    text="Advanced"
+    image="fa-search-plus"
+    comment="Advanced Search for records"
+    acceleratorName="Shift+Control-f" />
+
+  <ActionDefault name="excel_export"
+    text="Export to Excel"
+    image="fa-file-excel-o"
+    comment="Export result list to Excel" />
+  
+  <ActionDefault name="add"
+    text="Add"
+    image="fa-plus"
+    comment="Add a new record"
+    acceleratorName="Control-n" />
+
+  <ActionDefault name="append"
+    text="Add Item"
+    image="fa-plus-square"
+    comment="Add a new item"
+    acceleratorName="Shift-Control-n" />
+  
+  <ActionDefault name="modify"
+    text="Modify"
+    image="fa-pencil"
+    comment="Edit the current record"
+    acceleratorName="Control-e" />
+  
+  <ActionDefault name="delete"
+    text="Delete"
+    image="fa-trash"
+    comment="Delete the current record"
+    acceleratorName="Delete" />
+
+  <ActionDefault name="view"
+    text="View"
+    image="fa-eye"
+    comment="View the current record" />
+
+  <ActionDefault name="close"
+    text="Close"
+    image="fa-window-close"
+    comment="Close screen"
+    defaultView="no" />
+  
+  <!-- Related Data Actions -->
+  <ActionDefault name="products"
+    text="Products"
+    image="fa-list"
+    comment="View related products" />
+  
+  <ActionDefault name="orders"
+    text="Orders"
+    image="fa-shopping-cart"
+    comment="View related orders" />
+  
+  <ActionDefault name="supplier"
+    text="Supplier"
+    image="fa-truck"
+    comment="View related supplier" />
+  
+  <ActionDefault name="category"
+    text="Category"
+    image="fa-tag"
+    comment="View related category" />
+  
+  <ActionDefault name="region"
+    text="Region"
+    image="fa-globe"
+    comment="View related region" />
+  
+  <ActionDefault name="employees"
+    text="Employees"
+    image="fa-users"
+    comment="View related employees" />
+  
+  <ActionDefault name="territories"
+    text="Territories"
+    image="fa-map-marker"
+    comment="View related territories" />
+  
+  <ActionDefault name="customer"
+    text="Customer"
+    image="fa-user"
+    comment="View related customer" />
+  
+  <ActionDefault name="employee"
+    text="Employee"
+    image="fa-id-card"
+    comment="View related employee" />
+  
+  <ActionDefault name="shipper"
+    text="Shipper"
+    image="fa-ship"
+    comment="View related shipper" />
+  
+  <ActionDefault name="details"
+    text="Details"
+    image="fa-list-alt"
+    comment="View order details" />
+  
+  <ActionDefault name="reportsto"
+    text="Reports To"
+    image="fa-sitemap"
+    comment="View manager" />
+  
+  <ActionDefault name="order"
+    text="Order"
+    image="fa-file-text"
+    comment="View related order" />
+  
+  <ActionDefault name="product"
+    text="Product"
+    image="fa-cube"
+    comment="View related product" />
+  
+  <ActionDefault name="select"
+    text="Select"
+    image="fa-check-circle"
+    comment="Select the current record" />
+  
+  <ActionDefault name="cust_cust_demo"
+    text="Customer Type"
+    image="fa-tags"
+    comment="View customer type assignments" />
+  
+  <!-- Zoom/Lookup Actions -->
+  <ActionDefault name="zoom_employee"
+    image="zoom"
+    defaultView="no"
+    comment="Look up employee" />
+  
+  <ActionDefault name="zoom_territory"
+    image="zoom"
+    defaultView="no"
+    comment="Look up territory" />
+  
+  <ActionDefault name="zoom_customer"
+    image="zoom"
+    defaultView="no"
+    comment="Look up customer" />
+  
+  <ActionDefault name="zoom_product"
+    image="zoom"
+    defaultView="no"
+    comment="Look up product" />
+  
+  <ActionDefault name="zoom_order"
+    image="zoom"
+    defaultView="no"
+    comment="Look up order" />
+  
+  <ActionDefault name="zoom_cust_type"
+    image="zoom"
+    defaultView="no"
+    comment="Look up customer demographic type" />
+
+  <ActionDefault name="zoom"
+    image="zoom"
+    defaultView="no"
+    comment="Look up record" />
+  
+  <!-- Report Actions -->
+  <ActionDefault name="run"
+    text="Run Report"
+    image="fa-play"
+    comment="Execute the report" />
+  
+  <!-- Standard Actions -->
+  <ActionDefault name="accept"
+    text="OK"
+    image="fa-check"
+    acceleratorName="Return" />
+  
+  <ActionDefault name="cancel"
+    text="Cancel"
+    image="fa-ban"
+    acceleratorName="Escape" />
+  
+  <ActionDefault name="launch"
+    text="Launch"
+    image="fa-rocket"
+    comment="Launch the selected program"
+    acceleratorName="Return" />
+
+  <ActionDefault name="list"
+    text="List"
+    image="fa-table"
+    comment="Switch to list view" />
+
+  <ActionDefault name="exit"
+    text="Exit"
+    image="fa-power-off"
+    comment="Exit the program"
+    acceleratorName="Control-q" />
+
+  <ActionDefault name="to_pdf"
+    text="Export to PDF"
+    image="fa-pdf"
+    comment="Export to PDF"
+    acceleratorName="Control-L" />
+</ActionDefaultList>

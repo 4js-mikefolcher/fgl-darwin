@@ -1,0 +1,43 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Employees List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  Last Name            First Name       Title                          City            Country
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    [c1 |c2                  |c3              |c4                            |c5             |c6             ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.employeeid TYPE INTEGER, NOENTRY;
+  c2 = formonly.lastname TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.firstname TYPE VARCHAR, NOENTRY, SCROLL;
+  c4 = formonly.title TYPE VARCHAR, NOENTRY, SCROLL;
+  c5 = formonly.city TYPE VARCHAR, NOENTRY, SCROLL;
+  c6 = formonly.country TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD employees_list[10](employeeid, lastname, firstname, title, city, country);
+END

@@ -1,0 +1,35 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM run
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Employees With Order Detail Totals Report")
+  VBOX
+    GROUP (TEXT="Selection Criteria", STYLE="box")
+      GRID
+      {
+        Employee ID:  [employeeid    ]
+        Last Name:    [lastname                    ]
+        First Name:   [firstname         ]
+      }
+      END
+    END
+  END
+END
+
+TABLES
+  employees
+END
+
+ATTRIBUTES
+  EDIT employeeid = employees.employeeid;
+  EDIT lastname = employees.lastname;
+  EDIT firstname = employees.firstname;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_criteria(employees.employeeid, employees.lastname, employees.firstname);
+END

@@ -1,43 +1,47 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌────────────────────────── Categories ───────────────────────────┐
-  Category ID   : [categoryid]
-  Category Name : [categoryname         ]
-  Description   :
-  [description                                                   ]
-  [                                                              ]
-  [                                                              ]
-  [                                                              ]
-  [                                                              ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  ITEM products
+  ITEM list
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Categories Management")
+  VBOX
+    GROUP (TEXT="Category Information", STYLE="box")
+      GRID
+      {
+        Category ID:   [categoryid      ]
+        Name:          [categoryname         ]
+        Description:   [description                         ]
+                       [                                    ]
+                       [                                    ]
+                       [                                    ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-categoryid = formonly.categoryid TYPE INTEGER, DEFAULT=0, NOENTRY;
-categoryname = formonly.categoryname TYPE VARCHAR;
-description = formonly.description TYPE VARCHAR;
-
+  categoryid = formonly.categoryid TYPE INTEGER, DEFAULT=0, NOENTRY;
+  categoryname = formonly.categoryname TYPE VARCHAR;
+  TEXTEDIT description = formonly.description TYPE VARCHAR;
 END --ATTRIBUTES
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_categories(formonly.categoryid, formonly.categoryname, formonly.description);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_categories(formonly.categoryid, formonly.categoryname, formonly.description);
+END

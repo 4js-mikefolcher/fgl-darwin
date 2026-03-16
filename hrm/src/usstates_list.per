@@ -1,0 +1,41 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="US States List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     ID  State Name                              Abbr  Region
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    [c1 |c2                                     |c3   |c4                        ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.stateid TYPE INTEGER, NOENTRY;
+  c2 = formonly.statename TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.stateabbr TYPE VARCHAR, NOENTRY;
+  c4 = formonly.stateregion TYPE VARCHAR, NOENTRY, SCROLL;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD usstates_list[10](stateid, statename, stateabbr, stateregion);
+END

@@ -1,0 +1,6 @@
+PUBLIC CONSTANT cAddRecord = 1
+PUBLIC CONSTANT cEditRecord = 2
+PUBLIC CONSTANT cDeleteRecord = 3
+PUBLIC CONSTANT cViewRecord = 4
+PUBLIC CONSTANT cRefreshList = 5
+PUBLIC CONSTANT cExportToExcel = 6

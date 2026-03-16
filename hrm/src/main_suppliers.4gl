@@ -1,16 +1,18 @@
+IMPORT FGL main_lib
+IMPORT FGL ui_suppliers
 DATABASE northwind
 MAIN
 
     CALL init_pgm()
 
     OPEN WINDOW mainWindow WITH FORM "suppliers"
-      ATTRIBUTES(BORDER)
+      ATTRIBUTES(BORDER, STYLE="noactions")
 
     MENU "Suppliers Maintenance"
         COMMAND "Query" "Search for Suppliers"
             CALL submenu_suppliers()
         COMMAND "Add" "Add a new Supplier"
-            CALL add_suppliers()
+            CALL root_add_suppliers()
         COMMAND "Exit" "Cancel the program"
             EXIT MENU
     END MENU

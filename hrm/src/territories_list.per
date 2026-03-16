@@ -1,0 +1,40 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM add
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Territories List View")
+  VBOX
+    TABLE (DOUBLECLICK=modify)
+    {
+     Territory ID         Description                        Region
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    [c1                  |c2                                |c3     ]
+    }
+    END
+  END
+END
+
+ATTRIBUTES
+  c1 = formonly.territoryid TYPE VARCHAR, NOENTRY, SCROLL;
+  c2 = formonly.territorydescription TYPE VARCHAR, NOENTRY, SCROLL;
+  c3 = formonly.regionid TYPE SMALLINT, NOENTRY;
+END --ATTRIBUTES
+
+INSTRUCTIONS
+  SCREEN RECORD territories_list[10](territoryid, territorydescription, regionid);
+END

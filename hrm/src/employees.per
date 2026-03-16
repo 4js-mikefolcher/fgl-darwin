@@ -1,57 +1,91 @@
-DATABASE northwind
+SCHEMA northwind
 
-SCREEN SIZE 25 BY 80
-{
-┌─────────────────────────── Employees ───────────────────────────┐
-  Employee ID : [employeeid]   Last Name : [lastname              ]
-  First Name  : [firstname ]   Title     : [title                 ]
-  Courtesy    : [titleofcourtesy     ]
-  Birth Date  : [birthdate ] Hire Date : [hiredate  ]
-  Address     : [address                               ]
-  City        : [city         ] Region  : [region         ]
-  Postal Code : [postalcode]    Country : [country        ]
-  Home Phone  : [homephone    ] Ext     : [extension]
-  Reports To  : [reportsto    ] [fullname                ]
-  Photo Path  : [photopath                                        ]
-  Notes :
-  [notes                                                         ]
+TOOLBAR
+  ITEM query
+  ITEM add
+  SEPARATOR
+  ITEM first
+  ITEM previous
+  ITEM next
+  ITEM last
+  SEPARATOR
+  AUTOITEMS (CONTENT=actions)
+  SEPARATOR
+  ITEM list
+  SEPARATOR
+  ITEM modify
+  ITEM delete
+  SEPARATOR
+  ITEM exit
+END
 
-
-
-
-
-
-
-
-
-
-└──────────────────────────────────────────────────────────────────┘
-}
+LAYOUT (TEXT="Employee Management")
+  VBOX
+    GROUP (TEXT="Personal Information", STYLE="box")
+      GRID
+      {
+        Employee ID:  [employeeid      ]
+        Last Name:    [lastname                  ]
+        First Name:   [firstname       ]
+        Title:        [title                              ]
+        Courtesy:     [titleofcourtesy                    ]
+        Birth Date:   [birthdate  ]
+        Hire Date:    [hiredate   ]
+      }
+      END
+    END
+    GROUP (TEXT="Contact Information", STYLE="box")
+      GRID
+      {
+        Address:      [address                                         ]
+        City:         [city           ]  Region:  [empl_region    ]
+        Postal Code:  [postalcode ]  Country: [country        ]
+        Home Phone:   [homephone            ]
+        Extension:    [extension   ]
+      }
+      END
+    END
+    GROUP (TEXT="Employment Details", STYLE="box")
+      GRID
+      {
+        Reports To:   [reportsto  ][fullname                ]
+        Photo Path:   [photopath                                       ]
+        Notes:
+                      [notes                                           ]
+      }
+      END
+    END
+  END
+END
 
 ATTRIBUTES
-employeeid = formonly.employeeid TYPE INTEGER, DEFAULT=0, NOENTRY;
-lastname = formonly.lastname;
-firstname = formonly.firstname;
-title = formonly.title;
-titleofcourtesy = formonly.titleofcourtesy;
-birthdate = formonly.birthdate;
-hiredate = formonly.hiredate;
-address = formonly.address;
-city = formonly.city;
-region = formonly.region;
-postalcode = formonly.postalcode;
-country = formonly.country;
-homephone = formonly.homephone;
-extension = formonly.extension;
-reportsto = formonly.reportsto;
-fullname = formonly.fullname, NOENTRY;
-photopath = formonly.photopath;
-notes = formonly.notes;
-
+  employeeid = formonly.employeeid TYPE INTEGER, DEFAULT=0, NOENTRY;
+  lastname = formonly.lastname TYPE VARCHAR;
+  firstname = formonly.firstname TYPE VARCHAR;
+  title = formonly.title TYPE VARCHAR;
+  COMBOBOX titleofcourtesy = formonly.titleofcourtesy TYPE VARCHAR;
+  DATEEDIT birthdate = formonly.birthdate TYPE DATE;
+  DATEEDIT hiredate = formonly.hiredate TYPE DATE;
+  address = formonly.address TYPE VARCHAR;
+  city = formonly.city TYPE VARCHAR;
+  empl_region = formonly.region TYPE VARCHAR;
+  postalcode = formonly.postalcode TYPE VARCHAR;
+  country = formonly.country TYPE VARCHAR;
+  homephone = formonly.homephone TYPE VARCHAR;
+  extension = formonly.extension TYPE VARCHAR;
+  BUTTONEDIT reportsto = formonly.reportsto TYPE INTEGER, ACTION=zoom_employee;
+  fullname = formonly.fullname TYPE VARCHAR, NOENTRY;
+  photopath = formonly.photopath TYPE VARCHAR;
+  TEXTEDIT notes = formonly.notes TYPE TEXT, SCROLL;
 END --ATTRIBUTES
 
 INSTRUCTIONS
-
-   SCREEN RECORD s_employees(formonly.employeeid THRU formonly.notes);
-
-END --INSTRUCTIONS
+  SCREEN RECORD s_employees(formonly.employeeid, formonly.lastname,
+    formonly.firstname, formonly.title, formonly.titleofcourtesy,
+    formonly.birthdate, formonly.hiredate,
+    formonly.address, formonly.city, formonly.region,
+    formonly.postalcode, formonly.country,
+    formonly.homephone, formonly.extension,
+    formonly.reportsto, formonly.fullname,
+    formonly.photopath, formonly.notes);
+END

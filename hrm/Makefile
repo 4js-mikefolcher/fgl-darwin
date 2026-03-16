@@ -29,32 +29,14 @@ region:
 territories:
 	$(MAKE) -C $(SRCDIR) territories
 
-orders:
-	$(MAKE) -C $(SRCDIR) orders
+cust_demo:
+	$(MAKE) -C $(SRCDIR) cust_demo
 
-order_details:
-	$(MAKE) -C $(SRCDIR) order_details
+cust_cust_demo:
+	$(MAKE) -C $(SRCDIR) cust_cust_demo
 
-categories:
-	$(MAKE) -C $(SRCDIR) categories
+mstr_dtl_order:
+	$(MAKE) -C $(SRCDIR) mstr_dtl_order
 
-customers:
-	$(MAKE) -C $(SRCDIR) customers
-
-products:
-	$(MAKE) -C $(SRCDIR) products
-
-shippers:
-	$(MAKE) -C $(SRCDIR) shippers
-
-suppliers:
-	$(MAKE) -C $(SRCDIR) suppliers
-
-usstates:
-	$(MAKE) -C $(SRCDIR) usstates
-
-ifx_menu:
-	$(MAKE) -C $(SRCDIR) ifx_menu
-
-.PHONY: all clean rebuild ifx_menu employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates
+.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo mstr_dtl_order
 

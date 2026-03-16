@@ -1,0 +1,34 @@
+SCHEMA northwind
+
+TOOLBAR
+  ITEM run
+  SEPARATOR
+  ITEM exit
+END
+
+LAYOUT (TEXT="Orders By Customer Report")
+  VBOX
+    GROUP (TEXT="Selection Criteria", STYLE="box")
+      GRID
+      {
+        Customer ID:  [customerid           ]
+        Company Name: [companyname                            ]
+      }
+      END
+    END
+  END
+END
+
+
+TABLES
+  customers
+END
+
+ATTRIBUTES
+  EDIT customerid = customers.customerid;
+  EDIT companyname = customers.companyname;
+END
+
+INSTRUCTIONS
+  SCREEN RECORD s_criteria(customers.customerid, customers.companyname);
+END
