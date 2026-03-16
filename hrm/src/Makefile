@@ -291,7 +291,8 @@ MODULE_SOURCES = main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
                  rest_orders.4gl rest_order_details.4gl rest_products.4gl \
                  rest_suppliers.4gl rest_shippers.4gl rest_region.4gl \
                  rest_territories.4gl rest_usstates.4gl rest_empl_terr.4gl \
-                 rest_cust_demo.4gl rest_cust_cust_demo.4gl
+                 rest_cust_demo.4gl rest_cust_cust_demo.4gl \
+                 test_rest_lib.4gl
 
 # Compiled module targets (.42m in bin/)
 MODULE_TARGETS = $(patsubst %.4gl,$(BINDIR)/%.42m,$(MODULE_SOURCES))
@@ -407,6 +408,18 @@ $(BINDIR)/main_rest_server.42r: main_rest_server.4gl $(MODULE_TARGETS)
 	$(LDPATH) $(SRCCOMP) -o main_rest_server.42r main_rest_server.4gl
 	mv main_rest_server.42r main_rest_server.42m $(BINDIR)/
 
+$(BINDIR)/test_rest_shippers.42r: test_rest_shippers.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_shippers.42r test_rest_shippers.4gl
+	mv test_rest_shippers.42r test_rest_shippers.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_categories.42r: test_rest_categories.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_categories.42r test_rest_categories.4gl
+	mv test_rest_categories.42r test_rest_categories.42m $(BINDIR)/
+
+$(BINDIR)/test_rest_suppliers.42r: test_rest_suppliers.4gl $(MODULE_TARGETS)
+	$(LDPATH) $(SRCCOMP) -o test_rest_suppliers.42r test_rest_suppliers.4gl
+	mv test_rest_suppliers.42r test_rest_suppliers.42m $(BINDIR)/
+
 # Clean compiled files
 clean:
 	rm -f *.42f *.42m *.42r
@@ -450,4 +463,9 @@ rpt_employees_with_totals: $(BINDIR)/rpt_employees_with_totals.42f $(BINDIR)/mai
 
 rest_server: $(BINDIR)/main_rest_server.42r
 
-.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server
+test_rest_shippers: $(BINDIR)/test_rest_shippers.42r
+test_rest_categories: $(BINDIR)/test_rest_categories.42r
+test_rest_suppliers: $(BINDIR)/test_rest_suppliers.42r
+test_rest: $(BINDIR)/test_rest_shippers.42r $(BINDIR)/test_rest_categories.42r $(BINDIR)/test_rest_suppliers.42r
+
+.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server test_rest_shippers test_rest_categories test_rest_suppliers test_rest

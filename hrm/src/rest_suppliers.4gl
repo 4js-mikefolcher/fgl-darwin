@@ -8,6 +8,25 @@ PUBLIC DEFINE ws_error RECORD ATTRIBUTES(WSError = "error")
    message STRING
 END RECORD
 
+-- Lightweight record type using STRING for JSON serialization.
+-- Avoids VARCHAR padding that causes truncated responses in getAll.
+-- NOTE: If the definition of t_supplier in model_suppliers.4gl changes,
+--       this t_supplier_json record type must be updated to match.
+PRIVATE TYPE t_supplier_json RECORD
+   supplierid   INTEGER,
+   companyname  STRING,
+   contactname  STRING,
+   contacttitle STRING,
+   address      STRING,
+   city         STRING,
+   region       STRING,
+   postalcode   STRING,
+   country      STRING,
+   phone        STRING,
+   fax          STRING,
+   homepage     STRING
+END RECORD
+
 -- =====================================================================
 -- Function: getAll
 -- Purpose : Get all supplier records
@@ -17,10 +36,10 @@ PUBLIC FUNCTION getAll()
       WSPath = "/suppliers",
       WSDescription = "Get all suppliers",
       WSThrows = "500:@ws_error")
-   RETURNS DYNAMIC ARRAY OF t_supplier ATTRIBUTES(WSMedia = "application/json")
+   RETURNS DYNAMIC ARRAY OF t_supplier_json ATTRIBUTES(WSMedia = "application/json")
 
-   DEFINE suppliers DYNAMIC ARRAY OF t_supplier
-   DEFINE rec t_supplier
+   DEFINE suppliers DYNAMIC ARRAY OF t_supplier_json
+   DEFINE rec t_supplier_json
    DEFINE i INTEGER
 
    LET i = 0

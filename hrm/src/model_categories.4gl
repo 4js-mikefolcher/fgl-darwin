@@ -26,6 +26,11 @@ PUBLIC FUNCTION (self t_category) validateRec(mode CHAR(1)) RETURNS (t_valid_rec
    END IF
    IF self.categoryname IS NULL OR LENGTH(self.categoryname) == 0 THEN
       CALL valid_rec.failed("Category Name is required")
+      RETURN valid_rec
+   END IF
+   IF LENGTH(self.categoryname) > 15 THEN
+      CALL valid_rec.failed("Category Name must be 15 characters or less")
+      RETURN valid_rec
    END IF
 
    CALL valid_rec.success("Okay")
