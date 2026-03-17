@@ -3,6 +3,7 @@ IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_region
 IMPORT FGL ui_territories
+IMPORT FGL model_helper
 DATABASE northwind
 
 TYPE t_region_list RECORD
@@ -197,22 +198,28 @@ PRIVATE FUNCTION region_do_load(where_clause)
 END FUNCTION #region_do_load
 
 -- =====================================================================
--- Dispatch interface: region_do_add
+-- Dispatch interface: region_do_add_edit
 -- =====================================================================
-FUNCTION region_do_add()
+FUNCTION region_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
    CALL region_clear_curr()
+
    INPUT BY NAME curr_region.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("regionid", FALSE)
+         IF mode == "C" THEN
+            CALL DIALOG.setFieldActive("regiondescription", FALSE)
+         END IF
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         VAR valid_status = curr_region.validateRec("A")
+         VAR valid_status = curr_region.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -220,56 +227,30 @@ FUNCTION region_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Region add canceled"
+      IF mode = "A" THEN
+         ERROR "Region add canceled"
+      ELSE
+         ERROR "Region update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_region.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_region.insertRec()
+   ELSE
+      LET rec_status = curr_region.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL region_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #region_do_add
-
--- =====================================================================
--- Dispatch interface: region_do_edit
--- =====================================================================
-FUNCTION region_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_region.regiondescription
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      AFTER INPUT
-         VAR valid_status = curr_region.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Region update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_region.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #region_do_edit
+END FUNCTION #region_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: region_do_delete

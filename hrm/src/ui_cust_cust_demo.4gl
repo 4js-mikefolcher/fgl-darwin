@@ -5,6 +5,7 @@ IMPORT FGL controller
 IMPORT FGL model_cust_cust_demo
 IMPORT FGL ui_customers
 IMPORT FGL ui_cust_demo
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -208,15 +209,20 @@ PRIVATE FUNCTION cust_cust_demo_do_load(where_clause VARCHAR(500))
 END FUNCTION #cust_cust_demo_do_load
 
 -- =====================================================================
--- Function: cust_cust_demo_do_add
--- Purpose : Add a new customer type assignment
+-- Function: cust_cust_demo_do_add_edit
+-- Purpose : Add or edit a customer type assignment
 -- =====================================================================
-FUNCTION cust_cust_demo_do_add()
+FUNCTION cust_cust_demo_do_add_edit(mode CHAR(1))
    DEFINE selected_cust_id LIKE customers.customerid
    DEFINE selected_companyname LIKE customers.companyname
    DEFINE selected_type_id LIKE customerdemographics.customertypeid
    DEFINE selected_type_desc LIKE customerdemographics.customerdesc
    DEFINE cust_cust_demo_valid t_valid_rec
+
+   IF mode = "C" THEN
+      LET int_flag = TRUE
+      RETURN
+   END IF
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -281,7 +287,7 @@ FUNCTION cust_cust_demo_do_add()
           EXIT INPUT
 
       AFTER INPUT
-         VAR valid_status = curr_cust_cust_demo.validateRec("A")
+         VAR valid_status = curr_cust_cust_demo.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -289,27 +295,28 @@ FUNCTION cust_cust_demo_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Customer type assignment add canceled"
+      IF mode = "A" THEN
+         ERROR "Customer type assignment add canceled"
+      ELSE
+         ERROR "Customer type assignment update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_cust_cust_demo.insertRec()
-   IF ins_status.valid_status THEN
-      MESSAGE ins_status.valid_msg
+   IF mode = "A" THEN
+      VAR ins_status = curr_cust_cust_demo.insertRec()
+      IF ins_status.valid_status THEN
+         MESSAGE ins_status.valid_msg
+      ELSE
+         ERROR ins_status.valid_msg
+         LET int_flag = TRUE
+      END IF
    ELSE
-      ERROR ins_status.valid_msg
+      -- Edit not supported for customer type assignments
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #cust_cust_demo_do_add
-
--- =====================================================================
--- Function: cust_cust_demo_do_edit
--- Purpose : Edit not supported for customer type assignments (no-op)
--- =====================================================================
-FUNCTION cust_cust_demo_do_edit()
-   LET int_flag = TRUE
-END FUNCTION #cust_cust_demo_do_edit
+END FUNCTION #cust_cust_demo_do_add_edit
 
 -- =====================================================================
 -- Function: cust_cust_demo_do_delete

@@ -182,15 +182,20 @@ PRIVATE FUNCTION empl_terr_do_load(where_clause VARCHAR(500))
 END FUNCTION #empl_terr_do_load
 
 -- =====================================================================
--- Function: empl_terr_do_add
--- Purpose : Add a new employee territory assignment
+-- Function: empl_terr_do_add_edit
+-- Purpose : Add or edit an employee territory assignment
 -- =====================================================================
-FUNCTION empl_terr_do_add()
+FUNCTION empl_terr_do_add_edit(mode CHAR(1))
    DEFINE selected_employee_id LIKE employees.employeeid
    DEFINE selected_fullname VARCHAR(32)
    DEFINE selected_territory_id LIKE territories.territoryid
    DEFINE selected_territory_desc LIKE territories.territorydescription
    DEFINE empl_terr_valid t_valid_rec
+
+   IF mode = "C" THEN
+      LET int_flag = TRUE
+      RETURN
+   END IF
 
    CLEAR FORM
    LET int_flag = FALSE
@@ -254,7 +259,7 @@ FUNCTION empl_terr_do_add()
           EXIT INPUT
 
       AFTER INPUT
-         VAR valid_status = curr_empl_terr.validateRec("A")
+         VAR valid_status = curr_empl_terr.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -262,27 +267,28 @@ FUNCTION empl_terr_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Employee territory add canceled"
+      IF mode = "A" THEN
+         ERROR "Employee territory add canceled"
+      ELSE
+         ERROR "Employee territory update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_empl_terr.insertRec()
-   IF ins_status.valid_status THEN
-      MESSAGE ins_status.valid_msg
+   IF mode = "A" THEN
+      VAR ins_status = curr_empl_terr.insertRec()
+      IF ins_status.valid_status THEN
+         MESSAGE ins_status.valid_msg
+      ELSE
+         ERROR ins_status.valid_msg
+         LET int_flag = TRUE
+      END IF
    ELSE
-      ERROR ins_status.valid_msg
+      -- Edit not supported for employee territories
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #empl_terr_do_add
-
--- =====================================================================
--- Function: empl_terr_do_edit
--- Purpose : Edit not supported for employee territories (no-op)
--- =====================================================================
-FUNCTION empl_terr_do_edit()
-   LET int_flag = TRUE
-END FUNCTION #empl_terr_do_edit
+END FUNCTION #empl_terr_do_add_edit
 
 -- =====================================================================
 -- Function: empl_terr_do_delete

@@ -3,6 +3,7 @@ IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_cust_demo
 IMPORT FGL ui_cust_cust_demo
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -179,85 +180,61 @@ PRIVATE FUNCTION cust_demo_do_load(where_clause VARCHAR(500))
 END FUNCTION #cust_demo_do_load
 
 -- =====================================================================
--- Function: cust_demo_do_add
--- Purpose : Add a new customer demographic record
+-- Function: cust_demo_do_add_edit
+-- Purpose : Add or edit a customer demographic record
 -- =====================================================================
-FUNCTION cust_demo_do_add()
+FUNCTION cust_demo_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL cust_demo_clear_curr()
-   INPUT curr_cust_demo.* WITHOUT DEFAULTS FROM s_cust_demo.*
-      ATTRIBUTES(UNBUFFERED)
-      ON ACTION accept
-          ACCEPT INPUT
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER INPUT
-          VAR valid_status = curr_cust_demo.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Customer demographic add canceled"
-      RETURN
+   IF mode == "A" THEN
+      CALL cust_demo_clear_curr()
    END IF
 
-   VAR ins_status = curr_cust_demo.insertRec()
-   IF NOT ins_status.valid_status THEN
-      ERROR ins_status.valid_msg
-      LET int_flag = TRUE
-      RETURN
-   END IF
-
-   CALL cust_demo_display_curr()
-   MESSAGE ins_status.valid_msg
-
-END FUNCTION #cust_demo_do_add
-
--- =====================================================================
--- Function: cust_demo_do_edit
--- Purpose : Edit an existing customer demographic record
--- =====================================================================
-FUNCTION cust_demo_do_edit()
-
-   LET int_flag = FALSE
-   INPUT curr_cust_demo.* WITHOUT DEFAULTS FROM s_cust_demo.*
-      ATTRIBUTES(UNBUFFERED)
+   INPUT BY NAME curr_cust_demo.*
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
       BEFORE INPUT
-          CALL DIALOG.setFieldActive("s_cust_demo.customertypeid", FALSE)
+         IF mode == "C" THEN
+            CALL DIALOG.setFieldActive("customertypeid", FALSE)
+         END IF
       ON ACTION accept
-          ACCEPT INPUT
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
       AFTER INPUT
-          VAR valid_status = curr_cust_demo.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_cust_demo.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "Customer demographic update canceled"
+      IF mode = "A" THEN
+         ERROR "Customer demographic add canceled"
+      ELSE
+         ERROR "Customer demographic update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR upd_status = curr_cust_demo.updateRec()
-   IF NOT upd_status.valid_status THEN
-      ERROR upd_status.valid_msg
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_cust_demo.insertRec()
+   ELSE
+      LET rec_status = curr_cust_demo.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
+      CALL cust_demo_display_curr()
+      MESSAGE rec_status.valid_msg
+   ELSE
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
-      RETURN
    END IF
 
-   MESSAGE upd_status.valid_msg
-
-END FUNCTION #cust_demo_do_edit
+END FUNCTION #cust_demo_do_add_edit
 
 -- =====================================================================
 -- Function: cust_demo_do_delete

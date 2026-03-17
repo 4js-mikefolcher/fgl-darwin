@@ -2,6 +2,7 @@ IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_shippers
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -163,79 +164,59 @@ PRIVATE FUNCTION shippers_do_load(where_clause VARCHAR(500))
 END FUNCTION #shippers_do_load
 
 -- =====================================================================
--- Function: shippers_do_add
--- Purpose : Add a new shipper record
+-- Function: shippers_do_add_edit
+-- Purpose : Add or edit a shipper record
 -- =====================================================================
-FUNCTION shippers_do_add()
+FUNCTION shippers_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL shippers_clear_curr()
-   INPUT curr_shippers.* WITHOUT DEFAULTS FROM s_shippers.*
-      ATTRIBUTES(UNBUFFERED)
+   IF mode == "A" THEN
+      CALL shippers_clear_curr()
+   END IF
+
+   INPUT BY NAME curr_shippers.*
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("shipperid", FALSE)
+      ON ACTION accept
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
       AFTER INPUT
-          VAR valid_status = curr_shippers.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_shippers.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "Shipper add canceled"
+      IF mode = "A" THEN
+         ERROR "Shipper add canceled"
+      ELSE
+         ERROR "Shipper update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_shippers.insertRec()
-   IF NOT ins_status.valid_status THEN
-      ERROR ins_status.valid_msg
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_shippers.insertRec()
+   ELSE
+      LET rec_status = curr_shippers.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
+      CALL shippers_display_curr()
+      MESSAGE rec_status.valid_msg
+   ELSE
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
-      RETURN
    END IF
 
-   CALL shippers_display_curr()
-   MESSAGE ins_status.valid_msg
-
-END FUNCTION #shippers_do_add
-
--- =====================================================================
--- Function: shippers_do_edit
--- Purpose : Edit an existing shipper record
--- =====================================================================
-FUNCTION shippers_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_shippers.companyname, curr_shippers.phone
-      ATTRIBUTES(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER INPUT
-          VAR valid_status = curr_shippers.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Shipper update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_shippers.updateRec()
-   IF NOT upd_status.valid_status THEN
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-      RETURN
-   END IF
-
-   MESSAGE upd_status.valid_msg
-
-END FUNCTION #shippers_do_edit
+END FUNCTION #shippers_do_add_edit
 
 -- =====================================================================
 -- Function: shippers_do_delete

@@ -5,6 +5,7 @@ IMPORT FGL model_orders
 IMPORT FGL ui_customers
 IMPORT FGL ui_employees
 IMPORT FGL ui_order_details
+IMPORT FGL model_helper
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -297,9 +298,9 @@ PRIVATE FUNCTION orders_do_load(where_clause)
 END FUNCTION #orders_do_load
 
 -- =====================================================================
--- Dispatch interface: orders_do_add
+-- Dispatch interface: orders_do_add_edit
 -- =====================================================================
-FUNCTION orders_do_add()
+FUNCTION orders_do_add_edit(mode CHAR(1))
    DEFINE orders_valid SMALLINT
    DEFINE valid_msg CHAR(75)
    DEFINE selected_customer_id LIKE customers.customerid
@@ -309,10 +310,15 @@ FUNCTION orders_do_add()
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL orders_clear_curr()
+   IF mode == "A" THEN
+      CALL orders_clear_curr()
+   END IF
    CALL populate_shipvia_combo()
+
    INPUT BY NAME curr_orders.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("orderid", FALSE)
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
@@ -361,7 +367,7 @@ FUNCTION orders_do_add()
          END IF
 
       AFTER INPUT
-         VAR valid_status = curr_orders.validateRec("A")
+         VAR valid_status = curr_orders.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -369,109 +375,30 @@ FUNCTION orders_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Order add canceled"
+      IF mode = "A" THEN
+         ERROR "Order add canceled"
+      ELSE
+         ERROR "Order update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_orders.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_orders.insertRec()
+   ELSE
+      LET rec_status = curr_orders.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL orders_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #orders_do_add
-
--- =====================================================================
--- Dispatch interface: orders_do_edit
--- =====================================================================
-FUNCTION orders_do_edit()
-   DEFINE orders_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
-   DEFINE selected_customer_id LIKE customers.customerid
-   DEFINE selected_customer_name LIKE customers.companyname
-   DEFINE selected_employee_id LIKE employees.employeeid
-   DEFINE selected_employee_name VARCHAR(32)
-
-   CALL populate_shipvia_combo()
-   LET int_flag = FALSE
-   INPUT BY NAME curr_orders.customerid, curr_orders.employeeid,
-                 curr_orders.orderdate, curr_orders.requireddate, curr_orders.shippeddate,
-                 curr_orders.shipvia, curr_orders.freight,
-                 curr_orders.shipname, curr_orders.shipaddress, curr_orders.shipcity,
-                 curr_orders.shipregion, curr_orders.shippostalcode, curr_orders.shipcountry
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      ON ACTION zoom_customer
-         CALL customer_lookup()
-            RETURNING selected_customer_id, selected_customer_name
-         IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
-            LET curr_orders.customerid = selected_customer_id
-            LET curr_orders.customername = selected_customer_name
-            CALL default_shipping_from_customer(selected_customer_id)
-         END IF
-      ON ACTION zoom_employee
-         CALL employee_lookup()
-            RETURNING selected_employee_id, selected_employee_name
-         IF selected_employee_id > 0 THEN
-            LET curr_orders.employeeid = selected_employee_id
-            LET curr_orders.employeename = selected_employee_name
-         END IF
-
-      AFTER FIELD customerid
-         CALL validate_customer_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD customerid
-         ELSE
-            CALL default_shipping_from_customer(curr_orders.customerid)
-         END IF
-
-      AFTER FIELD employeeid
-         CALL validate_employee_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD employeeid
-         END IF
-
-      AFTER FIELD shipvia
-         CALL validate_shipvia_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD shipvia
-         END IF
-
-      AFTER INPUT
-         VAR valid_status = curr_orders.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Order update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_orders.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #orders_do_edit
+END FUNCTION #orders_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: orders_do_delete

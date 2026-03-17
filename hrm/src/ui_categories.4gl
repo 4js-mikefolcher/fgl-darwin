@@ -3,6 +3,7 @@ IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_categories
 IMPORT FGL ui_products
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -178,87 +179,61 @@ PRIVATE FUNCTION categories_do_load(where_clause VARCHAR(500))
 END FUNCTION #categories_do_load
 
 -- =====================================================================
--- Function: categories_do_add
--- Purpose : Add a new category record
+-- Function: categories_do_add_edit
+-- Purpose : Add or edit a category record
 -- =====================================================================
-FUNCTION categories_do_add()
+FUNCTION categories_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL categories_clear_curr()
-   INPUT curr_categories.* WITHOUT DEFAULTS FROM s_categories.*
-      ATTRIBUTES(UNBUFFERED)
-      ON ACTION accept
-          ACCEPT INPUT
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER FIELD description
-          DISPLAY SFMT("Description = (%1)", curr_categories.description)
-      AFTER INPUT
-          VAR valid_status = curr_categories.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Category add canceled"
-      RETURN
+   IF mode == "A" THEN
+      CALL categories_clear_curr()
    END IF
 
-   VAR ins_status = curr_categories.insertRec()
-   IF NOT ins_status.valid_status THEN
-      ERROR ins_status.valid_msg
-      LET int_flag = TRUE
-      RETURN
-   END IF
-
-   CALL categories_display_curr()
-   MESSAGE ins_status.valid_msg
-
-END FUNCTION #categories_do_add
-
--- =====================================================================
--- Function: categories_do_edit
--- Purpose : Edit an existing category record
--- =====================================================================
-FUNCTION categories_do_edit()
-
-   LET int_flag = FALSE
-   INPUT curr_categories.* WITHOUT DEFAULTS FROM s_categories.*
-      ATTRIBUTES(UNBUFFERED)
+   INPUT BY NAME curr_categories.*
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
       BEFORE INPUT
-          CALL DIALOG.setFieldActive("s_categories.categoryid", FALSE)
+         CALL DIALOG.setFieldActive("categoryid", FALSE)
       ON ACTION accept
-          ACCEPT INPUT
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
+      AFTER FIELD description
+         DISPLAY SFMT("Description = (%1)", curr_categories.description)
       AFTER INPUT
-          VAR valid_status = curr_categories.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_categories.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "Category update canceled"
+      IF mode = "A" THEN
+         ERROR "Category add canceled"
+      ELSE
+         ERROR "Category update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR upd_status = curr_categories.updateRec()
-   IF NOT upd_status.valid_status THEN
-      ERROR upd_status.valid_msg
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_categories.insertRec()
+   ELSE
+      LET rec_status = curr_categories.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
+      CALL categories_display_curr()
+      MESSAGE rec_status.valid_msg
+   ELSE
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
-      RETURN
    END IF
 
-   MESSAGE upd_status.valid_msg
-
-END FUNCTION #categories_do_edit
+END FUNCTION #categories_do_add_edit
 
 -- =====================================================================
 -- Function: categories_do_delete
