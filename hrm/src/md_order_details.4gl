@@ -1,4 +1,5 @@
 IMPORT util
+IMPORT os
 
 IMPORT FGL md_helper
 IMPORT FGL model_orders
@@ -11,6 +12,7 @@ IMPORT FGL model_customers
 IMPORT FGL model_shippers
 IMPORT FGL ui_products
 IMPORT FGL dialog_prompt
+IMPORT FGL com.fourjs.poiapi.fgl_table_export
 
 SCHEMA northwind
 
@@ -77,12 +79,6 @@ PUBLIC FUNCTION mstr_detail_orders()
       END CONSTRUCT
 
       DISPLAY ARRAY order_result_list TO s_table.*
-
-         AFTER DISPLAY
-            IF selected_option IS NULL THEN
-               LET selected_option = cView
-            END IF
-
       END DISPLAY
 
       ON ACTION ACCEPT
@@ -105,6 +101,10 @@ PUBLIC FUNCTION mstr_detail_orders()
 
       ON ACTION adv_search
          LET selected_option = cAdvSearch
+         ACCEPT DIALOG
+
+      ON ACTION excel_export
+         LET selected_option = cExport
          ACCEPT DIALOG
 
       ON ACTION ADD
@@ -161,6 +161,8 @@ PUBLIC FUNCTION mstr_detail_orders()
                ELSE
                   NEXT FIELD orderid
                END IF
+            WHEN cExport
+               CALL export_orders_to_excel()
             WHEN cAdd
                CALL init_new_order()
                IF main_input_md("A") THEN
@@ -306,6 +308,12 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
 
    END FOREACH
 
+   IF where_clause IS NULL OR where_clause.getLength() = 0 THEN
+      DISPLAY "Showing all orders" TO formonly.query_label
+   ELSE
+      DISPLAY SFMT("Filter: %1", where_clause) TO formonly.query_label
+   END IF
+
 END FUNCTION #execute_search
 
 PRIVATE FUNCTION set_current_recs() RETURNS ()
@@ -333,19 +341,28 @@ PRIVATE FUNCTION set_current_recs() RETURNS ()
       END IF
    END IF
 
-   DISPLAY SFMT("Order Details Length: %1", curr_detail_list.getLength())
-   IF curr_detail_list.getLength() > 0 THEN
-      DISPLAY SFMT("Order ID: %1 Product ID: %2", curr_detail_list[1].orderid, curr_detail_list[1].productid)
-   ELSE
-      DISPLAY "List is empty"
-   END IF
-
-   DISPLAY util.JSON.format(util.JSONArray.fromFGL(curr_detail_list).toString())
-
 END FUNCTION #set_current_recs
+
+PRIVATE FUNCTION update_view_status() RETURNS ()
+
+   DEFINE msg STRING
+
+   LET msg = SFMT("Order %1 of %2 — ID %3, Customer %4, Total Qty %5, Total Amount %6",
+                  listIdx,
+                  order_result_list.getLength(),
+                  curr_result_rec.orderid,
+                  curr_result_rec.companyname,
+                  curr_result_rec.totalqty,
+                  curr_result_rec.totalamt)
+
+   DISPLAY msg TO formonly.status_label
+
+END FUNCTION #update_view_status
 
 PRIVATE FUNCTION init_new_order() RETURNS ()
    INITIALIZE curr_order_rec TO NULL
+   LET curr_order_rec.orderid = 0
+   LET curr_order_rec.freight = 0
    LET curr_order_rec.orderdate = TODAY
    CALL curr_detail_list.clear()
    LET detailIdx = 0
@@ -695,7 +712,6 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
 
       BEFORE ROW
          LET currentIdx = DIALOG.getCurrentRow("s_details")
-         DISPLAY SFMT("Current Index: %1", currentIdx)
          IF currentIdx > 0 THEN
             IF currentIdx > curr_detail_list.getLength() THEN
                CALL curr_detail_list.appendElement()
@@ -704,7 +720,6 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
                LET curr_detail_list[currentIdx].orderid = curr_order_rec.orderid
             END IF
          END IF
-         DISPLAY SFMT("Order ID: %1", curr_detail_list[currentIdx].orderid)
 
       ON ACTION zoom_product
          LET currentIdx = DIALOG.getCurrentRow("s_details")
@@ -739,6 +754,9 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
 
       AFTER ROW
          LET currentIdx = DIALOG.getCurrentRow("s_details")
+         IF NVL(curr_detail_list[currentIdx].orderid, 0) == 0 THEN
+            LET curr_detail_list[currentIdx].orderid = curr_order_rec.orderid
+         END IF
          #Do validation and calculation
          VAR rec_valid = curr_detail_list[currentIdx].toOrderDetail().validateRec(input_mode)
          IF NOT rec_valid.valid_status THEN
@@ -832,140 +850,126 @@ PRIVATE FUNCTION detail_single_input(input_mode CHAR(1)) RETURNS ()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Order detail add canceled"
       RETURN
    END IF
 
 END FUNCTION #detail_single_input
 
 PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
-   DEFINE detail_list DYNAMIC ARRAY OF model_order_details.t_order_detail
    DEFINE order_id LIKE orders.orderid
+   DEFINE selected_option SMALLINT
 
    OPEN WINDOW detailWindow WITH FORM "md_order_details"
 
    LET int_flag = FALSE
-   LET order_id = order_result_list[listIdx].orderid
-   DISPLAY curr_order_rec.* TO s_orders.*
 
-   DISPLAY ARRAY curr_detail_list TO s_details.*
-      ATTRIBUTES(CANCEL=FALSE, ACCEPT=FALSE)
+   WHILE int_flag == FALSE
 
-      BEFORE DISPLAY
-         DISPLAY SFMT("View Mode: Displaying order %1 or %2", listIdx, order_result_list.getLength()) TO formonly.status_label
+      LET order_id = order_result_list[listIdx].orderid
+      DISPLAY curr_order_rec.* TO s_orders.*
 
-      ON ACTION EXIT
-         EXIT DISPLAY
+      VAR row_action = FALSE
+      DISPLAY ARRAY curr_detail_list TO s_details.*
+         ATTRIBUTES(CANCEL=FALSE, ACCEPT=FALSE)
 
-      ON ACTION CLOSE
-         EXIT DISPLAY
+         BEFORE DISPLAY
+            CALL update_view_status()
+            LET selected_option = cQuit
+            LET row_action = FALSE
 
-      ON ACTION FIRST
-         LET listIdx = 1
-         ACCEPT DISPLAY
+         ON ACTION ADD
+            LET selected_option = cAdd
+            EXIT DISPLAY
 
-      ON ACTION PREVIOUS
-         IF listIdx > 1 THEN
-            LET listIdx -= 1
+         ON ACTION APPEND
+            LET selected_option = cAppend
+            EXIT DISPLAY
+
+         ON ACTION MODIFY
+            LET selected_option = cEdit
+            EXIT DISPLAY
+
+         ON ACTION DELETE
+            LET selected_option = cDelete
+            EXIT DISPLAY
+
+         ON ACTION deleterow
+            ERROR "Not implemented yet!"
+
+         ON ACTION updaterow
+            ERROR "Not implemented yet!"
+
+         ON ACTION EXIT
+            LET selected_option = cQuit
+            EXIT DISPLAY
+
+         ON ACTION CLOSE
+            LET selected_option = cQuit
+            EXIT DISPLAY
+
+         ON ACTION FIRST
+            LET listIdx = 1
             ACCEPT DISPLAY
-         END IF
 
-      ON ACTION NEXT
-         IF listIdx < order_result_list.getLength() THEN
-            LET listIdx += 1
-            ACCEPT DISPLAY
-         END IF
-
-      ON ACTION LAST
-         LET listIdx = order_result_list.getLength()
-         ACCEPT DISPLAY
-
-      ON ACTION ADD
-         CALL init_new_order()
-         IF input_md_order("A") THEN
-            --CALL insert_current_recs()
-            --CALL set_current_recs()
-            DISPLAY curr_order_rec.* TO s_orders.*
-            IF curr_detail_list.getLength() > 0 THEN
-               CALL DIALOG.setCurrentRow("s_details", 1)
+         ON ACTION PREVIOUS
+            IF listIdx > 1 THEN
+               LET listIdx -= 1
+               ACCEPT DISPLAY
             END IF
-            DISPLAY SFMT("View Mode: Displaying order %1 or %2", listIdx, order_result_list.getLength()) TO formonly.status_label
-         ELSE
-            #Restore the previous order record
+
+         ON ACTION NEXT
+            IF listIdx < order_result_list.getLength() THEN
+               LET listIdx += 1
+               ACCEPT DISPLAY
+            END IF
+
+         ON ACTION LAST
+            LET listIdx = order_result_list.getLength()
+            ACCEPT DISPLAY
+
+         AFTER DISPLAY
             CALL set_current_recs()
             DISPLAY curr_order_rec.* TO s_orders.*
-         END IF
-         CONTINUE DISPLAY
-
-      ON ACTION MODIFY
-         IF input_md_order("C") THEN
-            --CALL update_current_recs()
-            --CALL set_current_recs()
-            DISPLAY curr_order_rec.* TO s_orders.*
             IF curr_detail_list.getLength() > 0 THEN
                CALL DIALOG.setCurrentRow("s_details", 1)
             END IF
-            DISPLAY SFMT("View Mode: Displaying order %1 or %2", listIdx, order_result_list.getLength()) TO formonly.status_label
-         END IF
-         CONTINUE DISPLAY
+            CALL update_view_status()
+            CONTINUE DISPLAY
 
-      ON APPEND
-         CALL detail_single_input("A")
-         IF NOT int_flag THEN
-            VAR currentIdx = DIALOG.getCurrentRow("s_details")
-            VAR detail_rec = curr_detail_list[currentIdx]
-            VAR ins_status = detail_rec.toOrderDetail().insertRec()
-            IF ins_status.valid_status THEN
-               MESSAGE "Detail item inserted"
-               CALL update_detail_recs()
-            ELSE
-               LET int_flag = TRUE
-               ERROR "Error inserting record"
+      END DISPLAY #detail_list
+
+      IF selected_option == cQuit THEN
+         EXIT WHILE
+      END IF
+
+      VAR update_results = FALSE
+      CASE selected_option
+         WHEN cAdd
+            CALL init_new_order()
+            IF input_md_order("A") THEN
+               LET listIdx = order_result_list.getLength()
+               LET update_results = TRUE
             END IF
-         END IF
-
-      ON UPDATE
-         CALL detail_single_input("C")
-         IF NOT int_flag THEN
-            VAR currentIdx = DIALOG.getCurrentRow("s_details")
-            VAR detail_rec = curr_detail_list[currentIdx]
-            VAR upd_status = detail_rec.toOrderDetail().updateRec()
-            IF upd_status.valid_status THEN
-               MESSAGE "Detail item updated"
-               CALL update_detail_recs()
-            ELSE
-               LET int_flag = TRUE
-               ERROR "Error updating record"
+         WHEN cEdit
+            IF input_md_order("C") THEN
+               LET update_results = TRUE
             END IF
-         END IF
-
-      ON DELETE
-         VAR currentIdx = DIALOG.getCurrentRow("s_details")
-         VAR detail_rec = curr_detail_list[currentIdx]
-         IF dialog_prompt.delete_prompt() THEN
-            VAR del_status = detail_rec.toOrderDetail().deleteRec()
-            IF del_status.valid_status THEN
-               MESSAGE "Detail item deleted"
-               CALL update_detail_recs()
-            ELSE
-               LET int_flag = TRUE
-               ERROR "Error deleting record"
+         WHEN cDelete
+            IF delete_md_order() THEN
+               IF listIdx > order_result_list.getLength() THEN
+                  LET listIdx = order_result_list.getLength()
+               END IF
+               LET update_results = TRUE
             END IF
-         ELSE
-            LET int_flag = TRUE
-         END IF
-
-      AFTER DISPLAY
+         WHEN cAppend
+            ERROR "Not implemented yet!"
+      END CASE
+      LET int_flag = FALSE
+      IF update_results THEN
          CALL set_current_recs()
-         DISPLAY curr_order_rec.* TO s_orders.*
-         IF curr_detail_list.getLength() > 0 THEN
-            CALL DIALOG.setCurrentRow("s_details", 1)
-         END IF
-         DISPLAY SFMT("View Mode: Displaying order %1 or %2", listIdx, order_result_list.getLength()) TO formonly.status_label
-         CALL ui.Interface.refresh()
-         CONTINUE DISPLAY
+      END IF
 
-   END DISPLAY #detail_list
+   END WHILE
 
    CLOSE WINDOW detailWindow
 
@@ -1026,13 +1030,29 @@ END FUNCTION #load_shipvia_combo
 
 PRIVATE FUNCTION array_cleanup(dlg ui.Dialog) RETURNS ()
 
-   VAR idx INTEGER = 0
-   VAR idx_size = curr_detail_list.getLength()
-   WHILE idx <= idx_size
+   VAR idx INTEGER = 1
+   WHILE idx <= curr_detail_list.getLength()
       IF NVL(curr_detail_list[idx].productid, 0) == 0 THEN
-         CALL dlg.deleteRow("s_table", idx)
+         CALL dlg.deleteRow("s_details", idx)
          CALL curr_detail_list.deleteElement(idx)
+      ELSE
+         LET idx = idx + 1
       END IF
    END WHILE
 
 END FUNCTION #array_cleanup
+
+PRIVATE FUNCTION export_orders_to_excel() RETURNS ()
+   DEFINE jsonData util.JSONArray
+   DEFINE excelFile STRING
+
+   LET jsonData = util.JSONArray.fromFGL(order_result_list)
+   LET excelFile = tableExcelExport("s_table", jsonData)
+
+   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
+      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
+   ELSE
+      ERROR "Excel export failed."
+   END IF
+
+END FUNCTION #export_orders_to_excel

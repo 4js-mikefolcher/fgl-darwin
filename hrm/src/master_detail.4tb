@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ToolBar>
+  <ToolBarItem name="add" />
+  <ToolBarItem name="modify" />
+  <ToolBarItem name="delete" />
+  <ToolBarItem name="append" />
+  <ToolBarSeparator />
+  <ToolBarItem name="first" />
+  <ToolBarItem name="previous" />
+  <ToolBarItem name="next" />
+  <ToolBarItem name="last" />
+  <ToolBarSeparator />
+  <ToolBarItem name="accept" />
+  <ToolBarItem name="cancel" />
+  <ToolBarSeparator />
+  <ToolBarItem name="exit" />
+</ToolBar>

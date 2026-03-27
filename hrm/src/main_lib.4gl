@@ -43,8 +43,17 @@ FUNCTION form_initializer(frm ui.Form)
     DEFINE win ui.Window
     DEFINE pgm_name STRING
     DEFINE icon STRING
+    DEFINE doc om.DomNode
+    DEFINE toolbar_file STRING
 
     CALL frm.loadActionDefaults("generic.4ad")
+
+    -- Load toolbar from TAG attribute on the form's LAYOUT element
+    LET doc = frm.getNode()
+    LET toolbar_file = doc.getAttribute("tag")
+    IF toolbar_file IS NOT NULL AND toolbar_file.getLength() > 0 THEN
+        CALL frm.loadToolBar(toolbar_file)
+    END IF
 
     -- Set the window icon based on the running program
     LET win = ui.Window.getCurrent()

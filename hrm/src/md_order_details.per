@@ -1,23 +1,6 @@
 SCHEMA northwind
 
-TOOLBAR
-  ITEM add
-  ITEM modify
-  ITEM delete
-  ITEM append
-  SEPARATOR
-  ITEM first
-  ITEM previous
-  ITEM next
-  ITEM last
-  SEPARATOR
-  ITEM accept
-  ITEM cancel
-  SEPARATOR
-  ITEM exit
-END --TOOLBAR
-
-LAYOUT (TEXT="Order Detail", STYLE="noaction")
+LAYOUT (TEXT="Order Detail", STYLE="noaction", TAG="master_detail.4tb")
    VBOX
       GRID
 {
@@ -86,7 +69,7 @@ ATTRIBUTES
 
   -- Order Information --
   EDIT orderid = orders.orderid, DEFAULT=0, NOENTRY;
-  BUTTONEDIT customerid = orders.customerid, ACTION=zoom_customer;
+  BUTTONEDIT customerid = orders.customerid, ACTION=zoom_customer, UPSHIFT;
   EDIT customername = customers.companyname, NOENTRY;
   BUTTONEDIT employeeid = orders.employeeid, ACTION=zoom_employee;
   EDIT employeename = formonly.employeename TYPE VARCHAR, NOENTRY;
@@ -105,15 +88,15 @@ ATTRIBUTES
   EDIT shipcountry = orders.shipcountry;
 
   -- Order Details --
-  EDIT orderid2 = order_details.orderid, NOENTRY, TITLE="Order ID";
+  EDIT orderid2 = formonly.orderid TYPE INTEGER, NOENTRY, TITLE="Order ID";
   BUTTONEDIT productid = order_details.productid, ACTION=zoom_product, TITLE="Product ID";
   EDIT productname = products.productname, NOENTRY, TITLE="Product Name";
   unitprice = order_details.unitprice, FORMAT="$ <<<,<<<,<<&.&&", TITLE="Unit Price";
   quantity = order_details.quantity, TITLE="Quanity";
   discount = order_details.discount, TITLE="Discount Factor";
   totalprice = formonly.totalprice TYPE DECIMAL(10,2), FORMAT="$ <<<,<<<,<<&.&&", NOENTRY, TITLE="Total Price";
-  IMAGE img01 = formonly.rowedit, TITLE="Modify",ACTION = update;
-  IMAGE img02 = formonly.rowdelete, TITLE="Delete",ACTION = delete;
+  IMAGE img01 = formonly.rowedit, TITLE="Modify",ACTION = updaterow;
+  IMAGE img02 = formonly.rowdelete, TITLE="Delete",ACTION = deleterow;
 
   AGGREGATE tot001 = FORMONLY.rec_count, AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
   AGGREGATE tot002 = FORMONLY.order_total, AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
@@ -129,7 +112,7 @@ INSTRUCTIONS
     orders.shipname, orders.shipaddress, orders.shipcity,
     orders.shipregion, orders.shippostalcode, orders.shipcountry);
 
-  SCREEN RECORD s_details(order_details.orderid, order_details.productid, products.productname,
+  SCREEN RECORD s_details(formonly.orderid, order_details.productid, products.productname,
       order_details.unitprice, order_details.quantity, order_details.discount, formonly.totalprice,
       formonly.rowedit, formonly.rowdelete);
 

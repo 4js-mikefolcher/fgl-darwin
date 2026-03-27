@@ -8,8 +8,9 @@ BINDIR = ../../bin
 FORMCOMP = fglform
 SRCCOMP = fgl2p
 
-# FGLLDPATH for linking: include bin dir + existing system paths
-LDPATH = FGLLDPATH=$(BINDIR):$$FGLLDPATH
+# FGLLDPATH for linking: include bin dir, POI API package, and existing system paths
+#POIAPI = /opt/fourjs/packages/v6/poiapi
+#LDPATH = FGLLDPATH=$(BINDIR):$(POIAPI):$$FGLLDPATH
 
 # Source files
 FORMS = employees.per employees_list.per empl_terr.per empl_terr_list.per region.per region_list.per territories.per territories_list.per \
@@ -299,7 +300,7 @@ MODULE_TARGETS = $(patsubst %.4gl,$(BINDIR)/%.42m,$(MODULE_SOURCES))
 
 # Generic rule: compile any .4gl module to .42m and move to bin/
 $(BINDIR)/%.42m: %.4gl
-	$(MODCOMP) $<
+	$(LDPATH) $(MODCOMP) $<
 	mv $*.42m $(BINDIR)/
 
 # Program linking rules (each main program links only itself; deps resolved via IMPORT FGL)

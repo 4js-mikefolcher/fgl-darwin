@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ToolBar>
+  <ToolBarItem name="add" />
+  <ToolBarSeparator />
+  <ToolBarItem name="modify" />
+  <ToolBarItem name="delete" />
+  <ToolBarSeparator />
+  <ToolBarItem name="exit" />
+</ToolBar>
