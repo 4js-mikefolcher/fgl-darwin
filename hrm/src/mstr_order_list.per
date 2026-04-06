@@ -5,7 +5,7 @@ LAYOUT (TEXT="Order Search/List", TAG="search_list.4tb")
       GROUP (TEXT="Search Criteria Information", STYLE="box")
          GRID
 {
-[::"Order ID: "::fld001      ::"Order Date: "::fld002         ::btn001               ::]
+[::"Order ID: "::fld001      ::"Order Date: "::fld002         ::btn001               ::"    "::btn002  :]
 [::query_label                                                                       ::]
 }
          END --GRID
@@ -38,9 +38,10 @@ END --TABLES
 
 ATTRIBUTES
 
-   BUTTONEDIT fld001 = orders.orderid, COMMENT="Enter an order ID for search";
+   BUTTONEDIT fld001 = orders.orderid, COMMENT="Enter an order ID for search", ACTION=zoom_order, UPSHIFT;
    DATEEDIT fld002 = orders.orderdate, COMMENT="Enter an order date for search";
-   BUTTON btn001 : adv_search, TEXT="Advance Search";
+   BUTTON btn001 : adv_search, TEXT="+ Advanced Search", IMAGE="fa-search-plus", STYLE="btnLink";
+   BUTTON btn002 : add, TEXT="Add a new order", IMAGE="fa-plus", STYLE="btnPrimary";
    LABEL query_label = formonly.query_label, SIZEPOLICY=DYNAMIC;
 
    EDIT col001 = formonly.orderid TYPE INTEGER, TITLE="Order ID";

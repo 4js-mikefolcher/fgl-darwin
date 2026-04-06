@@ -2,11 +2,13 @@ IMPORT util
 IMPORT os
 
 IMPORT FGL md_helper
+IMPORT FGL model_helper
 IMPORT FGL model_orders
 IMPORT FGL model_order_details
 IMPORT FGL advsearch_orders
 IMPORT FGL ui_customers
 IMPORT FGL ui_employees
+IMPORT FGL ui_orders
 IMPORT FGL model_employees
 IMPORT FGL model_customers
 IMPORT FGL model_shippers
@@ -76,6 +78,14 @@ PUBLIC FUNCTION mstr_detail_orders()
          ON orders.orderid, orders.orderdate
          FROM s_search.orderid, s_search.orderdate
 
+         ON ACTION zoom_order
+            VAR order_id LIKE orders.orderid = ui_orders.order_lookup_menu()
+            IF NVL(order_id, 0) > 0 THEN
+               DISPLAY order_id TO s_search.orderid
+               LET selected_option = cSearch
+               ACCEPT DIALOG
+            END IF
+
       END CONSTRUCT
 
       DISPLAY ARRAY order_result_list TO s_table.*
@@ -141,25 +151,10 @@ PUBLIC FUNCTION mstr_detail_orders()
                EXIT DIALOG
             WHEN cSearch
                CALL execute_search(where_clause)
-               IF order_result_list.getLength() > 0 THEN
-                  LET listIdx = 1
-                  CALL set_current_recs()
-                  CALL DIALOG.setCurrentRow("s_table", listIdx)
-               ELSE
-                  NEXT FIELD orderid
-               END IF
             WHEN cAdvSearch
                LET where_clause = advsearch_orders()
-               IF where_clause.getLength() == 0 THEN
-                  NEXT FIELD orderid
-               END IF
-               CALL execute_search(where_clause)
-               IF order_result_list.getLength() > 0 THEN
-                  LET listIdx = 1
-                  CALL set_current_recs()
-                  CALL DIALOG.setCurrentRow("s_table", listIdx)
-               ELSE
-                  NEXT FIELD orderid
+               IF where_clause.getLength() > 0 THEN
+                  CALL execute_search(where_clause)
                END IF
             WHEN cExport
                CALL export_orders_to_excel()
@@ -181,6 +176,15 @@ PUBLIC FUNCTION mstr_detail_orders()
                   LET update_results = TRUE
                END IF
          END CASE
+         IF selected_option == cSearch OR selected_option == cAdvSearch THEN
+            IF order_result_list.getLength() > 0 THEN
+               LET listIdx = 1
+               CALL set_current_recs()
+               CALL DIALOG.setCurrentRow("s_table", listIdx)
+            ELSE
+               NEXT FIELD orderid
+            END IF
+         END IF
          IF update_results THEN
             CALL set_current_recs()
             CALL DIALOG.setCurrentRow("s_table", listIdx)
@@ -227,7 +231,6 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
    CALL order_detail_dict.clear()
 
    VAR header_idx = 0
-   VAR detail_idx = 0
 
    DECLARE cursSearchQuery CURSOR FROM sqlText
    FOREACH cursSearchQuery INTO r_orders.*, r_order_details.*, r_employee.*,
@@ -235,19 +238,10 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
 
       IF order_id == r_orders.orderid THEN
 
-         #Update the order_header_list record with quantity and amount
+         #Update totals and append detail for existing order
+         CALL append_search_detail(order_id, r_order_details.*, r_product.productname)
          LET order_result_list[header_idx].totalqty += NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt += NVL((r_order_details.unitprice * r_order_details.quantity * (1 - NVL(r_order_details.discount, 0))),0)
-
-         #Append and build the order details record
-         LET detail_idx = order_detail_dict[order_id].getLength() + 1
-         LET order_detail_dict[order_id][detail_idx].orderid = r_order_details.orderid
-         LET order_detail_dict[order_id][detail_idx].productid = r_order_details.productid
-         LET order_detail_dict[order_id][detail_idx].productname = r_product.productname
-         LET order_detail_dict[order_id][detail_idx].quantity = r_order_details.quantity
-         LET order_detail_dict[order_id][detail_idx].unitprice = r_order_details.unitprice
-         LET order_detail_dict[order_id][detail_idx].discount = r_order_details.discount
-         LET order_detail_dict[order_id][detail_idx].totalprice = NVL((r_order_details.unitprice * r_order_details.quantity * (1 - NVL(r_order_details.discount, 0))),0)
+         LET order_result_list[header_idx].totalamt += calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
 
       ELSE
          LET header_idx += 1
@@ -265,7 +259,7 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
          LET order_result_list[header_idx].shipcountry = r_orders.shipcountry
 
          LET order_result_list[header_idx].totalqty = NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt = NVL((r_order_details.unitprice * r_order_details.quantity * (1 - NVL(r_order_details.discount, 0))),0)
+         LET order_result_list[header_idx].totalamt = calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
 
          LET order_result_list[header_idx].employeename = SFMT("%1 %2", r_employee.firstname, r_employee.lastname)
          LET order_result_list[header_idx].companyname = r_customer.companyname
@@ -292,16 +286,9 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
          LET order_header_dict[order_id].customername = r_customer.companyname
          LET order_header_dict[order_id].employeename = SFMT("%1 %2", r_employee.firstname, r_employee.lastname)
 
-         #Append and build the order details record
+         #Append first detail record if present
          IF NVL(r_order_details.orderid, 0) > 0 THEN
-            LET detail_idx = order_detail_dict[order_id].getLength() + 1
-            LET order_detail_dict[order_id][detail_idx].orderid = r_order_details.orderid
-            LET order_detail_dict[order_id][detail_idx].productid = r_order_details.productid
-            LET order_detail_dict[order_id][detail_idx].productname = r_product.productname
-            LET order_detail_dict[order_id][detail_idx].quantity = r_order_details.quantity
-            LET order_detail_dict[order_id][detail_idx].unitprice = r_order_details.unitprice
-            LET order_detail_dict[order_id][detail_idx].discount = r_order_details.discount
-            LET order_detail_dict[order_id][detail_idx].totalprice = NVL((r_order_details.unitprice * r_order_details.quantity * (1 - NVL(r_order_details.discount, 0))),0)
+            CALL append_search_detail(order_id, r_order_details.*, r_product.productname)
          END IF
 
       END IF
@@ -316,6 +303,29 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
 
 END FUNCTION #execute_search
 
+PRIVATE FUNCTION append_search_detail(order_id LIKE orders.orderid,
+   r_dtl RECORD LIKE order_details.*, product_name LIKE products.productname) RETURNS ()
+
+   VAR idx = order_detail_dict[order_id].getLength() + 1
+   LET order_detail_dict[order_id][idx].orderid = r_dtl.orderid
+   LET order_detail_dict[order_id][idx].productid = r_dtl.productid
+   LET order_detail_dict[order_id][idx].productname = product_name
+   LET order_detail_dict[order_id][idx].quantity = r_dtl.quantity
+   LET order_detail_dict[order_id][idx].unitprice = r_dtl.unitprice
+   LET order_detail_dict[order_id][idx].discount = r_dtl.discount
+   LET order_detail_dict[order_id][idx].totalprice = calc_line_total(r_dtl.unitprice, r_dtl.quantity, r_dtl.discount)
+
+END FUNCTION #append_search_detail
+
+PRIVATE FUNCTION calc_line_total(
+   unitprice LIKE order_details.unitprice,
+   quantity LIKE order_details.quantity,
+   discount LIKE order_details.discount) RETURNS (DECIMAL(12,2))
+
+   RETURN NVL(unitprice * quantity * (1 - NVL(discount, 0)), 0)
+
+END FUNCTION #calc_line_total
+
 PRIVATE FUNCTION set_current_recs() RETURNS ()
 
    LET curr_result_rec = order_result_list[listIdx]
@@ -327,15 +337,7 @@ PRIVATE FUNCTION set_current_recs() RETURNS ()
       IF order_detail_dict[curr_result_rec.orderid].getLength() > 0 THEN
          VAR idx = 0
          FOR idx = 1 TO order_detail_dict[curr_result_rec.orderid].getLength()
-            LET curr_detail_list[idx].orderid = order_detail_dict[curr_result_rec.orderid][idx].orderid
-            LET curr_detail_list[idx].productid = order_detail_dict[curr_result_rec.orderid][idx].productid
-            LET curr_detail_list[idx].productname = order_detail_dict[curr_result_rec.orderid][idx].productname
-            LET curr_detail_list[idx].quantity = order_detail_dict[curr_result_rec.orderid][idx].quantity
-            LET curr_detail_list[idx].unitprice = order_detail_dict[curr_result_rec.orderid][idx].unitprice
-            LET curr_detail_list[idx].discount = order_detail_dict[curr_result_rec.orderid][idx].discount
-            LET curr_detail_list[idx].totalprice = order_detail_dict[curr_result_rec.orderid][idx].totalprice
-            LET curr_detail_list[idx].rowedit = cEditImage
-            LET curr_detail_list[idx].rowdelete = cDeleteImage
+            CALL curr_detail_list[idx].fromOrderDetail(order_detail_dict[curr_result_rec.orderid][idx])
          END FOR
          LET detailIdx = 1
       END IF
@@ -368,29 +370,11 @@ PRIVATE FUNCTION init_new_order() RETURNS ()
    LET detailIdx = 0
 END FUNCTION #init_new_order
 
-PRIVATE FUNCTION add_current_recs() RETURNS ()
+PRIVATE FUNCTION sync_current_recs(is_new BOOLEAN) RETURNS ()
 
-   VAR lastIdx = order_result_list.getLength() + 1
-   LET order_result_list[lastIdx].orderid = curr_order_rec.orderid
-   LET order_result_list[lastIdx].customerid = curr_order_rec.customerid
-   LET order_result_list[lastIdx].companyname = curr_order_rec.customername
-   LET order_result_list[lastIdx].employeeid = curr_order_rec.employeeid
-   LET order_result_list[lastIdx].employeename = curr_order_rec.employeename
-   LET order_result_list[lastIdx].freight = curr_order_rec.freight
-   LET order_result_list[lastIdx].orderdate = curr_order_rec.orderdate
-   LET order_result_list[lastIdx].shipcity = curr_order_rec.shipcity
-   LET order_result_list[lastIdx].shipcountry = curr_order_rec.shipcountry
-   LET order_result_list[lastIdx].shipname = curr_order_rec.shipname
-
-   LET order_header_dict[curr_order_rec.orderid] = curr_order_rec
-
-   LET listIdx = lastIdx
-   CALL update_detail_recs()
-   CALL set_current_recs()
-
-END FUNCTION #add_current_recs
-
-PRIVATE FUNCTION update_current_recs() RETURNS ()
+   IF is_new THEN
+      LET listIdx = order_result_list.getLength() + 1
+   END IF
 
    LET order_result_list[listIdx].orderid = curr_order_rec.orderid
    LET order_result_list[listIdx].customerid = curr_order_rec.customerid
@@ -403,11 +387,12 @@ PRIVATE FUNCTION update_current_recs() RETURNS ()
    LET order_result_list[listIdx].shipcountry = curr_order_rec.shipcountry
    LET order_result_list[listIdx].shipname = curr_order_rec.shipname
 
-   CALL update_detail_recs()
+   LET order_header_dict[curr_order_rec.orderid] = curr_order_rec
 
+   CALL update_detail_recs()
    CALL set_current_recs()
 
-END FUNCTION #update_current_recs
+END FUNCTION #sync_current_recs
 
 PRIVATE FUNCTION delete_current_recs() RETURNS ()
 
@@ -426,13 +411,21 @@ PRIVATE FUNCTION delete_current_recs() RETURNS ()
 
 END FUNCTION #delete_current_recs
 
+PRIVATE FUNCTION delete_current_recs_detail(rowIdx INTEGER) RETURNS ()
+
+   CALL curr_detail_list.deleteElement(rowIdx)
+   CALL update_detail_recs()
+   CALL set_current_recs()
+
+END FUNCTION #delete_current_recs_detail
+
 PRIVATE FUNCTION update_detail_recs() RETURNS ()
 
    IF listIdx > 0 AND listIdx <= order_result_list.getLength() THEN
 
       LET curr_result_rec = order_result_list[listIdx]
-      LET curr_result_rec.totalqty += 0
-      LET curr_result_rec.totalamt += 0
+      LET curr_result_rec.totalqty = 0
+      LET curr_result_rec.totalamt = 0
 
       VAR orderid = curr_result_rec.orderid
       CALL order_detail_dict[orderid].clear()
@@ -485,25 +478,8 @@ PRIVATE FUNCTION input_md_order(input_mode CHAR(1)) RETURNS (BOOLEAN)
             CONTINUE DIALOG
          END IF
 
-         #Check for duplicate products in details
-         VAR outerIdx = 0
-         FOR outerIdx = 1 TO curr_detail_list.getLength()
-            VAR innerIdx = 0
-            FOR innerIdx = outerIdx + 1 TO curr_detail_list.getLength()
-               IF curr_detail_list[innerIdx].productid == curr_detail_list[outerIdx].productid THEN
-                  ERROR "Cannot have 2 or more detail items with the same product, please consolidate"
-                  CONTINUE DIALOG
-               END IF
-            END FOR
-         END FOR
-
          #Persist based on mode
-         CASE input_mode
-            WHEN "A"
-               CALL save_new_order()
-            WHEN "C"
-               CALL save_existing_order()
-         END CASE
+         CALL save_order(input_mode)
 
    END DIALOG
 
@@ -515,52 +491,24 @@ PRIVATE FUNCTION input_md_order(input_mode CHAR(1)) RETURNS (BOOLEAN)
 
 END FUNCTION #input_md_order
 
-PRIVATE FUNCTION save_new_order() RETURNS ()
+PRIVATE FUNCTION save_order(input_mode CHAR(1)) RETURNS ()
+   DEFINE hdr_status model_helper.t_valid_rec
+   VAR is_new = (input_mode == "A")
    VAR success = FALSE
-   TRY
-      BEGIN WORK
-      VAR ins_status = curr_order_rec.insertRec()
-      IF ins_status.valid_status THEN
-         #Update detail order ids with the new order id
-         VAR idx = 0
-         LET success = TRUE
-         FOR idx = 1 TO curr_detail_list.getLength()
-            LET curr_detail_list[idx].orderid = curr_order_rec.orderid
-            VAR dtl_status = curr_detail_list[idx].toOrderDetail().insertRec()
-            IF NOT dtl_status.valid_status THEN
-               LET success = FALSE
-               ERROR dtl_status.valid_msg
-               EXIT FOR
-            END IF
-         END FOR
-         IF success THEN
-            COMMIT WORK
-            CALL add_current_recs()
-            MESSAGE "Order inserted successfully"
-         ELSE
-            ROLLBACK WORK
-         END IF
-      ELSE
-         ROLLBACK WORK
-         ERROR ins_status.valid_msg
-      END IF
-   CATCH
-      ROLLBACK WORK
-      ERROR "Error inserting order: ", SQLCA.SQLERRM
-   END TRY
-   IF NOT success THEN
-      LET int_flag = TRUE
-   END IF
-END FUNCTION #save_new_order
 
-PRIVATE FUNCTION save_existing_order() RETURNS ()
-   VAR success = FALSE
    TRY
       BEGIN WORK
-      VAR upd_status = curr_order_rec.updateRec()
-      IF upd_status.valid_status THEN
-         #Delete all existing details and re-insert from the current list
-         DELETE FROM order_details WHERE orderid = curr_order_rec.orderid
+
+      IF is_new THEN
+         LET hdr_status = curr_order_rec.insertRec()
+      ELSE
+         LET hdr_status = curr_order_rec.updateRec()
+         IF hdr_status.valid_status THEN
+            DELETE FROM order_details WHERE orderid = curr_order_rec.orderid
+         END IF
+      END IF
+
+      IF hdr_status.valid_status THEN
          LET success = TRUE
          VAR idx = 0
          FOR idx = 1 TO curr_detail_list.getLength()
@@ -574,23 +522,23 @@ PRIVATE FUNCTION save_existing_order() RETURNS ()
          END FOR
          IF success THEN
             COMMIT WORK
-            CALL update_current_recs()
-            MESSAGE "Order updated successfully"
+            CALL sync_current_recs(is_new)
+            MESSAGE SFMT("Order %1 successfully", IIF(is_new, "inserted", "updated"))
          ELSE
             ROLLBACK WORK
          END IF
       ELSE
          ROLLBACK WORK
-         ERROR upd_status.valid_msg
+         ERROR hdr_status.valid_msg
       END IF
    CATCH
       ROLLBACK WORK
-      ERROR "Error updating order: ", SQLCA.SQLERRM
+      ERROR SFMT("Error saving order: %1", SQLCA.SQLERRM)
    END TRY
    IF NOT success THEN
       LET int_flag = TRUE
    END IF
-END FUNCTION #save_existing_order
+END FUNCTION #save_order
 
 PRIVATE FUNCTION delete_md_order() RETURNS (BOOLEAN)
 
@@ -622,6 +570,57 @@ PRIVATE FUNCTION delete_md_order() RETURNS (BOOLEAN)
 
 END FUNCTION #delete_md_order
 
+PRIVATE FUNCTION update_md_detail(rowIdx INTEGER, input_mode CHAR(1)) RETURNS (BOOLEAN)
+
+   VAR order_dt_rec = curr_detail_list[rowIdx].toOrderDetail()
+
+   IF input_mode == "A" THEN
+      VAR status_rec = order_dt_rec.insertRec()
+      IF NOT status_rec.valid_status THEN
+         ERROR status_rec.valid_msg
+         RETURN FALSE
+      END IF
+   ELSE
+      VAR status_rec = order_dt_rec.updateRec()
+      IF NOT status_rec.valid_status THEN
+         ERROR status_rec.valid_msg
+         RETURN FALSE
+      END IF
+   END IF
+
+   CALL update_detail_recs()
+   CALL set_current_recs()
+   RETURN TRUE
+
+END FUNCTION #update_md_detail
+
+PRIVATE FUNCTION delete_md_detail(rowIdx INTEGER) RETURNS (BOOLEAN)
+
+   IF NOT dialog_prompt.delete_prompt() THEN
+      RETURN FALSE
+   END IF
+
+   VAR success = FALSE
+   TRY
+      BEGIN WORK
+      #Delete the item with product id
+      VAR product_id = curr_detail_list[rowIdx].productid
+      DELETE FROM order_details 
+         WHERE orderid = curr_order_rec.orderid
+         AND productid = product_id
+
+      COMMIT WORK
+      CALL delete_current_recs_detail(rowIdx)
+      MESSAGE "Order item deleted successfully"
+      LET success = TRUE
+   CATCH
+      ROLLBACK WORK
+      ERROR SFMT("Error deleting order detail record: %1", sqlca.sqlerrm)
+   END TRY
+   RETURN success
+
+END FUNCTION #delete_md_detail
+
 PRIVATE DIALOG header_input(input_mode CHAR(1))
    DEFINE selected_customer_id LIKE customers.customerid
    DEFINE selected_customer_name LIKE customers.companyname
@@ -630,13 +629,6 @@ PRIVATE DIALOG header_input(input_mode CHAR(1))
 
    INPUT curr_order_rec.* FROM s_orders.*
       ATTRIBUTES(WITHOUT DEFAULTS = TRUE)
-
-      ON ACTION ACCEPT
-         ACCEPT DIALOG
-
-      ON ACTION CANCEL
-         LET int_flag = TRUE
-         EXIT DIALOG
 
       ON ACTION zoom_customer
          CALL customer_lookup()
@@ -746,6 +738,8 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
             ERROR val_status.valid_msg
             NEXT FIELD productid
          END IF
+         LET curr_detail_list[currentIdx].discount = NVL(curr_detail_list[currentIdx].discount, 0)
+         LET curr_detail_list[currentIdx].quantity = NVL(curr_detail_list[currentIdx].quantity, 1)
 
       AFTER FIELD unitprice, quantity, discount
          LET currentIdx = DIALOG.getCurrentRow("s_details")
@@ -758,15 +752,16 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
             LET curr_detail_list[currentIdx].orderid = curr_order_rec.orderid
          END IF
          #Do validation and calculation
-         VAR rec_valid = curr_detail_list[currentIdx].toOrderDetail().validateRec(input_mode)
-         IF NOT rec_valid.valid_status THEN
-            ERROR rec_valid.valid_msg
-            CALL DIALOG.setCurrentRow("s_details", currentIdx)
-            CONTINUE DIALOG
+         IF LENGTH(curr_detail_list[currentIdx].productid) > 0 THEN
+            VAR rec_valid = curr_detail_list[currentIdx].toOrderDetail().validateRec(input_mode)
+            IF NOT rec_valid.valid_status THEN
+               ERROR rec_valid.valid_msg
+               CALL DIALOG.setCurrentRow("s_details", currentIdx)
+               CONTINUE DIALOG
+            END IF
+            #Do calculation
+            CALL curr_detail_list[currentIdx].calcPrice()
          END IF
-
-         #Do calculation
-         CALL curr_detail_list[currentIdx].calcPrice()
 
       AFTER INPUT
          #Do all input validation
@@ -790,20 +785,23 @@ END DIALOG
 PRIVATE FUNCTION detail_single_input(input_mode CHAR(1)) RETURNS ()
    DEFINE selected_product_id LIKE products.productid
    DEFINE selected_product_name LIKE products.productname
+   DEFINE orig_detail_rec t_detail_input_rec
 
-   VAR arrIdx = arr_curr()
-   VAR scrIdx = scr_line()
+   VAR arrIdx = detailIdx
 
    IF input_mode == "A" THEN
       LET curr_detail_list[arrIdx].orderid = curr_order_rec.orderid
       LET curr_detail_list[arrIdx].productid = NULL
       LET curr_detail_list[arrIdx].discount = 0
-      LET curr_detail_list[arrIdx].quantity = 0
+      LET curr_detail_list[arrIdx].quantity = 1
       LET curr_detail_list[arrIdx].totalprice = 0
       LET curr_detail_list[arrIdx].unitprice = 0
+      LET detailIdx = arrIdx
+   ELSE
+      LET orig_detail_rec = curr_detail_list[arrIdx]
    END IF
 
-   INPUT curr_detail_list[arrIdx].* WITHOUT DEFAULTS FROM s_details[scrIdx].*
+   INPUT curr_detail_list[arrIdx].* WITHOUT DEFAULTS FROM s_details[arrIdx].*
       ATTRIBUTE(UNBUFFERED)
       BEFORE INPUT
          IF input_mode == "C" THEN
@@ -837,6 +835,8 @@ PRIVATE FUNCTION detail_single_input(input_mode CHAR(1)) RETURNS ()
             ERROR val_status.valid_msg
             NEXT FIELD productid
          END IF
+                  LET curr_detail_list[arrIdx].discount = NVL(curr_detail_list[arrIdx].discount, 0)
+         LET curr_detail_list[arrIdx].quantity = NVL(curr_detail_list[arrIdx].quantity, 1)
 
       AFTER FIELD unitprice, quantity, discount
          CALL curr_detail_list[arrIdx].calcPrice()
@@ -850,22 +850,27 @@ PRIVATE FUNCTION detail_single_input(input_mode CHAR(1)) RETURNS ()
    END INPUT
 
    IF int_flag THEN
+      IF input_mode == "A" THEN
+         CALL curr_detail_list.deleteElement(arrIdx)
+      ELSE
+         LET curr_detail_list[arrIdx] = orig_detail_rec
+      END IF
       RETURN
    END IF
 
 END FUNCTION #detail_single_input
 
 PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
-   DEFINE order_id LIKE orders.orderid
    DEFINE selected_option SMALLINT
+   DEFINE has_changes BOOLEAN
 
    OPEN WINDOW detailWindow WITH FORM "md_order_details"
 
    LET int_flag = FALSE
+   LET has_changes = FALSE
 
    WHILE int_flag == FALSE
 
-      LET order_id = order_result_list[listIdx].orderid
       DISPLAY curr_order_rec.* TO s_orders.*
 
       VAR row_action = FALSE
@@ -882,6 +887,8 @@ PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
             EXIT DISPLAY
 
          ON ACTION APPEND
+            LET detailIdx = curr_detail_list.getLength() + 1
+            CALL DIALOG.appendRow("s_details")
             LET selected_option = cAppend
             EXIT DISPLAY
 
@@ -894,10 +901,20 @@ PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
             EXIT DISPLAY
 
          ON ACTION deleterow
-            ERROR "Not implemented yet!"
+            VAR idx = DIALOG.getCurrentRow("s_details")
+            VAR result = delete_md_detail(idx)
+            IF NOT result THEN
+               ERROR "Error deleting the selected order item"
+               CONTINUE DISPLAY
+            END IF
+            LET has_changes = TRUE
+            ACCEPT DISPLAY
 
          ON ACTION updaterow
-            ERROR "Not implemented yet!"
+            LET detailIdx = DIALOG.getCurrentRow("s_details")
+            LET selected_option = cEdit
+            LET row_action = TRUE
+            EXIT DISPLAY
 
          ON ACTION EXIT
             LET selected_option = cQuit
@@ -949,10 +966,30 @@ PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
             IF input_md_order("A") THEN
                LET listIdx = order_result_list.getLength()
                LET update_results = TRUE
+               LET has_changes = TRUE
             END IF
          WHEN cEdit
-            IF input_md_order("C") THEN
-               LET update_results = TRUE
+            IF row_action THEN
+               CALL detail_single_input("C")
+               IF NOT int_flag THEN
+                  IF update_md_detail(detailIdx, "C") THEN
+                     LET update_results = TRUE
+                     LET has_changes = TRUE
+                  END IF
+               END IF
+            ELSE
+               IF input_md_order("C") THEN
+                  LET update_results = TRUE
+                  LET has_changes = TRUE
+               END IF
+            END IF
+         WHEN cAppend
+            CALL detail_single_input("A")
+            IF NOT int_flag THEN
+               IF update_md_detail(detailIdx, "A") THEN
+                  LET update_results = TRUE
+                  LET has_changes = TRUE
+               END IF
             END IF
          WHEN cDelete
             IF delete_md_order() THEN
@@ -960,9 +997,8 @@ PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
                   LET listIdx = order_result_list.getLength()
                END IF
                LET update_results = TRUE
+               LET has_changes = TRUE
             END IF
-         WHEN cAppend
-            ERROR "Not implemented yet!"
       END CASE
       LET int_flag = FALSE
       IF update_results THEN
@@ -973,7 +1009,7 @@ PRIVATE FUNCTION view_md_order() RETURNS (BOOLEAN)
 
    CLOSE WINDOW detailWindow
 
-   RETURN TRUE
+   RETURN has_changes
 
 END FUNCTION #view_md_order
 
@@ -996,6 +1032,15 @@ PRIVATE FUNCTION (self t_detail_input_rec) toOrderDetail() RETURNS (t_order_deta
    RETURN rec_order_detail
 
 END FUNCTION #toOrderDetail
+
+PRIVATE FUNCTION (self t_detail_input_rec) fromOrderDetail(src t_order_detail) RETURNS ()
+
+   VAR jsonObj = util.JSONObject.fromFGL(src)
+   CALL jsonObj.toFGL(self)
+   LET self.rowedit = cEditImage
+   LET self.rowdelete = cDeleteImage
+
+END FUNCTION #fromOrderDetail
 
 -- =====================================================================
 -- Function: default_unitprice_from_product (PRIVATE)

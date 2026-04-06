@@ -236,4 +236,14 @@
     image="fa-pdf"
     comment="Export to PDF"
     acceleratorName="Control-L" />
+
+   <ActionDefault name="cancel_search"
+    text="Cancel"
+    comment="Cancel Advanced Search" />
+
+   <ActionDefault name="do_search"
+    text="Search"
+    comment="Execute Advanced Search"
+    acceleratorName="Enter" />
+
 </ActionDefaultList>

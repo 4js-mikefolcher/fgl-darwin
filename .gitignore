@@ -39,3 +39,8 @@ build/
 com/
 data/
 fonts/
+
+#Genero Package Files
+.mcp.json
+.fglpkg/
+*.lock

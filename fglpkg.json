@@ -1,0 +1,9 @@
+{
+  "name": "fgl-darwin",
+  "version": "1.0.0",
+  "dependencies": {
+    "fgl": {
+      "poiapi": "1.2.0"
+    }
+  }
+}
