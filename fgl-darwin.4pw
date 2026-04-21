@@ -270,6 +270,7 @@
           <File filePath="hrm/src/ui_usstates.4gl"/>
         </VirtualFolder>
         <VirtualFolder label="resources">
+          <File filePath="hrm/src/detail_cust_demo.4tb"/>
           <File filePath="hrm/src/detail_no_modify.4tb"/>
           <File filePath="hrm/src/detail_shippers.4tb"/>
           <File filePath="hrm/src/detail_standard.4tb"/>
@@ -379,6 +380,12 @@
       <Application binaryName="test_rest_usstates" id="1134826828" label="test_rest_usstates">
         <Configuration id="1134826829" label="test_rest_usstates"/>
         <File filePath="hrm/src/test_rest_usstates.4gl"/>
+      </Application>
+    </Group>
+    <Group id="1134826900" label="GGC Tests">
+      <Application binaryName="test_md_orders" id="1134826901" label="test_md_orders">
+        <Configuration id="1134826902" label="test_md_orders"/>
+        <File filePath="ggc-test/test_md_orders.4gl"/>
       </Application>
     </Group>
   </Group>
