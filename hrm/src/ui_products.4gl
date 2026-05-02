@@ -1,3 +1,5 @@
+IMPORT util
+IMPORT os
 IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
@@ -5,6 +7,7 @@ IMPORT FGL model_products
 IMPORT FGL ui_suppliers
 IMPORT FGL ui_categories
 IMPORT FGL model_helper
+IMPORT FGL com.fourjs.poiapi.fgl_table_export
 
 DATABASE northwind
 
@@ -407,11 +410,32 @@ FUNCTION products_list_display() RETURNS (INTEGER, INTEGER)
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
+      ON ACTION excel_export
+         CALL export_products_to_excel()
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #products_list_display
+
+-- =====================================================================
+-- Function: export_products_to_excel (PRIVATE)
+-- Purpose : Export the displayed products list to an Excel file
+-- =====================================================================
+PRIVATE FUNCTION export_products_to_excel()
+   DEFINE jsonData util.JSONArray
+   DEFINE excelFile STRING
+
+   LET jsonData = util.JSONArray.fromFGL(products_arr)
+   LET excelFile = tableExcelExport("products_list", jsonData)
+
+   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
+      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
+   ELSE
+      ERROR "Excel export failed."
+   END IF
+
+END FUNCTION #export_products_to_excel
 
 -- =====================================================================
 -- Function: products_do_command

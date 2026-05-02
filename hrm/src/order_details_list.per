@@ -4,17 +4,18 @@ LAYOUT (TEXT="Order Details List View", TAG="list_standard.4tb")
   VBOX
     TABLE (DOUBLECLICK=modify)
     {
-     Order ID  Product                                   Unit Price Qty  Discount
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
-    [c1       |c2                                       |c3        |c4  |c5       ]
+     Order ID  Product                                   Unit Price Qty  Discount Total Price
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [c1       |c2                                       |c3        |c4  |c5      |c6         ]
+    [tcnt     ]                                                    [tqty]        [tamt       ]
     }
     END
   END
@@ -26,8 +27,16 @@ ATTRIBUTES
   c3 = formonly.unitprice TYPE FLOAT, NOENTRY;
   c4 = formonly.quantity TYPE SMALLINT, NOENTRY;
   c5 = formonly.discount TYPE FLOAT, NOENTRY;
+  c6 = formonly.totalprice TYPE DECIMAL, NOENTRY, FORMAT="$ <<<,<<<,<<&.&&";
+
+  AGGREGATE tcnt = FORMONLY.rec_count,
+    AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
+  AGGREGATE tqty = FORMONLY.qty_total,
+    AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
+  AGGREGATE tamt = FORMONLY.amt_total,
+    AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
 END --ATTRIBUTES
 
 INSTRUCTIONS
-  SCREEN RECORD order_details_list[10](orderid, productname, unitprice, quantity, discount);
+  SCREEN RECORD order_details_list[10](orderid, productname, unitprice, quantity, discount, totalprice);
 END

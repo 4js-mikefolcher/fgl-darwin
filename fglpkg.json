@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "dependencies": {
     "fgl": {
-      "poiapi": "^1.3.0",
-      "aim": "^1.0.1"
+      "aim": "^1.0.1",
+      "poiapi": "^1.0.3",
+      "restdblib": "^1.0.0"
     }
   }
 }

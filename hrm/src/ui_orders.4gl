@@ -1,3 +1,5 @@
+IMPORT util
+IMPORT os
 IMPORT FGL main_lib
 IMPORT FGL list_view_helper
 IMPORT FGL controller
@@ -6,6 +8,7 @@ IMPORT FGL ui_customers
 IMPORT FGL ui_employees
 IMPORT FGL ui_order_details
 IMPORT FGL model_helper
+IMPORT FGL com.fourjs.poiapi.fgl_table_export
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -487,11 +490,32 @@ FUNCTION orders_list_display()
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
+      ON ACTION excel_export
+         CALL export_orders_to_excel(list_arr)
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #orders_list_display
+
+-- =====================================================================
+-- Function: export_orders_to_excel (PRIVATE)
+-- Purpose : Export the displayed orders list to an Excel file
+-- =====================================================================
+PRIVATE FUNCTION export_orders_to_excel(list_arr DYNAMIC ARRAY OF t_order_list)
+   DEFINE jsonData util.JSONArray
+   DEFINE excelFile STRING
+
+   LET jsonData = util.JSONArray.fromFGL(list_arr)
+   LET excelFile = tableExcelExport("orders_list", jsonData)
+
+   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
+      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
+   ELSE
+      ERROR "Excel export failed."
+   END IF
+
+END FUNCTION #export_orders_to_excel
 
 -- =====================================================================
 -- Function: orders_do_command
