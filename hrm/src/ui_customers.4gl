@@ -447,6 +447,15 @@ FUNCTION customer_lookup_menu()
          COMMAND "Last" "View last record in result set"
             LET currentIdx = customers_arr.getLength()
             EXIT MENU
+         COMMAND "List" "Switch to List View"
+            LET currentIdx = customer_lookup_table(currentIdx)
+            IF int_flag OR currentIdx < 1 THEN
+               LET int_flag = FALSE
+            ELSE
+               LET selectedIdx = currentIdx
+               CALL customers_load_at(selectedIdx)
+            END IF
+            EXIT MENU
          COMMAND "Select" "Select the current customer"
             LET selectedIdx = currentIdx
             CALL customers_load_at(selectedIdx)
@@ -465,5 +474,63 @@ FUNCTION customer_lookup_menu()
    RETURN "", ""
 
 END FUNCTION #customer_lookup_menu
+
+PRIVATE FUNCTION customer_lookup_table(currentIdx INTEGER) RETURNS (INTEGER)
+   DEFINE list_arr DYNAMIC ARRAY OF t_customer_list
+   DEFINE idx INTEGER
+
+   OPEN WINDOW customers_list WITH FORM "customers_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   FOR idx = 1 TO customers_arr.getLength()
+      CALL list_arr.appendElement()
+      LET list_arr[idx].customerid = customers_arr[idx].customerid
+      LET list_arr[idx].companyname = customers_arr[idx].companyname
+      LET list_arr[idx].contactname = customers_arr[idx].contactname
+      LET list_arr[idx].contacttitle = customers_arr[idx].contacttitle
+      LET list_arr[idx].phone = customers_arr[idx].phone
+   END FOR
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " customers"
+
+   VAR first_time = TRUE
+   DISPLAY ARRAY list_arr TO customers_list.*
+      ATTRIBUTES(DOUBLECLICK=ACCEPT)
+      BEFORE ROW
+         IF first_time THEN
+            CALL DIALOG.setCurrentRow("customers_list", currentIdx)
+            LET first_time = FALSE
+         ELSE
+            LET currentIdx = arr_curr()
+         END IF
+      ON ACTION accept
+         ACCEPT DISPLAY
+      ON ACTION CANCEL
+         LET int_flag = TRUE
+         EXIT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW customers_list
+
+   RETURN currentIdx
+
+END FUNCTION #customer_lookup_table
+
+PRIVATE DEFINE load_cust_prepped BOOLEAN = FALSE
+PUBLIC FUNCTION load_customers(cbx ui.ComboBox) RETURNS ()
+   DEFINE cust_id LIKE customers.customerid
+   DEFINE cust_name LIKE customers.companyname
+
+   IF NOT load_cust_prepped THEN
+      DECLARE curs_load_customers CURSOR FOR 
+         SELECT customers.customerid, customers.companyname FROM customers 
+         ORDER BY companyname
+   END IF
+
+   FOREACH curs_load_customers INTO cust_id, cust_name
+      CALL cbx.addItem(cust_id, SFMT("%1 (%2)", cust_name, cust_id))
+   END FOREACH
+
+END FUNCTION #load_customers
 
 

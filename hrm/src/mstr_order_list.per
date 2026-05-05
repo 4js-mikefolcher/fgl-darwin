@@ -5,8 +5,8 @@ LAYOUT (TEXT="Order Search/List", TAG="search_list.4tb")
       GROUP (TEXT="Search Criteria Information", STYLE="box")
          GRID
 {
-[::"Order ID: "::fld001      ::"Order Date: "::fld002         ::btn001               ::"    "::btn002  :]
-[::query_label                                                                       ::]
+[::"Order ID: "::fld001      ::"Order Date: "::fld002         ::"Customer: "::fld003                    ::"Employee: "::fld004             ]
+[::query_label                                                                                                                           ::]
 }
          END --GRID
       END --GRID
@@ -40,14 +40,14 @@ ATTRIBUTES
 
    BUTTONEDIT fld001 = orders.orderid, COMMENT="Enter an order ID for search", ACTION=zoom_order, UPSHIFT;
    DATEEDIT fld002 = orders.orderdate, COMMENT="Enter an order date for search";
-   BUTTON btn001 : adv_search, TEXT="+ Advanced Search", IMAGE="fa-search-plus", STYLE="btnLink";
-   BUTTON btn002 : add, TEXT="Add a new order", IMAGE="fa-plus", STYLE="btnPrimary";
+   COMBOBOX fld003 = customers.customerid, INITIALIZER=ui_customers.load_customers, COMMENT="Select customers for search";
+   COMBOBOX fld004 = employees.employeeid, INITIALIZER=ui_employees.load_employees, COMMENT="Select employees for search";
    LABEL query_label = formonly.query_label, SIZEPOLICY=DYNAMIC;
 
    EDIT col001 = formonly.orderid TYPE INTEGER, TITLE="Order ID";
-   PHANTOM customers.customerid;
+   PHANTOM formonly.customerid;
    EDIT col002 = customers.companyname, SCROLL, TITLE="Customer";
-   PHANTOM employees.employeeid;
+   PHANTOM formonly.employeeid;
    EDIT col003 = formonly.employeename TYPE VARCHAR, SCROLL, TITLE="Employee";
    EDIT col004 = formonly.orderdate TYPE DATE, TITLE="Order Date";
    EDIT col005 = orders.freight, FORMAT="$ <<<,<<<,<<&.&&", SCROLL, TITLE="Freight";
@@ -68,7 +68,7 @@ END --ATTRIBUTES
 
 INSTRUCTIONS
 
-   SCREEN RECORD s_search (orders.orderid, orders.orderdate, formonly.query_label);
+   SCREEN RECORD s_search (orders.orderid, orders.orderdate, customers.customerid, employees.employeeid, formonly.query_label);
    SCREEN RECORD s_table (formonly.orderid THRU formonly.rowdelete);
 
 END --INSTRUCTIONS

@@ -75,8 +75,10 @@ PUBLIC FUNCTION mstr_detail_orders()
    DIALOG ATTRIBUTES(UNBUFFERED)
 
       CONSTRUCT where_clause
-         ON orders.orderid, orders.orderdate
-         FROM s_search.orderid, s_search.orderdate
+         ON orders.orderid, orders.orderdate,
+            customers.customerid, employees.employeeid
+         FROM s_search.orderid, s_search.orderdate,
+            s_search.customerid, s_search.employeeid
 
          ON ACTION zoom_order
             VAR order_id LIKE orders.orderid = ui_orders.order_lookup_menu()
@@ -480,6 +482,11 @@ PRIVATE FUNCTION input_md_order(input_mode CHAR(1)) RETURNS (BOOLEAN)
 
          #Persist based on mode
          CALL save_order(input_mode)
+         IF int_flag THEN
+            ERROR "An error occurred while saving, please try again"
+            CONTINUE DIALOG
+         END IF
+         MESSAGE "Your changes have been saved"
 
    END DIALOG
 

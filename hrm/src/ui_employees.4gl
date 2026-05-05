@@ -460,6 +460,15 @@ FUNCTION employee_lookup_menu()
          COMMAND "Last" "View last record in result set"
             LET currentIdx = employeeList.getLength()
             EXIT MENU
+         COMMAND "List" "Switch to List View"
+            LET currentIdx = employees_lookup_table(currentIdx)
+            IF int_flag OR currentIdx < 1 THEN
+               LET int_flag = FALSE
+            ELSE
+               LET selectedIdx = currentIdx
+               CALL employees_load_at(selectedIdx)
+            END IF
+            EXIT MENU
          COMMAND "Select" "Select the current employee"
             LET selectedIdx = currentIdx
             CALL employees_load_at(selectedIdx)
@@ -478,6 +487,48 @@ FUNCTION employee_lookup_menu()
    RETURN 0, ""
 
 END FUNCTION #employee_lookup_menu
+
+PRIVATE FUNCTION employees_lookup_table(currentIdx INTEGER) RETURNS (INTEGER)
+   DEFINE list_arr DYNAMIC ARRAY OF t_employee_list
+   DEFINE idx INTEGER
+
+   OPEN WINDOW employees_list WITH FORM "employees_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   FOR idx = 1 TO employeeList.getLength()
+      CALL list_arr.appendElement()
+      LET list_arr[idx].employeeid = employeeList[idx].employeeid
+      LET list_arr[idx].lastname = employeeList[idx].lastname
+      LET list_arr[idx].firstname = employeeList[idx].firstname
+      LET list_arr[idx].title = employeeList[idx].title
+      LET list_arr[idx].city = employeeList[idx].city
+      LET list_arr[idx].country = employeeList[idx].country
+   END FOR
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " employees"
+
+   VAR first_time = TRUE
+   DISPLAY ARRAY list_arr TO employees_list.*
+      ATTRIBUTES(DOUBLECLICK=ACCEPT)
+      BEFORE ROW
+         IF first_time THEN
+            CALL DIALOG.setCurrentRow("employees_list", currentIdx)
+            LET first_time = FALSE
+         ELSE
+            LET currentIdx = arr_curr()
+         END IF
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         ACCEPT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW employees_list
+
+   RETURN currentIdx
+
+END FUNCTION #employees_lookup_table
 
 -- =====================================================================
 -- Function: load_employees_ext
@@ -542,5 +593,24 @@ FUNCTION populate_courtesy_combo()
    CALL cb.addItem("Ms.",  "Ms.")
 
 END FUNCTION #populate_courtesy_combo
+
+PRIVATE DEFINE load_empl_prepped BOOLEAN = FALSE
+PUBLIC FUNCTION load_employees(cbx ui.ComboBox) RETURNS ()
+   DEFINE empl_id LIKE employees.employeeid
+   DEFINE empl_fname LIKE employees.firstname
+   DEFINE empl_lname LIKE employees.lastname
+
+   IF NOT load_empl_prepped THEN
+      DECLARE curs_load_empls CURSOR FOR
+         SELECT employees.employeeid, employees.firstname, employees.lastname
+         FROM employees
+         ORDER BY employees.lastname, employees.firstname
+   END IF
+
+   FOREACH curs_load_empls INTO empl_id, empl_fname, empl_lname
+      CALL cbx.addItem(empl_id, SFMT("%1, %2 (%3)", empl_lname, empl_fname, empl_id))
+   END FOREACH
+
+END FUNCTION #load_employees
 
 

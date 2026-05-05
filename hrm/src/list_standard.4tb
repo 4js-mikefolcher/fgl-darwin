@@ -5,6 +5,7 @@
   <ToolBarItem name="modify" />
   <ToolBarItem name="delete" />
   <ToolBarItem name="excel_export" />
+  <ToolBarItem name="accept" />
   <ToolBarSeparator />
   <ToolBarItem name="exit" />
 </ToolBar>
