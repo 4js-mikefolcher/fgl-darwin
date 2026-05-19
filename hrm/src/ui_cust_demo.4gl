@@ -1,4 +1,5 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_cust_demo
@@ -211,7 +212,7 @@ END FUNCTION #cust_demo_do_add_edit
 FUNCTION cust_demo_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Customer demographic delete canceled"
       LET int_flag = TRUE
       RETURN

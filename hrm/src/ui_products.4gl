@@ -1,13 +1,12 @@
 IMPORT util
-IMPORT os
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_products
 IMPORT FGL ui_suppliers
 IMPORT FGL ui_categories
 IMPORT FGL model_helper
-IMPORT FGL com.fourjs.poiapi.fgl_table_export
 
 DATABASE northwind
 
@@ -270,7 +269,7 @@ END FUNCTION #products_do_add_edit
 FUNCTION products_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Product delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -344,31 +343,12 @@ FUNCTION products_list_display() RETURNS (INTEGER, INTEGER)
          LET selectedOption = cViewRecord
          EXIT DISPLAY
       ON ACTION excel_export
-         CALL export_products_to_excel()
+         CALL list_view_helper.export_array_to_excel("products_list", util.JSONArray.fromFGL(products_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #products_list_display
-
--- =====================================================================
--- Function: export_products_to_excel (PRIVATE)
--- Purpose : Export the displayed products list to an Excel file
--- =====================================================================
-PRIVATE FUNCTION export_products_to_excel()
-   DEFINE jsonData util.JSONArray
-   DEFINE excelFile STRING
-
-   LET jsonData = util.JSONArray.fromFGL(products_arr)
-   LET excelFile = tableExcelExport("products_list", jsonData)
-
-   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
-      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
-   ELSE
-      ERROR "Excel export failed."
-   END IF
-
-END FUNCTION #export_products_to_excel
 
 -- =====================================================================
 -- Function: products_do_command

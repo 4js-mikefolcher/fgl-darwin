@@ -59,19 +59,6 @@ FUNCTION form_initializer(frm ui.Form)
 
 END FUNCTION #form_initializer
 
-FUNCTION confirm_delete()
-
-   MENU "Confirm Deletion"
-      ATTRIBUTES(COMMENT="Are you sure you want to delete this record?", STYLE="dialog")
-      COMMAND "Yes"
-         RETURN TRUE
-      COMMAND "No"
-         EXIT MENU
-   END MENU
-   RETURN FALSE
-
-END FUNCTION #confirm_delete
-
 -- =====================================================================
 -- Function: generate_temp_filename
 -- Purpose : Generate a unique temporary file path that works across

@@ -1,4 +1,5 @@
 IMPORT FGL model_helper
+IMPORT ui
 SCHEMA northwind
 
 PUBLIC TYPE t_shipper RECORD
@@ -120,3 +121,23 @@ PUBLIC FUNCTION validate_shipvia(shipperid LIKE shippers.shipperid) RETURNS (t_v
    RETURN valid_status
 
 END FUNCTION #validate_shipvia
+
+-- =====================================================================
+-- Function: load_shipvia_combo (PUBLIC)
+-- Purpose : Populate a shipvia combobox from the shippers table
+-- =====================================================================
+PUBLIC FUNCTION load_shipvia_combo(cbx ui.ComboBox)
+   DEFINE ship_id LIKE shippers.shipperid
+   DEFINE ship_name LIKE shippers.companyname
+
+   IF cbx IS NULL THEN
+      RETURN
+   END IF
+   CALL cbx.clear()
+   DECLARE c_shipvia CURSOR FOR
+      SELECT shipperid, companyname FROM shippers ORDER BY companyname
+   FOREACH c_shipvia INTO ship_id, ship_name
+      CALL cbx.addItem(ship_id, ship_name)
+   END FOREACH
+
+END FUNCTION #load_shipvia_combo

@@ -1,4 +1,5 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL model_helper
 IMPORT FGL list_view_helper
 IMPORT FGL controller
@@ -297,7 +298,7 @@ END FUNCTION #empl_terr_do_add_edit
 FUNCTION empl_terr_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Employee territory delete canceled"
       LET int_flag = TRUE
       RETURN

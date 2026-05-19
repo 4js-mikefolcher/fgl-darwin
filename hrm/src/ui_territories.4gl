@@ -1,4 +1,5 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_territories
@@ -307,7 +308,7 @@ END FUNCTION #territories_do_add_edit
 FUNCTION territories_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Territory delete canceled"
       LET int_flag = TRUE
       RETURN

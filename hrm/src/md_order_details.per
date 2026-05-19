@@ -76,7 +76,7 @@ ATTRIBUTES
   DATEEDIT orderdt = orders.orderdate;
   DATEEDIT reqireddt = orders.requireddate;
   DATEEDIT shippeddt = orders.shippeddate;
-  COMBOBOX shipvia = orders.shipvia, INITIALIZER=load_shipvia_combo;
+  COMBOBOX shipvia = orders.shipvia, INITIALIZER=model_shippers.load_shipvia_combo;
   EDIT freight = orders.freight,FORMAT="$ <<<,<<<,<<&.&&";
 
   -- Shipping Information --

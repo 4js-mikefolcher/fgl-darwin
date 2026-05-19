@@ -1,13 +1,12 @@
 IMPORT util
-IMPORT os
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_order_details
 IMPORT FGL ui_orders
 IMPORT FGL ui_products
 IMPORT FGL model_helper
-IMPORT FGL com.fourjs.poiapi.fgl_table_export
 DATABASE northwind
 
 DEFINE order_details_arr DYNAMIC ARRAY OF t_order_detail
@@ -345,7 +344,7 @@ END FUNCTION #order_details_do_add_edit
 FUNCTION order_details_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Order detail delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -428,31 +427,12 @@ FUNCTION order_details_list_display()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
       ON ACTION excel_export
-         CALL export_order_details_to_excel(list_arr)
+         CALL list_view_helper.export_array_to_excel("order_details_list", util.JSONArray.fromFGL(list_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #order_details_list_display
-
--- =====================================================================
--- Function: export_order_details_to_excel (PRIVATE)
--- Purpose : Export the displayed order_details list to an Excel file
--- =====================================================================
-PRIVATE FUNCTION export_order_details_to_excel(list_arr DYNAMIC ARRAY OF t_order_detail_list)
-   DEFINE jsonData util.JSONArray
-   DEFINE excelFile STRING
-
-   LET jsonData = util.JSONArray.fromFGL(list_arr)
-   LET excelFile = tableExcelExport("order_details_list", jsonData)
-
-   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
-      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
-   ELSE
-      ERROR "Excel export failed."
-   END IF
-
-END FUNCTION #export_order_details_to_excel
 
 -- =====================================================================
 -- Function: order_details_do_command

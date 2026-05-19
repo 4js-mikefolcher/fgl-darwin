@@ -1,4 +1,5 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_suppliers
@@ -223,7 +224,7 @@ END FUNCTION #suppliers_do_add_edit
 FUNCTION suppliers_do_delete()
 
     LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
+    IF NOT dialog_prompt.delete_prompt() THEN
         ERROR "Supplier delete canceled"
         LET int_flag = TRUE
         RETURN

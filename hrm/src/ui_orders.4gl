@@ -1,14 +1,14 @@
 IMPORT util
-IMPORT os
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_orders
+IMPORT FGL model_shippers
 IMPORT FGL ui_customers
 IMPORT FGL ui_employees
 IMPORT FGL ui_order_details
 IMPORT FGL model_helper
-IMPORT FGL com.fourjs.poiapi.fgl_table_export
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -95,7 +95,7 @@ FUNCTION view_orders_for_customer(cust_id)
    OPEN WINDOW viewOrdersWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET where_clause = " orders.customerid = '", cust_id CLIPPED, "'"
    CALL orders_do_load(where_clause)
 
@@ -127,7 +127,7 @@ FUNCTION view_orders_for_employee(empl_id)
    OPEN WINDOW viewOrdersWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET where_clause = " orders.employeeid = ", empl_id
    CALL orders_do_load(where_clause)
 
@@ -203,7 +203,7 @@ FUNCTION orders_do_query()
 
    CLEAR FORM
    CALL orders_clear_curr()
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET int_flag = FALSE
    CONSTRUCT where_clause ON orders.orderid, orders.customerid, orders.employeeid,
                              orders.orderdate, orders.requireddate, orders.shippeddate,
@@ -283,7 +283,7 @@ FUNCTION orders_do_add_edit(mode CHAR(1))
    IF mode == "A" THEN
       CALL orders_clear_curr()
    END IF
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
 
    INPUT BY NAME curr_orders.*
       ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
@@ -300,7 +300,7 @@ FUNCTION orders_do_add_edit(mode CHAR(1))
          IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
             LET curr_orders.customerid = selected_customer_id
             LET curr_orders.customername = selected_customer_name
-            CALL default_shipping_from_customer(selected_customer_id)
+            CALL curr_orders.default_shipping_from_customer()
          END IF
       ON ACTION zoom_employee
          CALL employee_lookup()
@@ -317,7 +317,7 @@ FUNCTION orders_do_add_edit(mode CHAR(1))
             ERROR valid_msg
             NEXT FIELD customerid
          ELSE
-            CALL default_shipping_from_customer(curr_orders.customerid)
+            CALL curr_orders.default_shipping_from_customer()
          END IF
 
       AFTER FIELD employeeid
@@ -376,7 +376,7 @@ END FUNCTION #orders_do_add_edit
 FUNCTION orders_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Order delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -458,31 +458,12 @@ FUNCTION orders_list_display()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
       ON ACTION excel_export
-         CALL export_orders_to_excel(list_arr)
+         CALL list_view_helper.export_array_to_excel("orders_list", util.JSONArray.fromFGL(list_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
 
 END FUNCTION #orders_list_display
-
--- =====================================================================
--- Function: export_orders_to_excel (PRIVATE)
--- Purpose : Export the displayed orders list to an Excel file
--- =====================================================================
-PRIVATE FUNCTION export_orders_to_excel(list_arr DYNAMIC ARRAY OF t_order_list)
-   DEFINE jsonData util.JSONArray
-   DEFINE excelFile STRING
-
-   LET jsonData = util.JSONArray.fromFGL(list_arr)
-   LET excelFile = tableExcelExport("orders_list", jsonData)
-
-   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
-      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
-   ELSE
-      ERROR "Excel export failed."
-   END IF
-
-END FUNCTION #export_orders_to_excel
 
 -- =====================================================================
 -- Function: orders_do_command
@@ -511,7 +492,7 @@ FUNCTION order_lookup()
    OPEN WINDOW lookupWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    CALL order_lookup_menu()
       RETURNING ord_id
 
@@ -585,34 +566,6 @@ END FUNCTION #order_lookup_menu
 
 
 -- =====================================================================
--- Function: default_shipping_from_customer (PRIVATE)
--- Purpose : Populate shipping fields from selected customer address info
--- =====================================================================
-PRIVATE FUNCTION default_shipping_from_customer(cust_id LIKE customers.customerid)
-   DEFINE contact_name LIKE customers.contactname
-   DEFINE address LIKE customers.address
-   DEFINE city LIKE customers.city
-   DEFINE region LIKE customers.region
-   DEFINE postalcode LIKE customers.postalcode
-   DEFINE country LIKE customers.country
-
-   SELECT c.contactname, c.address, c.city, c.region, c.postalcode, c.country
-      INTO contact_name, address, city, region, postalcode, country
-      FROM customers c
-      WHERE customerid = $cust_id
-
-   IF sqlca.sqlcode == 0 THEN
-      LET curr_orders.shipname = contact_name
-      LET curr_orders.shipaddress = address
-      LET curr_orders.shipcity = city
-      LET curr_orders.shipregion = region
-      LET curr_orders.shippostalcode = postalcode
-      LET curr_orders.shipcountry = country
-   END IF
-
-END FUNCTION #default_shipping_from_customer
-
--- =====================================================================
 -- Function: validate_employee_field (PRIVATE)
 -- =====================================================================
 PRIVATE FUNCTION validate_employee_field()
@@ -662,24 +615,3 @@ PRIVATE FUNCTION validate_shipvia_field()
 
 END FUNCTION #validate_shipvia_field
 
--- =====================================================================
--- Function: populate_shipvia_combo
--- Purpose : Populate the shipvia combobox from the shippers table
--- =====================================================================
-FUNCTION populate_shipvia_combo()
-   DEFINE cb ui.ComboBox
-   DEFINE ship_id LIKE shippers.shipperid
-   DEFINE ship_name LIKE shippers.companyname
-
-   LET cb = ui.ComboBox.forName("shipvia")
-   IF cb IS NULL THEN
-      RETURN
-   END IF
-   CALL cb.clear()
-   DECLARE c_shipvia CURSOR FOR
-      SELECT shipperid, companyname FROM shippers ORDER BY companyname
-   FOREACH c_shipvia INTO ship_id, ship_name
-      CALL cb.addItem(ship_id, ship_name)
-   END FOREACH
-
-END FUNCTION #populate_shipvia_combo

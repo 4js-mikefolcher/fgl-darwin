@@ -1,7 +1,7 @@
 IMPORT util
-IMPORT os
 
 IMPORT FGL md_helper
+IMPORT FGL list_view_helper
 IMPORT FGL model_helper
 IMPORT FGL model_orders
 IMPORT FGL model_order_details
@@ -14,7 +14,6 @@ IMPORT FGL model_customers
 IMPORT FGL model_shippers
 IMPORT FGL ui_products
 IMPORT FGL dialog_prompt
-IMPORT FGL com.fourjs.poiapi.fgl_table_export
 
 SCHEMA northwind
 
@@ -159,7 +158,7 @@ PUBLIC FUNCTION mstr_detail_orders()
                   CALL execute_search(where_clause)
                END IF
             WHEN cExport
-               CALL export_orders_to_excel()
+               CALL list_view_helper.export_array_to_excel("s_table", util.JSONArray.fromFGL(order_result_list))
             WHEN cAdd
                CALL init_new_order()
                IF main_input_md("A") THEN
@@ -1063,23 +1062,6 @@ PRIVATE FUNCTION (self t_detail_input_rec) default_unitprice_from_product()
 
 END FUNCTION #default_unitprice_from_product
 
--- =====================================================================
--- Function: load_shipvia_combo
--- Purpose : Populate the shipvia combobox from the shippers table
--- =====================================================================
-PUBLIC FUNCTION load_shipvia_combo(cbx ui.ComboBox)
-   DEFINE ship_id LIKE shippers.shipperid
-   DEFINE ship_name LIKE shippers.companyname
-
-   CALL cbx.clear()
-   DECLARE c_shipvia CURSOR FOR
-      SELECT shipperid, companyname FROM shippers ORDER BY companyname
-   FOREACH c_shipvia INTO ship_id, ship_name
-      CALL cbx.addItem(ship_id, ship_name)
-   END FOREACH
-
-END FUNCTION #load_shipvia_combo
-
 PRIVATE FUNCTION array_cleanup(dlg ui.Dialog) RETURNS ()
 
    VAR idx INTEGER = 1
@@ -1094,17 +1076,3 @@ PRIVATE FUNCTION array_cleanup(dlg ui.Dialog) RETURNS ()
 
 END FUNCTION #array_cleanup
 
-PRIVATE FUNCTION export_orders_to_excel() RETURNS ()
-   DEFINE jsonData util.JSONArray
-   DEFINE excelFile STRING
-
-   LET jsonData = util.JSONArray.fromFGL(order_result_list)
-   LET excelFile = tableExcelExport("s_table", jsonData)
-
-   IF excelFile IS NOT NULL AND excelFile.getLength() > 0 THEN
-      CALL fgl_putfile(excelFile, os.Path.baseName(excelFile))
-   ELSE
-      ERROR "Excel export failed."
-   END IF
-
-END FUNCTION #export_orders_to_excel
