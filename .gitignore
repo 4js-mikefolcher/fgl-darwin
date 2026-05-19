@@ -39,3 +39,13 @@ build/
 com/
 data/
 fonts/
+
+#Genero Package Files
+.mcp.json
+.fglpkg/
+*.lock
+
+#AI Files/Directories
+.claude/
+.kiro/
+.windsurfrules

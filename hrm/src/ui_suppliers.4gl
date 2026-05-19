@@ -1,8 +1,10 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_suppliers
 IMPORT FGL ui_products
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -164,21 +166,28 @@ FUNCTION suppliers_do_load(where_clause VARCHAR(500))
 
 END FUNCTION #suppliers_do_load
 
--- Add a new supplier
-FUNCTION suppliers_do_add()
+-- =====================================================================
+-- Dispatch interface: suppliers_do_add_edit
+-- =====================================================================
+FUNCTION suppliers_do_add_edit(mode CHAR(1))
 
     CLEAR FORM
     LET int_flag = FALSE
-    CALL suppliers_clear_curr()
+    IF mode == "A" THEN
+        CALL suppliers_clear_curr()
+    END IF
+
     INPUT BY NAME curr_suppliers.*
-        ATTRIBUTE(UNBUFFERED)
+        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+        BEFORE INPUT
+            CALL DIALOG.setFieldActive("supplierid", FALSE)
         ON ACTION accept
             ACCEPT INPUT
         ON ACTION cancel
             LET int_flag = TRUE
             EXIT INPUT
         AFTER INPUT
-            VAR valid_status = curr_suppliers.validateRec("A")
+            VAR valid_status = curr_suppliers.validateRec(mode)
             IF NOT valid_status.valid_status THEN
                 ERROR valid_status.valid_msg
                 CONTINUE INPUT
@@ -186,65 +195,36 @@ FUNCTION suppliers_do_add()
     END INPUT
 
     IF int_flag THEN
-       ERROR "Supplier add canceled"
+       IF mode = "A" THEN
+          ERROR "Supplier add canceled"
+       ELSE
+          ERROR "Supplier update canceled"
+       END IF
        RETURN
     END IF
 
-    VAR ins_status = curr_suppliers.insertRec()
-    IF NOT ins_status.valid_status THEN
-       ERROR ins_status.valid_msg
-       LET int_flag = TRUE
-       RETURN
+    VAR rec_status t_valid_rec
+    IF mode = "A" THEN
+        LET rec_status = curr_suppliers.insertRec()
+    ELSE
+        LET rec_status = curr_suppliers.updateRec()
     END IF
 
-    CALL suppliers_display_curr()
-    MESSAGE ins_status.valid_msg
-
-END FUNCTION #suppliers_do_add
-
--- Edit an existing supplier
-FUNCTION suppliers_do_edit()
-
-    LET int_flag = FALSE
-    INPUT BY NAME curr_suppliers.companyname, curr_suppliers.contactname, curr_suppliers.contacttitle,
-                  curr_suppliers.address, curr_suppliers.city, curr_suppliers.region,
-                  curr_suppliers.postalcode, curr_suppliers.country, curr_suppliers.phone,
-                  curr_suppliers.fax, curr_suppliers.homepage
-        ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-        ON ACTION accept
-            ACCEPT INPUT
-        ON ACTION cancel
-            LET int_flag = TRUE
-            EXIT INPUT
-        AFTER INPUT
-            VAR valid_status = curr_suppliers.validateRec("C")
-            IF NOT valid_status.valid_status THEN
-                ERROR valid_status.valid_msg
-                CONTINUE INPUT
-            END IF
-    END INPUT
-
-    IF int_flag THEN
-       ERROR "Supplier update canceled"
-       RETURN
+    IF rec_status.valid_status THEN
+        CALL suppliers_display_curr()
+        MESSAGE rec_status.valid_msg
+    ELSE
+        ERROR rec_status.valid_msg
+        LET int_flag = TRUE
     END IF
 
-    VAR upd_status = curr_suppliers.updateRec()
-    IF NOT upd_status.valid_status THEN
-       ERROR upd_status.valid_msg
-       LET int_flag = TRUE
-       RETURN
-    END IF
-
-    MESSAGE upd_status.valid_msg
-
-END FUNCTION #suppliers_do_edit
+END FUNCTION #suppliers_do_add_edit
 
 -- Delete a supplier
 FUNCTION suppliers_do_delete()
 
     LET int_flag = FALSE
-    IF NOT confirm_delete() THEN
+    IF NOT dialog_prompt.delete_prompt() THEN
         ERROR "Supplier delete canceled"
         LET int_flag = TRUE
         RETURN
@@ -327,79 +307,3 @@ FUNCTION suppliers_do_command(commandName STRING)
 
 END FUNCTION #suppliers_do_command
 
--- =====================================================================
--- Function: supplier_lookup
--- Purpose : Open a lookup window for supplier selection
--- =====================================================================
-FUNCTION supplier_lookup()
-   DEFINE supp_id LIKE suppliers.supplierid
-   DEFINE supp_name LIKE suppliers.companyname
-
-   OPEN WINDOW lookupWindow WITH FORM "suppliers"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL supplier_lookup_menu()
-      RETURNING supp_id, supp_name
-
-   CLOSE WINDOW lookupWindow
-
-   RETURN supp_id, supp_name
-
-END FUNCTION #supplier_lookup
-
-FUNCTION supplier_lookup_menu()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-   DEFINE selectedIdx INTEGER
-
-   CALL suppliers_do_query()
-   IF suppliers_arr.getLength() == 0 THEN
-      RETURN 0, ""
-   END IF
-
-   LET currentIdx = 1
-   LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= suppliers_arr.getLength() AND selectedIdx == 0
-
-       CALL suppliers_load_at(currentIdx)
-       CALL suppliers_display_curr()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", suppliers_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Supplier Selection"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > suppliers_arr.getLength() THEN
-                 LET currentIdx = suppliers_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = suppliers_arr.getLength()
-              EXIT MENU
-          COMMAND "Select" "Select the current supplier"
-              LET selectedIdx = currentIdx
-              CALL suppliers_load_at(selectedIdx)
-              EXIT MENU
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
-
-   IF selectedIdx > 0 THEN
-      RETURN curr_suppliers.supplierid, curr_suppliers.companyname
-   END IF
-
-   RETURN 0, ""
-
-END FUNCTION #supplier_lookup_menu

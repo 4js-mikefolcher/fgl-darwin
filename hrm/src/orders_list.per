@@ -1,15 +1,6 @@
 SCHEMA northwind
 
-TOOLBAR
-  ITEM add
-  SEPARATOR
-  ITEM modify
-  ITEM delete
-  SEPARATOR
-  ITEM exit
-END
-
-LAYOUT (TEXT="Orders List View")
+LAYOUT (TEXT="Orders List View", TAG="list_standard.4tb")
   VBOX
     TABLE (DOUBLECLICK=modify)
     {
@@ -24,6 +15,7 @@ LAYOUT (TEXT="Orders List View")
     [c1    |c2                               |c3                              |c4        |c5     |c6          ]
     [c1    |c2                               |c3                              |c4        |c5     |c6          ]
     [c1    |c2                               |c3                              |c4        |c5     |c6          ]
+    [tcnt  ]                                                                                     [tfrt        ]
     }
     END
   END
@@ -36,6 +28,11 @@ ATTRIBUTES
   c4 = formonly.orderdate TYPE DATE, NOENTRY;
   c5 = formonly.shipvia TYPE SMALLINT, NOENTRY;
   c6 = formonly.freight TYPE FLOAT, NOENTRY;
+
+  AGGREGATE tcnt = FORMONLY.rec_count,
+    AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
+  AGGREGATE tfrt = FORMONLY.freight_total,
+    AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
 END --ATTRIBUTES
 
 INSTRUCTIONS

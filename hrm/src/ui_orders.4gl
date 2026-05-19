@@ -1,10 +1,14 @@
+IMPORT util
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_orders
+IMPORT FGL model_shippers
 IMPORT FGL ui_customers
 IMPORT FGL ui_employees
 IMPORT FGL ui_order_details
+IMPORT FGL model_helper
 DATABASE northwind
 
 TYPE t_order_list RECORD
@@ -76,39 +80,6 @@ FUNCTION root_add_orders()
 END FUNCTION #root_add_orders
 
 -- =====================================================================
--- Function: view_order
--- Purpose : View a specific order record (called from other modules)
--- =====================================================================
-FUNCTION view_order(order_id)
-   DEFINE order_id LIKE orders.orderid
-   DEFINE where_clause VARCHAR(500)
-
-   IF order_id IS NULL OR order_id < 1 THEN
-      ERROR "Order ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewOrderWindow WITH FORM "orders"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_shipvia_combo()
-   LET where_clause = " orders.orderid = ", order_id
-   CALL orders_do_load(where_clause)
-
-   IF orders_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewOrderWindow
-      ERROR "Order not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewOrderWindow
-
-END FUNCTION #view_order
-
--- =====================================================================
 -- Function: view_orders_for_customer
 -- Purpose : View orders for a specific customer (called from customers)
 -- =====================================================================
@@ -124,7 +95,7 @@ FUNCTION view_orders_for_customer(cust_id)
    OPEN WINDOW viewOrdersWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET where_clause = " orders.customerid = '", cust_id CLIPPED, "'"
    CALL orders_do_load(where_clause)
 
@@ -156,7 +127,7 @@ FUNCTION view_orders_for_employee(empl_id)
    OPEN WINDOW viewOrdersWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET where_clause = " orders.employeeid = ", empl_id
    CALL orders_do_load(where_clause)
 
@@ -232,7 +203,7 @@ FUNCTION orders_do_query()
 
    CLEAR FORM
    CALL orders_clear_curr()
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    LET int_flag = FALSE
    CONSTRUCT where_clause ON orders.orderid, orders.customerid, orders.employeeid,
                              orders.orderdate, orders.requireddate, orders.shippeddate,
@@ -297,9 +268,9 @@ PRIVATE FUNCTION orders_do_load(where_clause)
 END FUNCTION #orders_do_load
 
 -- =====================================================================
--- Dispatch interface: orders_do_add
+-- Dispatch interface: orders_do_add_edit
 -- =====================================================================
-FUNCTION orders_do_add()
+FUNCTION orders_do_add_edit(mode CHAR(1))
    DEFINE orders_valid SMALLINT
    DEFINE valid_msg CHAR(75)
    DEFINE selected_customer_id LIKE customers.customerid
@@ -309,10 +280,15 @@ FUNCTION orders_do_add()
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL orders_clear_curr()
-   CALL populate_shipvia_combo()
+   IF mode == "A" THEN
+      CALL orders_clear_curr()
+   END IF
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
+
    INPUT BY NAME curr_orders.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("orderid", FALSE)
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
@@ -324,7 +300,7 @@ FUNCTION orders_do_add()
          IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
             LET curr_orders.customerid = selected_customer_id
             LET curr_orders.customername = selected_customer_name
-            CALL default_shipping_from_customer(selected_customer_id)
+            CALL curr_orders.default_shipping_from_customer()
          END IF
       ON ACTION zoom_employee
          CALL employee_lookup()
@@ -341,7 +317,7 @@ FUNCTION orders_do_add()
             ERROR valid_msg
             NEXT FIELD customerid
          ELSE
-            CALL default_shipping_from_customer(curr_orders.customerid)
+            CALL curr_orders.default_shipping_from_customer()
          END IF
 
       AFTER FIELD employeeid
@@ -361,7 +337,7 @@ FUNCTION orders_do_add()
          END IF
 
       AFTER INPUT
-         VAR valid_status = curr_orders.validateRec("A")
+         VAR valid_status = curr_orders.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -369,109 +345,30 @@ FUNCTION orders_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Order add canceled"
+      IF mode = "A" THEN
+         ERROR "Order add canceled"
+      ELSE
+         ERROR "Order update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_orders.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_orders.insertRec()
+   ELSE
+      LET rec_status = curr_orders.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL orders_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #orders_do_add
-
--- =====================================================================
--- Dispatch interface: orders_do_edit
--- =====================================================================
-FUNCTION orders_do_edit()
-   DEFINE orders_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
-   DEFINE selected_customer_id LIKE customers.customerid
-   DEFINE selected_customer_name LIKE customers.companyname
-   DEFINE selected_employee_id LIKE employees.employeeid
-   DEFINE selected_employee_name VARCHAR(32)
-
-   CALL populate_shipvia_combo()
-   LET int_flag = FALSE
-   INPUT BY NAME curr_orders.customerid, curr_orders.employeeid,
-                 curr_orders.orderdate, curr_orders.requireddate, curr_orders.shippeddate,
-                 curr_orders.shipvia, curr_orders.freight,
-                 curr_orders.shipname, curr_orders.shipaddress, curr_orders.shipcity,
-                 curr_orders.shipregion, curr_orders.shippostalcode, curr_orders.shipcountry
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      ON ACTION zoom_customer
-         CALL customer_lookup()
-            RETURNING selected_customer_id, selected_customer_name
-         IF selected_customer_id IS NOT NULL AND LENGTH(selected_customer_id) > 0 THEN
-            LET curr_orders.customerid = selected_customer_id
-            LET curr_orders.customername = selected_customer_name
-            CALL default_shipping_from_customer(selected_customer_id)
-         END IF
-      ON ACTION zoom_employee
-         CALL employee_lookup()
-            RETURNING selected_employee_id, selected_employee_name
-         IF selected_employee_id > 0 THEN
-            LET curr_orders.employeeid = selected_employee_id
-            LET curr_orders.employeename = selected_employee_name
-         END IF
-
-      AFTER FIELD customerid
-         CALL validate_customer_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD customerid
-         ELSE
-            CALL default_shipping_from_customer(curr_orders.customerid)
-         END IF
-
-      AFTER FIELD employeeid
-         CALL validate_employee_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD employeeid
-         END IF
-
-      AFTER FIELD shipvia
-         CALL validate_shipvia_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD shipvia
-         END IF
-
-      AFTER INPUT
-         VAR valid_status = curr_orders.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Order update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_orders.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #orders_do_edit
+END FUNCTION #orders_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: orders_do_delete
@@ -479,7 +376,7 @@ END FUNCTION #orders_do_edit
 FUNCTION orders_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Order delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -560,6 +457,8 @@ FUNCTION orders_list_display()
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
+      ON ACTION excel_export
+         CALL list_view_helper.export_array_to_excel("orders_list", util.JSONArray.fromFGL(list_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption
@@ -593,7 +492,7 @@ FUNCTION order_lookup()
    OPEN WINDOW lookupWindow WITH FORM "orders"
       ATTRIBUTES(STYLE="modulewindow")
 
-   CALL populate_shipvia_combo()
+   CALL model_shippers.load_shipvia_combo(ui.ComboBox.forName("shipvia"))
    CALL order_lookup_menu()
       RETURNING ord_id
 
@@ -667,34 +566,6 @@ END FUNCTION #order_lookup_menu
 
 
 -- =====================================================================
--- Function: default_shipping_from_customer (PRIVATE)
--- Purpose : Populate shipping fields from selected customer address info
--- =====================================================================
-PRIVATE FUNCTION default_shipping_from_customer(cust_id LIKE customers.customerid)
-   DEFINE contact_name LIKE customers.contactname
-   DEFINE address LIKE customers.address
-   DEFINE city LIKE customers.city
-   DEFINE region LIKE customers.region
-   DEFINE postalcode LIKE customers.postalcode
-   DEFINE country LIKE customers.country
-
-   SELECT c.contactname, c.address, c.city, c.region, c.postalcode, c.country
-      INTO contact_name, address, city, region, postalcode, country
-      FROM customers c
-      WHERE customerid = $cust_id
-
-   IF sqlca.sqlcode == 0 THEN
-      LET curr_orders.shipname = contact_name
-      LET curr_orders.shipaddress = address
-      LET curr_orders.shipcity = city
-      LET curr_orders.shipregion = region
-      LET curr_orders.shippostalcode = postalcode
-      LET curr_orders.shipcountry = country
-   END IF
-
-END FUNCTION #default_shipping_from_customer
-
--- =====================================================================
 -- Function: validate_employee_field (PRIVATE)
 -- =====================================================================
 PRIVATE FUNCTION validate_employee_field()
@@ -744,24 +615,3 @@ PRIVATE FUNCTION validate_shipvia_field()
 
 END FUNCTION #validate_shipvia_field
 
--- =====================================================================
--- Function: populate_shipvia_combo
--- Purpose : Populate the shipvia combobox from the shippers table
--- =====================================================================
-FUNCTION populate_shipvia_combo()
-   DEFINE cb ui.ComboBox
-   DEFINE ship_id LIKE shippers.shipperid
-   DEFINE ship_name LIKE shippers.companyname
-
-   LET cb = ui.ComboBox.forName("shipvia")
-   IF cb IS NULL THEN
-      RETURN
-   END IF
-   CALL cb.clear()
-   DECLARE c_shipvia CURSOR FOR
-      SELECT shipperid, companyname FROM shippers ORDER BY companyname
-   FOREACH c_shipvia INTO ship_id, ship_name
-      CALL cb.addItem(ship_id, ship_name)
-   END FOREACH
-
-END FUNCTION #populate_shipvia_combo

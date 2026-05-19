@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ToolBar>
+  <ToolBarItem name="launch" />
+  <ToolBarSeparator />
+  <ToolBarItem name="exit" />
+</ToolBar>

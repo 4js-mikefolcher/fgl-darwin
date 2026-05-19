@@ -1,7 +1,9 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_usstates
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -131,81 +133,64 @@ PRIVATE FUNCTION usstates_do_load(where_clause VARCHAR(500))
 END FUNCTION #usstates_do_load
 
 -- =====================================================================
--- Function: usstates_do_add
--- Purpose : Add a new state record
+-- Function: usstates_do_add_edit
+-- Purpose : Add or edit a state record
 -- =====================================================================
-FUNCTION usstates_do_add()
+FUNCTION usstates_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL usstates_clear_curr()
+   IF mode == "A" THEN
+      CALL usstates_clear_curr()
+   END IF
+
    INPUT BY NAME curr_usstates.*
-      ATTRIBUTES(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("stateid", FALSE)
+         IF mode == "C" THEN
+            CALL DIALOG.setFieldActive("statename", FALSE)
+            CALL DIALOG.setFieldActive("stateabbr", FALSE)
+            CALL DIALOG.setFieldActive("stateregion", FALSE)
+         END IF
       ON ACTION accept
-          ACCEPT INPUT
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
       AFTER INPUT
-          VAR valid_status = curr_usstates.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_usstates.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "State add canceled"
+      IF mode = "A" THEN
+         ERROR "State add canceled"
+      ELSE
+         ERROR "State update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_usstates.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_usstates.insertRec()
+   ELSE
+      LET rec_status = curr_usstates.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL usstates_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #usstates_do_add
-
--- =====================================================================
--- Function: usstates_do_edit
--- Purpose : Edit an existing state record
--- =====================================================================
-FUNCTION usstates_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_usstates.statename, curr_usstates.stateabbr, curr_usstates.stateregion
-      ATTRIBUTES(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-          ACCEPT INPUT
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER INPUT
-          VAR valid_status = curr_usstates.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "State update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_usstates.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #usstates_do_edit
+END FUNCTION #usstates_do_add_edit
 
 -- =====================================================================
 -- Function: usstates_do_delete
@@ -214,7 +199,7 @@ END FUNCTION #usstates_do_edit
 FUNCTION usstates_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "State delete canceled"
       LET int_flag = TRUE
       RETURN

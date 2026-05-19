@@ -1,8 +1,10 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_region
 IMPORT FGL ui_territories
+IMPORT FGL model_helper
 DATABASE northwind
 
 TYPE t_region_list RECORD
@@ -197,22 +199,28 @@ PRIVATE FUNCTION region_do_load(where_clause)
 END FUNCTION #region_do_load
 
 -- =====================================================================
--- Dispatch interface: region_do_add
+-- Dispatch interface: region_do_add_edit
 -- =====================================================================
-FUNCTION region_do_add()
+FUNCTION region_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
    CALL region_clear_curr()
+
    INPUT BY NAME curr_region.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("regionid", FALSE)
+         IF mode == "C" THEN
+            CALL DIALOG.setFieldActive("regiondescription", FALSE)
+         END IF
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         VAR valid_status = curr_region.validateRec("A")
+         VAR valid_status = curr_region.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -220,56 +228,30 @@ FUNCTION region_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Region add canceled"
+      IF mode = "A" THEN
+         ERROR "Region add canceled"
+      ELSE
+         ERROR "Region update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_region.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_region.insertRec()
+   ELSE
+      LET rec_status = curr_region.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL region_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #region_do_add
-
--- =====================================================================
--- Dispatch interface: region_do_edit
--- =====================================================================
-FUNCTION region_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_region.regiondescription
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      AFTER INPUT
-         VAR valid_status = curr_region.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Region update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_region.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #region_do_edit
+END FUNCTION #region_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: region_do_delete
@@ -277,7 +259,7 @@ END FUNCTION #region_do_edit
 FUNCTION region_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Region delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -377,85 +359,5 @@ FUNCTION region_do_command(commandName STRING)
 
 END FUNCTION #region_do_command
 
--- =====================================================================
--- Function: region_lookup
--- Purpose : Open region lookup window, return selected region
--- =====================================================================
-FUNCTION region_lookup()
-   DEFINE region_id LIKE region.regionid
-   DEFINE region_desc LIKE region.regiondescription
-
-   OPEN WINDOW lookupWindow WITH FORM "region"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL region_lookup_menu()
-      RETURNING region_id, region_desc
-
-   CLOSE WINDOW lookupWindow
-
-   RETURN region_id, region_desc
-
-END FUNCTION #region_lookup
-
--- =====================================================================
--- Function: region_lookup_menu
--- Purpose : Navigate regions for selection
--- =====================================================================
-FUNCTION region_lookup_menu()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-   DEFINE selectedIdx INTEGER
-
-   CALL region_do_query()
-   IF region_arr.getLength() == 0 THEN
-      RETURN 0, ""
-   END IF
-
-   LET currentIdx = 1
-   LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= region_arr.getLength() AND selectedIdx == 0
-
-      CALL region_load_at(currentIdx)
-      CALL region_display_curr()
-      LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", region_arr.getLength() USING "<<<<"
-      MESSAGE statusMessage
-
-      MENU "Region Selection"
-         COMMAND "First" "View first record in result set"
-            LET currentIdx = 1
-            EXIT MENU
-         COMMAND "Previous" "View previous record in result set"
-            LET currentIdx = currentIdx - 1
-            IF currentIdx < 1 THEN
-               LET currentIdx = 1
-            END IF
-            EXIT MENU
-         COMMAND "Next" "View next record in result set"
-            LET currentIdx = currentIdx + 1
-            IF currentIdx > region_arr.getLength() THEN
-               LET currentIdx = region_arr.getLength()
-            END IF
-            EXIT MENU
-         COMMAND "Last" "View last record in result set"
-            LET currentIdx = region_arr.getLength()
-            EXIT MENU
-         COMMAND "Select" "Select the current region"
-            LET selectedIdx = currentIdx
-            CALL region_load_at(selectedIdx)
-            EXIT MENU
-         COMMAND "Exit" "Quit operation"
-            LET currentIdx = 0
-            EXIT MENU
-      END MENU
-
-   END WHILE
-
-   IF selectedIdx > 0 THEN
-      RETURN curr_region.regionid, curr_region.regiondescription
-   END IF
-
-   RETURN 0, ""
-
-END FUNCTION #region_lookup_menu
 
 

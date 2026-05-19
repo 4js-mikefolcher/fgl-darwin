@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ToolBar>
+  <ToolBarItem name="query" />
+  <ToolBarItem name="add" />
+  <ToolBarSeparator />
+  <ToolBarItem name="first" />
+  <ToolBarItem name="previous" />
+  <ToolBarItem name="next" />
+  <ToolBarItem name="last" />
+  <ToolBarSeparator />
+  <ToolBarAutoItems content="actions" />
+  <ToolBarSeparator />
+  <ToolBarItem name="list" />
+  <ToolBarSeparator />
+  <ToolBarItem name="delete" />
+  <ToolBarSeparator />
+  <ToolBarItem name="exit" />
+</ToolBar>

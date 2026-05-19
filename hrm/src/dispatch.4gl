@@ -230,86 +230,45 @@ PUBLIC FUNCTION dispatch_query(moduleName STRING)
 END FUNCTION #dispatch_query
 
 -- =====================================================================
--- Function: dispatch_add
--- Purpose : Execute the module's add/insert flow
+-- Function: dispatch_add_edit
+-- Purpose : Execute the module's add/edit flow
 -- =====================================================================
-PUBLIC FUNCTION dispatch_add(moduleName STRING)
+PUBLIC FUNCTION dispatch_add_edit(moduleName STRING, mode CHAR(1))
 
    CASE moduleName
       WHEN "suppliers"
-         CALL suppliers_do_add()
+         CALL suppliers_do_add_edit(mode)
       WHEN "categories"
-         CALL categories_do_add()
+         CALL categories_do_add_edit(mode)
       WHEN "customers"
-         CALL customers_do_add()
+         CALL customers_do_add_edit(mode)
       WHEN "employees"
-         CALL employees_do_add()
+         CALL employees_do_add_edit(mode)
       WHEN "empl_terr"
-         CALL empl_terr_do_add()
+         CALL empl_terr_do_add_edit(mode)
       WHEN "orders"
-         CALL orders_do_add()
+         CALL orders_do_add_edit(mode)
       WHEN "order_details"
-         CALL order_details_do_add()
+         CALL order_details_do_add_edit(mode)
       WHEN "products"
-         CALL products_do_add()
+         CALL products_do_add_edit(mode)
       WHEN "region"
-         CALL region_do_add()
+         CALL region_do_add_edit(mode)
       WHEN "shippers"
-         CALL shippers_do_add()
+         CALL shippers_do_add_edit(mode)
       WHEN "territories"
-         CALL territories_do_add()
+         CALL territories_do_add_edit(mode)
       WHEN "usstates"
-         CALL usstates_do_add()
+         CALL usstates_do_add_edit(mode)
       WHEN "cust_demo"
-         CALL cust_demo_do_add()
+         CALL cust_demo_do_add_edit(mode)
       WHEN "cust_cust_demo"
-         CALL cust_cust_demo_do_add()
+         CALL cust_cust_demo_do_add_edit(mode)
       OTHERWISE
          ERROR "Unknown module: ", moduleName
    END CASE
 
-END FUNCTION #dispatch_add
-
--- =====================================================================
--- Function: dispatch_edit
--- Purpose : Execute the module's edit/update flow
--- =====================================================================
-PUBLIC FUNCTION dispatch_edit(moduleName STRING)
-
-   CASE moduleName
-      WHEN "suppliers"
-         CALL suppliers_do_edit()
-      WHEN "categories"
-         CALL categories_do_edit()
-      WHEN "customers"
-         CALL customers_do_edit()
-      WHEN "employees"
-         CALL employees_do_edit()
-      WHEN "empl_terr"
-         CALL empl_terr_do_edit()
-      WHEN "orders"
-         CALL orders_do_edit()
-      WHEN "order_details"
-         CALL order_details_do_edit()
-      WHEN "products"
-         CALL products_do_edit()
-      WHEN "region"
-         CALL region_do_edit()
-      WHEN "shippers"
-         CALL shippers_do_edit()
-      WHEN "territories"
-         CALL territories_do_edit()
-      WHEN "usstates"
-         CALL usstates_do_edit()
-      WHEN "cust_demo"
-         CALL cust_demo_do_edit()
-      WHEN "cust_cust_demo"
-         CALL cust_cust_demo_do_edit()
-      OTHERWISE
-         ERROR "Unknown module: ", moduleName
-   END CASE
-
-END FUNCTION #dispatch_edit
+END FUNCTION #dispatch_add_edit
 
 -- =====================================================================
 -- Function: dispatch_delete

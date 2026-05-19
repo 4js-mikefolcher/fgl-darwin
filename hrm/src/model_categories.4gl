@@ -55,7 +55,7 @@ PUBLIC FUNCTION (self t_category) insertRec() RETURNS (t_valid_rec)
 
 END FUNCTION #insertRec
 
-FUNCTION (self t_category) updateRec() RETURNS (t_valid_rec)
+PUBLIC FUNCTION (self t_category) updateRec() RETURNS (t_valid_rec)
    DEFINE upd_status t_valid_rec
 
    UPDATE categories

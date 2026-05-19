@@ -58,7 +58,7 @@ PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid
    END IF
 
    # Validate foreign keys
-   IF mode == "A" THEN
+   IF mode == "A" AND self.orderid > 0 THEN
       SELECT 1 INTO detailExists FROM orders WHERE orders.orderid = self.orderid
       IF sqlca.sqlcode == NOTFOUND THEN
          CALL valid_rec.failed("Order ID does not exist in orders table")

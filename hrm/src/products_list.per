@@ -1,15 +1,6 @@
 SCHEMA northwind
 
-TOOLBAR
-  ITEM add
-  SEPARATOR
-  ITEM modify
-  ITEM delete
-  SEPARATOR
-  ITEM exit
-END
-
-LAYOUT (TEXT="Products List View")
+LAYOUT (TEXT="Products List View", TAG="list_standard.4tb")
   VBOX
     TABLE (DOUBLECLICK=modify)
     {
@@ -24,6 +15,7 @@ LAYOUT (TEXT="Products List View")
     [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
     [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
     [c1 |c2                               |c3      |c4      |c5                  |c6        |c7   |c8   |c9     |c10 ]
+    [tct]                                                                                   [tstk ]
     }
     END
   END
@@ -40,6 +32,11 @@ ATTRIBUTES
   c8 = formonly.unitsonorder TYPE SMALLINT, NOENTRY;
   c9 = formonly.reorderlevel TYPE SMALLINT, NOENTRY;
   c10 = formonly.discontinued TYPE INTEGER, NOENTRY;
+
+  AGGREGATE tct = FORMONLY.rec_count,
+    AGGREGATETEXT = "Count:", AGGREGATETYPE = COUNT;
+  AGGREGATE tstk = FORMONLY.stock_total,
+    AGGREGATETEXT = "Total:", AGGREGATETYPE = SUM;
 END --ATTRIBUTES
 
 INSTRUCTIONS

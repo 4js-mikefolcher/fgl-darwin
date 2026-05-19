@@ -12,12 +12,13 @@ PUBLIC FUNCTION advsearch_orders() RETURNS (STRING)
          orders.shipvia, orders.freight, orders.shipname, orders.shipaddress,
          orders.shipcity,orders.shipregion,orders.shippostalcode, orders.shipcountry
       FROM s_advsearch.*
+      ATTRIBUTES(CANCEL = FALSE, ACCEPT = FALSE)
 
-      ON ACTION CANCEL
+      ON ACTION cancel_search
          LET int_flag = TRUE
          EXIT CONSTRUCT
 
-      ON ACTION ACCEPT ATTRIBUTES(TEXT="Search")
+      ON ACTION do_search
          ACCEPT CONSTRUCT
 
    END CONSTRUCT

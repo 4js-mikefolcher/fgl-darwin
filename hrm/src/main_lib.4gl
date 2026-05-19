@@ -2,7 +2,6 @@ IMPORT os
 IMPORT util
 
 DATABASE northwind
-DEFINE arr_max INTEGER
 DEFINE m_program_icons DYNAMIC ARRAY OF RECORD
     program_name STRING,
     icon_name    STRING
@@ -17,8 +16,6 @@ FUNCTION init_pgm()
     OPTIONS ERROR LINE LAST - 1
     OPTIONS INPUT WRAP
 
-    LET arr_max = 1000
-
     -- Load generic stylesheet for all windows
     CALL ui.Interface.loadStyles("generic.4st")
 
@@ -30,21 +27,21 @@ FUNCTION init_pgm()
 
 END FUNCTION
 
-FUNCTION get_arr_max()
-
-   IF arr_max == 0 THEN
-      LET arr_max = 1000
-   END IF
-   RETURN arr_max
-
-END FUNCTION
-
 FUNCTION form_initializer(frm ui.Form)
     DEFINE win ui.Window
     DEFINE pgm_name STRING
     DEFINE icon STRING
+    DEFINE doc om.DomNode
+    DEFINE toolbar_file STRING
 
     CALL frm.loadActionDefaults("generic.4ad")
+
+    -- Load toolbar from TAG attribute on the form's LAYOUT element
+    LET doc = frm.getNode()
+    LET toolbar_file = doc.getAttribute("tag")
+    IF toolbar_file IS NOT NULL AND toolbar_file.getLength() > 0 THEN
+        CALL frm.loadToolBar(toolbar_file)
+    END IF
 
     -- Set the window icon based on the running program
     LET win = ui.Window.getCurrent()
@@ -61,19 +58,6 @@ FUNCTION form_initializer(frm ui.Form)
     END IF
 
 END FUNCTION #form_initializer
-
-FUNCTION confirm_delete()
-
-   MENU "Confirm Deletion"
-      ATTRIBUTES(COMMENT="Are you sure you want to delete this record?", STYLE="dialog")
-      COMMAND "Yes"
-         RETURN TRUE
-      COMMAND "No"
-         EXIT MENU
-   END MENU
-   RETURN FALSE
-
-END FUNCTION #confirm_delete
 
 -- =====================================================================
 -- Function: generate_temp_filename

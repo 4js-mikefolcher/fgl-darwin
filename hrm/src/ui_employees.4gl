@@ -1,9 +1,11 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_employees
 IMPORT FGL ui_empl_terr
 IMPORT FGL ui_orders
+IMPORT FGL model_helper
 DATABASE northwind
 
 TYPE t_employee_list RECORD
@@ -76,49 +78,6 @@ FUNCTION root_add_employee()
    CALL controller_add()
 
 END FUNCTION #root_add_employee
-
--- =====================================================================
--- Function: view_employee
--- Purpose : View a specific employee record (called from other modules)
--- =====================================================================
-FUNCTION view_employee(empl_id)
-   DEFINE empl_id LIKE employees.employeeid
-   DEFINE sqlText CHAR(2000)
-
-   IF empl_id IS NULL OR empl_id < 1 THEN
-      ERROR "Employee ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewWindow WITH FORM "employees"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_courtesy_combo()
-   LET sqlText = "SELECT ",
-       "employees.employeeid, employees.lastname, employees.firstname, ",
-       "employees.title, employees.titleofcourtesy, ",
-       "employees.birthdate, employees.hiredate, employees.address, ",
-       "employees.city, employees.region, employees.postalcode, employees.country, ",
-       "employees.homephone, employees.extension, employees.reportsto, ",
-       "RTRIM(e2.firstname) || ' ' || RTRIM(e2.lastname) as fullname, ",
-       "employees.photopath, employees.notes ",
-       "FROM employees ",
-       "LEFT OUTER JOIN employees e2 ON e2.employeeid = employees.reportsto ",
-       "WHERE employees.employeeid = ", empl_id
-   CALL employees_do_load_sql(sqlText)
-
-   IF employeeList.getLength() == 0 THEN
-      CLOSE WINDOW viewWindow
-      ERROR "Employee not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewWindow
-
-END FUNCTION #view_employee
 
 -- =====================================================================
 -- Dispatch interface: employees_get_count
@@ -230,23 +189,28 @@ PRIVATE FUNCTION employees_do_load_sql(sqlText)
 END FUNCTION #employees_do_load_sql
 
 -- =====================================================================
--- Dispatch interface: employees_do_add
+-- Dispatch interface: employees_do_add_edit
 -- =====================================================================
-FUNCTION employees_do_add()
+FUNCTION employees_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
-   CALL employees_clear_curr()
-   CALL populate_courtesy_combo()
    LET int_flag = FALSE
+   IF mode == "A" THEN
+      CALL employees_clear_curr()
+   END IF
+   CALL populate_courtesy_combo()
 
-   INPUT BY NAME currentRec.* WITHOUT DEFAULTS
+   INPUT BY NAME currentRec.*
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("employeeid", FALSE)
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         VAR valid_status = currentRec.validateRec("A")
+         VAR valid_status = currentRec.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -254,56 +218,30 @@ FUNCTION employees_do_add()
    END INPUT
 
    IF int_flag THEN
-      MESSAGE "Employee add canceled"
+      IF mode = "A" THEN
+         ERROR "Employee add canceled"
+      ELSE
+         ERROR "Employee update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = currentRec.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = currentRec.insertRec()
+   ELSE
+      LET rec_status = currentRec.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL employees_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #employees_do_add
-
--- =====================================================================
--- Dispatch interface: employees_do_edit
--- =====================================================================
-FUNCTION employees_do_edit()
-
-   CALL populate_courtesy_combo()
-   LET int_flag = FALSE
-   INPUT BY NAME currentRec.* WITHOUT DEFAULTS
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      AFTER INPUT
-         VAR valid_status = currentRec.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      MESSAGE "Employee update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = currentRec.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #employees_do_edit
+END FUNCTION #employees_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: employees_do_delete
@@ -311,7 +249,7 @@ END FUNCTION #employees_do_edit
 FUNCTION employees_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       MESSAGE "Employee delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -480,6 +418,15 @@ FUNCTION employee_lookup_menu()
          COMMAND "Last" "View last record in result set"
             LET currentIdx = employeeList.getLength()
             EXIT MENU
+         COMMAND "List" "Switch to List View"
+            LET currentIdx = employees_lookup_table(currentIdx)
+            IF int_flag OR currentIdx < 1 THEN
+               LET int_flag = FALSE
+            ELSE
+               LET selectedIdx = currentIdx
+               CALL employees_load_at(selectedIdx)
+            END IF
+            EXIT MENU
          COMMAND "Select" "Select the current employee"
             LET selectedIdx = currentIdx
             CALL employees_load_at(selectedIdx)
@@ -498,6 +445,48 @@ FUNCTION employee_lookup_menu()
    RETURN 0, ""
 
 END FUNCTION #employee_lookup_menu
+
+PRIVATE FUNCTION employees_lookup_table(currentIdx INTEGER) RETURNS (INTEGER)
+   DEFINE list_arr DYNAMIC ARRAY OF t_employee_list
+   DEFINE idx INTEGER
+
+   OPEN WINDOW employees_list WITH FORM "employees_list"
+      ATTRIBUTES(STYLE="modulewindow")
+
+   FOR idx = 1 TO employeeList.getLength()
+      CALL list_arr.appendElement()
+      LET list_arr[idx].employeeid = employeeList[idx].employeeid
+      LET list_arr[idx].lastname = employeeList[idx].lastname
+      LET list_arr[idx].firstname = employeeList[idx].firstname
+      LET list_arr[idx].title = employeeList[idx].title
+      LET list_arr[idx].city = employeeList[idx].city
+      LET list_arr[idx].country = employeeList[idx].country
+   END FOR
+
+   MESSAGE "Displayed ", list_arr.getLength() USING "<<<<<", " employees"
+
+   VAR first_time = TRUE
+   DISPLAY ARRAY list_arr TO employees_list.*
+      ATTRIBUTES(DOUBLECLICK=ACCEPT)
+      BEFORE ROW
+         IF first_time THEN
+            CALL DIALOG.setCurrentRow("employees_list", currentIdx)
+            LET first_time = FALSE
+         ELSE
+            LET currentIdx = arr_curr()
+         END IF
+      ON ACTION cancel
+         LET int_flag = TRUE
+         EXIT DISPLAY
+      ON ACTION accept
+         ACCEPT DISPLAY
+   END DISPLAY
+
+   CLOSE WINDOW employees_list
+
+   RETURN currentIdx
+
+END FUNCTION #employees_lookup_table
 
 -- =====================================================================
 -- Function: load_employees_ext
@@ -562,5 +551,24 @@ FUNCTION populate_courtesy_combo()
    CALL cb.addItem("Ms.",  "Ms.")
 
 END FUNCTION #populate_courtesy_combo
+
+PRIVATE DEFINE load_empl_prepped BOOLEAN = FALSE
+PUBLIC FUNCTION load_employees(cbx ui.ComboBox) RETURNS ()
+   DEFINE empl_id LIKE employees.employeeid
+   DEFINE empl_fname LIKE employees.firstname
+   DEFINE empl_lname LIKE employees.lastname
+
+   IF NOT load_empl_prepped THEN
+      DECLARE curs_load_empls CURSOR FOR
+         SELECT employees.employeeid, employees.firstname, employees.lastname
+         FROM employees
+         ORDER BY employees.lastname, employees.firstname
+   END IF
+
+   FOREACH curs_load_empls INTO empl_id, empl_fname, empl_lname
+      CALL cbx.addItem(empl_id, SFMT("%1, %2 (%3)", empl_lname, empl_fname, empl_id))
+   END FOREACH
+
+END FUNCTION #load_employees
 
 

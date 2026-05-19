@@ -1,9 +1,12 @@
+IMPORT util
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_order_details
 IMPORT FGL ui_orders
 IMPORT FGL ui_products
+IMPORT FGL model_helper
 DATABASE northwind
 
 DEFINE order_details_arr DYNAMIC ARRAY OF t_order_detail
@@ -61,7 +64,7 @@ FUNCTION view_details_for_order(order_id)
 
    WHILE order_details_arr.getLength() == 0
 
-      CALL order_details_do_add()
+      CALL order_details_do_add_edit("A")
       IF int_flag == TRUE THEN
          EXIT WHILE
       END IF
@@ -219,9 +222,9 @@ PRIVATE FUNCTION order_details_do_load(where_clause)
 END FUNCTION #order_details_do_load
 
 -- =====================================================================
--- Dispatch interface: order_details_do_add
+-- Dispatch interface: order_details_do_add_edit
 -- =====================================================================
-FUNCTION order_details_do_add()
+FUNCTION order_details_do_add_edit(mode CHAR(1))
    DEFINE order_details_valid SMALLINT
    DEFINE valid_msg CHAR(75)
    DEFINE selected_order_id LIKE orders.orderid
@@ -230,12 +233,19 @@ FUNCTION order_details_do_add()
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL order_details_clear_curr()
-   LET curr_order_details.discount = 0
+   IF mode == "A" THEN
+      CALL order_details_clear_curr()
+      LET curr_order_details.discount = 0
+   ELSE
+      CALL calculate_total_price()
+   END IF
+
    INPUT BY NAME curr_order_details.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
       BEFORE INPUT
-         IF curr_order_details.orderid > 0 THEN
+         CALL DIALOG.setFieldActive("orderid", FALSE)
+         CALL DIALOG.setFieldActive("productid", FALSE)
+         IF mode == "A" AND curr_order_details.orderid > 0 THEN
             NEXT FIELD productid
          END IF
       ON ACTION accept
@@ -295,7 +305,7 @@ FUNCTION order_details_do_add()
          END IF
 
       AFTER INPUT
-         VAR valid_status = curr_order_details.validateRec("A")
+         VAR valid_status = curr_order_details.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -303,72 +313,30 @@ FUNCTION order_details_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Order detail add canceled"
+      IF mode = "A" THEN
+         ERROR "Order detail add canceled"
+      ELSE
+         ERROR "Order detail update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_order_details.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_order_details.insertRec()
+   ELSE
+      LET rec_status = curr_order_details.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL order_details_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #order_details_do_add
-
--- =====================================================================
--- Dispatch interface: order_details_do_edit
--- =====================================================================
-FUNCTION order_details_do_edit()
-   DEFINE order_details_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
-
-   LET int_flag = FALSE
-   CALL calculate_total_price()
-   INPUT BY NAME curr_order_details.unitprice, curr_order_details.quantity, curr_order_details.discount, curr_order_details.totalprice
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      AFTER FIELD unitprice
-         CALL calculate_total_price()
-      AFTER FIELD quantity
-         CALL calculate_total_price()
-      AFTER FIELD discount
-         CALL validate_discount_field()
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
-            NEXT FIELD discount
-         ELSE
-            CALL calculate_total_price()
-         END IF
-      AFTER INPUT
-         VAR valid_status = curr_order_details.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Order detail update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_order_details.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #order_details_do_edit
+END FUNCTION #order_details_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: order_details_do_delete
@@ -376,7 +344,7 @@ END FUNCTION #order_details_do_edit
 FUNCTION order_details_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Order detail delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -458,6 +426,8 @@ FUNCTION order_details_list_display()
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
+      ON ACTION excel_export
+         CALL list_view_helper.export_array_to_excel("order_details_list", util.JSONArray.fromFGL(list_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ToolBar>
+  <ToolBarItem name="search" />
+  <ToolBarItem name="adv_search" />
+  <ToolBarSeparator />
+  <ToolBarItem name="add" />
+  <ToolBarItem name="view" />
+  <ToolBarItem name="modify" />
+  <ToolBarItem name="delete" />
+  <ToolBarItem name="excel_export" />
+  <ToolBarSeparator />
+  <ToolBarItem name="exit" />
+</ToolBar>

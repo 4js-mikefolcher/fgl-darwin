@@ -1,7 +1,9 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_shippers
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -24,38 +26,6 @@ PRIVATE FUNCTION get_config() RETURNS t_controller_config
    LET cfg.entityName   = "Shipper"
    RETURN cfg
 END FUNCTION #get_config
-
--- =====================================================================
--- Function: view_shipper
--- Purpose : View a specific shipper record (called from other modules)
--- =====================================================================
-FUNCTION view_shipper(ship_id)
-   DEFINE ship_id LIKE shippers.shipperid
-   DEFINE where_clause VARCHAR(500)
-
-   IF ship_id IS NULL OR ship_id < 1 THEN
-      ERROR "Shipper ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewShipperWindow WITH FORM "shippers"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   LET where_clause = " shippers.shipperid = ", ship_id
-   CALL shippers_do_load(where_clause)
-
-   IF shippers_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewShipperWindow
-      ERROR "Shipper not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewShipperWindow
-
-END FUNCTION #view_shipper
 
 -- =====================================================================
 -- Function: submenu_shippers
@@ -163,79 +133,59 @@ PRIVATE FUNCTION shippers_do_load(where_clause VARCHAR(500))
 END FUNCTION #shippers_do_load
 
 -- =====================================================================
--- Function: shippers_do_add
--- Purpose : Add a new shipper record
+-- Function: shippers_do_add_edit
+-- Purpose : Add or edit a shipper record
 -- =====================================================================
-FUNCTION shippers_do_add()
+FUNCTION shippers_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL shippers_clear_curr()
-   INPUT curr_shippers.* WITHOUT DEFAULTS FROM s_shippers.*
-      ATTRIBUTES(UNBUFFERED)
+   IF mode == "A" THEN
+      CALL shippers_clear_curr()
+   END IF
+
+   INPUT BY NAME curr_shippers.*
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("shipperid", FALSE)
+      ON ACTION accept
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
       AFTER INPUT
-          VAR valid_status = curr_shippers.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_shippers.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "Shipper add canceled"
+      IF mode = "A" THEN
+         ERROR "Shipper add canceled"
+      ELSE
+         ERROR "Shipper update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_shippers.insertRec()
-   IF NOT ins_status.valid_status THEN
-      ERROR ins_status.valid_msg
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_shippers.insertRec()
+   ELSE
+      LET rec_status = curr_shippers.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
+      CALL shippers_display_curr()
+      MESSAGE rec_status.valid_msg
+   ELSE
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
-      RETURN
    END IF
 
-   CALL shippers_display_curr()
-   MESSAGE ins_status.valid_msg
-
-END FUNCTION #shippers_do_add
-
--- =====================================================================
--- Function: shippers_do_edit
--- Purpose : Edit an existing shipper record
--- =====================================================================
-FUNCTION shippers_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_shippers.companyname, curr_shippers.phone
-      ATTRIBUTES(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER INPUT
-          VAR valid_status = curr_shippers.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Shipper update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_shippers.updateRec()
-   IF NOT upd_status.valid_status THEN
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-      RETURN
-   END IF
-
-   MESSAGE upd_status.valid_msg
-
-END FUNCTION #shippers_do_edit
+END FUNCTION #shippers_do_add_edit
 
 -- =====================================================================
 -- Function: shippers_do_delete
@@ -244,7 +194,7 @@ END FUNCTION #shippers_do_edit
 FUNCTION shippers_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Shipper delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -336,83 +286,3 @@ FUNCTION shippers_do_command(commandName STRING)
 
 END FUNCTION #shippers_do_command
 
--- =====================================================================
--- Function: shipper_lookup
--- Purpose : Open a lookup window for shipper selection
--- =====================================================================
-FUNCTION shipper_lookup()
-   DEFINE ship_id LIKE shippers.shipperid
-   DEFINE ship_name LIKE shippers.companyname
-
-   OPEN WINDOW lookupWindow WITH FORM "shippers"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL shipper_lookup_menu()
-      RETURNING ship_id, ship_name
-
-   CLOSE WINDOW lookupWindow
-
-   RETURN ship_id, ship_name
-
-END FUNCTION #shipper_lookup
-
--- =====================================================================
--- Function: shipper_lookup_menu
--- Purpose : Navigation menu for shipper lookup selection
--- =====================================================================
-FUNCTION shipper_lookup_menu()
-   DEFINE currentIdx INTEGER
-   DEFINE statusMessage CHAR(60)
-   DEFINE selectedIdx INTEGER
-
-   CALL shippers_do_query()
-   IF shippers_arr.getLength() == 0 THEN
-      RETURN 0, ""
-   END IF
-
-   LET currentIdx = 1
-   LET selectedIdx = 0
-   WHILE currentIdx > 0 AND currentIdx <= shippers_arr.getLength() AND selectedIdx == 0
-
-       CALL shippers_load_at(currentIdx)
-       CALL shippers_display_curr()
-       LET statusMessage = "Viewing ", currentIdx USING "<<<<", " of ", shippers_arr.getLength() USING "<<<<"
-       MESSAGE statusMessage
-
-       MENU "Shipper Selection"
-          COMMAND "First" "View first record in result set"
-              LET currentIdx = 1
-              EXIT MENU
-          COMMAND "Previous" "View previous record in result set"
-              LET currentIdx = currentIdx - 1
-              IF currentIdx < 1 THEN
-                 LET currentIdx = 1
-              END IF
-              EXIT MENU
-          COMMAND "Next" "View next record in result set"
-              LET currentIdx = currentIdx + 1
-              IF currentIdx > shippers_arr.getLength() THEN
-                 LET currentIdx = shippers_arr.getLength()
-              END IF
-              EXIT MENU
-          COMMAND "Last" "View last record in result set"
-              LET currentIdx = shippers_arr.getLength()
-              EXIT MENU
-          COMMAND "Select" "Select the current shipper"
-              LET selectedIdx = currentIdx
-              CALL shippers_load_at(selectedIdx)
-              EXIT MENU
-          COMMAND "Exit" "Quit operation"
-              LET currentIdx = 0
-              EXIT MENU
-       END MENU
-
-   END WHILE
-
-   IF selectedIdx > 0 THEN
-      RETURN curr_shippers.shipperid, curr_shippers.companyname
-   END IF
-
-   RETURN 0, ""
-
-END FUNCTION #shipper_lookup_menu

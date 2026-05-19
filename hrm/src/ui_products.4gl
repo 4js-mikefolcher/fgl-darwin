@@ -1,9 +1,12 @@
+IMPORT util
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_products
 IMPORT FGL ui_suppliers
 IMPORT FGL ui_categories
+IMPORT FGL model_helper
 
 DATABASE northwind
 
@@ -43,73 +46,6 @@ PRIVATE FUNCTION init_view_commands() RETURNS DYNAMIC ARRAY OF t_view_command
    LET cmds[2].commandComment = "View Category for this Product"
    RETURN cmds
 END FUNCTION #init_view_commands
-
--- =====================================================================
--- Function: view_product
--- Purpose : View a specific product record (called from other modules)
--- =====================================================================
-FUNCTION view_product(prod_id)
-   DEFINE prod_id LIKE products.productid
-   DEFINE where_clause VARCHAR(500)
-
-   IF prod_id IS NULL OR prod_id < 1 THEN
-      ERROR "Product ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewProductWindow WITH FORM "products"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_supplier_combo()
-   CALL populate_category_combo()
-   LET where_clause = " products.productid = ", prod_id
-   CALL products_do_load(where_clause)
-
-   IF products_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewProductWindow
-      ERROR "Product not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewProductWindow
-
-END FUNCTION #view_product
-
--- =====================================================================
--- Function: view_products_for_supplier
--- Purpose : View products for a specific supplier
--- =====================================================================
-FUNCTION view_products_for_supplier(supp_id)
-   DEFINE supp_id LIKE suppliers.supplierid
-   DEFINE where_clause VARCHAR(500)
-
-   IF supp_id IS NULL OR supp_id < 1 THEN
-      ERROR "Supplier ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewProductsWindow WITH FORM "products"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_supplier_combo()
-   CALL populate_category_combo()
-   LET where_clause = " products.supplierid = ", supp_id
-   CALL products_do_load(where_clause)
-
-   IF products_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewProductsWindow
-      ERROR "No Products found for this Supplier"
-      RETURN
-   END IF
-
-   CALL submenu_products_view()
-
-   CLOSE WINDOW viewProductsWindow
-
-END FUNCTION #view_products_for_supplier
 
 -- =====================================================================
 -- Function: view_products_for_category
@@ -269,86 +205,62 @@ PRIVATE FUNCTION products_do_load(where_clause VARCHAR(500))
 END FUNCTION #products_do_load
 
 -- =====================================================================
--- Function: products_do_add
--- Purpose : Add a new product record
+-- Function: products_do_add_edit
+-- Purpose : Add or edit a product record based on mode
 -- =====================================================================
-FUNCTION products_do_add()
+FUNCTION products_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL products_clear_curr()
-   LET curr_products.discontinued = 0
+   IF mode == "A" THEN
+      CALL products_clear_curr()
+      LET curr_products.discontinued = 0
+   END IF
    CALL populate_supplier_combo()
    CALL populate_category_combo()
+
    INPUT BY NAME curr_products.*
-      ATTRIBUTES(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         CALL DIALOG.setFieldActive("productid", FALSE)
       ON ACTION accept
-          ACCEPT INPUT
+         ACCEPT INPUT
       ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
+         LET int_flag = TRUE
+         EXIT INPUT
       AFTER INPUT
-          VAR valid_status = curr_products.validateRec("A")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
+         VAR valid_status = curr_products.validateRec(mode)
+         IF NOT valid_status.valid_status THEN
+            ERROR valid_status.valid_msg
+            CONTINUE INPUT
+         END IF
    END INPUT
 
    IF int_flag THEN
-      ERROR "Product add canceled"
+      IF mode = "A" THEN
+         ERROR "Product add canceled"
+      ELSE
+         ERROR "Product update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_products.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_products.insertRec()
+   ELSE
+      LET rec_status = curr_products.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL products_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #products_do_add
-
--- =====================================================================
--- Function: products_do_edit
--- Purpose : Edit an existing product record
--- =====================================================================
-FUNCTION products_do_edit()
-
-   LET int_flag = FALSE
-   INPUT BY NAME curr_products.productname, curr_products.supplierid, curr_products.categoryid,
-                 curr_products.quantityperunit, curr_products.unitprice, curr_products.unitsinstock,
-                 curr_products.unitsonorder, curr_products.reorderlevel, curr_products.discontinued
-      ATTRIBUTES(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-          ACCEPT INPUT
-      ON ACTION cancel
-          LET int_flag = TRUE
-          EXIT INPUT
-      AFTER INPUT
-          VAR valid_status = curr_products.validateRec("C")
-          IF NOT valid_status.valid_status THEN
-              ERROR valid_status.valid_msg
-              CONTINUE INPUT
-          END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Product update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_products.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #products_do_edit
+END FUNCTION #products_do_add_edit
 
 -- =====================================================================
 -- Function: products_do_delete
@@ -357,7 +269,7 @@ END FUNCTION #products_do_edit
 FUNCTION products_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Product delete canceled"
       LET int_flag = TRUE
       RETURN
@@ -430,6 +342,8 @@ FUNCTION products_list_display() RETURNS (INTEGER, INTEGER)
          LET selectedIdx = ARR_CURR()
          LET selectedOption = cViewRecord
          EXIT DISPLAY
+      ON ACTION excel_export
+         CALL list_view_helper.export_array_to_excel("products_list", util.JSONArray.fromFGL(products_arr))
    END DISPLAY
 
    RETURN selectedIdx, selectedOption

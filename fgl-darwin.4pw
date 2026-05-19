@@ -70,7 +70,7 @@
   </Settings>
   <LanguageList version="1.0"/>
   <PlatformList version="1.0"/>
-  <Group environment="filelist:FGLPROFILE=$(FGLPROFILE);$(ProjectDir)/dbs/postgres/fglprofile.pgs,dirlist:FGLDBPATH=$(ProjectDir)/dbs" id="675791855" label="fgl-darwin" language="Genero (no link)">
+  <Group environment="dirlist:FGLLDPATH=$(ProjectDir)/.fglpkg/packages/poiapi;$(FGLLDPATH),dirlist:CLASSPATH=$(ProjectDir)/.fglpkg/jars/commons-codec-1.17.2.jar;$(ProjectDir)/.fglpkg/jars/commons-collections4-4.5.0.jar;$(ProjectDir)/.fglpkg/jars/commons-compress-1.27.1.jar;$(ProjectDir)/.fglpkg/jars/commons-io-2.18.0.jar;$(ProjectDir)/.fglpkg/jars/commons-math3-3.6.1.jar;$(ProjectDir)/.fglpkg/jars/curvesapi-1.08.jar;$(ProjectDir)/.fglpkg/jars/log4j-api-2.17.1.jar;$(ProjectDir)/.fglpkg/jars/poi-5.3.0.jar;$(ProjectDir)/.fglpkg/jars/poi-ooxml-5.3.0.jar;$(ProjectDir)/.fglpkg/jars/poi-ooxml-lite-5.3.0.jar;$(ProjectDir)/.fglpkg/jars/xmlbeans-5.2.2.jar;$(CLASSPATH),filelist:FGLPROFILE=$(FGLPROFILE);$(ProjectDir)/dbs/postgres/fglprofile.pgs,dirlist:FGLDBPATH=$(ProjectDir)/dbs" id="675791855" label="fgl-darwin" language="Genero (no link)">
     <Group id="-1580766858" label="Core Application">
       <Application binaryName="mstr_dtl_order" id="1145118413" label="mstr_dtl_order">
         <Configuration id="-1946006971" label="mstr_dtl_order"/>
@@ -270,8 +270,20 @@
           <File filePath="hrm/src/ui_usstates.4gl"/>
         </VirtualFolder>
         <VirtualFolder label="resources">
+          <File filePath="hrm/src/detail_cust_demo.4tb"/>
+          <File filePath="hrm/src/detail_no_modify.4tb"/>
+          <File filePath="hrm/src/detail_shippers.4tb"/>
+          <File filePath="hrm/src/detail_standard.4tb"/>
+          <File filePath="hrm/src/detail_with_products.4tb"/>
           <File filePath="hrm/src/generic.4ad"/>
           <File filePath="hrm/src/generic.4st"/>
+          <File filePath="hrm/src/list_lookup.4tb"/>
+          <File filePath="hrm/src/list_standard.4tb"/>
+          <File filePath="hrm/src/master_detail.4tb"/>
+          <File filePath="hrm/src/menu_launcher.4tb"/>
+          <File filePath="hrm/src/report_criteria.4tb"/>
+          <File filePath="hrm/src/report_viewer.4tb"/>
+          <File filePath="hrm/src/search_list.4tb"/>
         </VirtualFolder>
       </Library>
     </Group>
@@ -368,6 +380,12 @@
       <Application binaryName="test_rest_usstates" id="1134826828" label="test_rest_usstates">
         <Configuration id="1134826829" label="test_rest_usstates"/>
         <File filePath="hrm/src/test_rest_usstates.4gl"/>
+      </Application>
+    </Group>
+    <Group id="1134826900" label="GGC Tests">
+      <Application binaryName="test_md_orders" id="1134826901" label="test_md_orders">
+        <Configuration id="1134826902" label="test_md_orders"/>
+        <File filePath="ggc-test/test_md_orders.4gl"/>
       </Application>
     </Group>
   </Group>

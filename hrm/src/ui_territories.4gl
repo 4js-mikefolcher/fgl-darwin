@@ -1,9 +1,11 @@
 IMPORT FGL main_lib
+IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_territories
 IMPORT FGL ui_region
 IMPORT FGL ui_employees
+IMPORT FGL model_helper
 DATABASE northwind
 
 DEFINE territories_arr DYNAMIC ARRAY OF t_territory
@@ -67,39 +69,6 @@ FUNCTION root_add_territories()
    CALL controller_add()
 
 END FUNCTION #root_add_territories
-
--- =====================================================================
--- Function: view_territory
--- Purpose : View a specific territory record (called from other modules)
--- =====================================================================
-FUNCTION view_territory(terr_id)
-   DEFINE terr_id LIKE territories.territoryid
-   DEFINE where_clause VARCHAR(255)
-
-   IF terr_id IS NULL OR LENGTH(terr_id) == 0 THEN
-      ERROR "Territory ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewTerritoryWindow WITH FORM "territories"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   CALL populate_region_combo()
-   LET where_clause = " territories.territoryid = '", terr_id CLIPPED, "'"
-   CALL territories_do_load(where_clause)
-
-   IF territories_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewTerritoryWindow
-      ERROR "Territory not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewTerritoryWindow
-
-END FUNCTION #view_territory
 
 -- =====================================================================
 -- Function: view_territories_for_region
@@ -277,23 +246,30 @@ PRIVATE FUNCTION territories_do_load(where_clause)
 END FUNCTION #territories_do_load
 
 -- =====================================================================
--- Dispatch interface: territories_do_add
+-- Dispatch interface: territories_do_add_edit
 -- =====================================================================
-FUNCTION territories_do_add()
+FUNCTION territories_do_add_edit(mode CHAR(1))
 
    CLEAR FORM
    LET int_flag = FALSE
-   CALL territories_clear_curr()
+   IF mode == "A" THEN
+      CALL territories_clear_curr()
+   END IF
    CALL populate_region_combo()
+
    INPUT BY NAME curr_territories.*
-      ATTRIBUTE(UNBUFFERED)
+      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS=TRUE)
+      BEFORE INPUT
+         IF mode == "C" THEN
+            CALL DIALOG.setFieldActive("territoryid", FALSE)
+         END IF
       ON ACTION accept
          ACCEPT INPUT
       ON ACTION cancel
          LET int_flag = TRUE
          EXIT INPUT
       AFTER INPUT
-         VAR valid_status = curr_territories.validateRec("A")
+         VAR valid_status = curr_territories.validateRec(mode)
          IF NOT valid_status.valid_status THEN
             ERROR valid_status.valid_msg
             CONTINUE INPUT
@@ -301,57 +277,30 @@ FUNCTION territories_do_add()
    END INPUT
 
    IF int_flag THEN
-      ERROR "Territory add canceled"
+      IF mode = "A" THEN
+         ERROR "Territory add canceled"
+      ELSE
+         ERROR "Territory update canceled"
+      END IF
       RETURN
    END IF
 
-   VAR ins_status = curr_territories.insertRec()
-   IF ins_status.valid_status THEN
+   VAR rec_status t_valid_rec
+   IF mode = "A" THEN
+      LET rec_status = curr_territories.insertRec()
+   ELSE
+      LET rec_status = curr_territories.updateRec()
+   END IF
+
+   IF rec_status.valid_status THEN
       CALL territories_display_curr()
-      MESSAGE ins_status.valid_msg
+      MESSAGE rec_status.valid_msg
    ELSE
-      ERROR ins_status.valid_msg
+      ERROR rec_status.valid_msg
       LET int_flag = TRUE
    END IF
 
-END FUNCTION #territories_do_add
-
--- =====================================================================
--- Dispatch interface: territories_do_edit
--- =====================================================================
-FUNCTION territories_do_edit()
-
-   CALL populate_region_combo()
-   LET int_flag = FALSE
-   INPUT BY NAME curr_territories.territorydescription, curr_territories.regionid
-      ATTRIBUTE(UNBUFFERED, WITHOUT DEFAULTS)
-      ON ACTION accept
-         ACCEPT INPUT
-      ON ACTION cancel
-         LET int_flag = TRUE
-         EXIT INPUT
-      AFTER INPUT
-         VAR valid_status = curr_territories.validateRec("C")
-         IF NOT valid_status.valid_status THEN
-            ERROR valid_status.valid_msg
-            CONTINUE INPUT
-         END IF
-   END INPUT
-
-   IF int_flag THEN
-      ERROR "Territory update canceled"
-      RETURN
-   END IF
-
-   VAR upd_status = curr_territories.updateRec()
-   IF upd_status.valid_status THEN
-      MESSAGE upd_status.valid_msg
-   ELSE
-      ERROR upd_status.valid_msg
-      LET int_flag = TRUE
-   END IF
-
-END FUNCTION #territories_do_edit
+END FUNCTION #territories_do_add_edit
 
 -- =====================================================================
 -- Dispatch interface: territories_do_delete
@@ -359,7 +308,7 @@ END FUNCTION #territories_do_edit
 FUNCTION territories_do_delete()
 
    LET int_flag = FALSE
-   IF NOT confirm_delete() THEN
+   IF NOT dialog_prompt.delete_prompt() THEN
       ERROR "Territory delete canceled"
       LET int_flag = TRUE
       RETURN

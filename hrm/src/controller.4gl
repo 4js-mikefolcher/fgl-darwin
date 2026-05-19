@@ -114,7 +114,7 @@ PUBLIC FUNCTION controller_navigate()
               EXIT MENU
 
           ON ACTION add
-              CALL dispatch_add(m_config.moduleName)
+              CALL dispatch_add_edit(m_config.moduleName, "A")
               IF int_flag == FALSE THEN
                  CALL dispatch_refresh(m_config.moduleName, m_idx, "A")
                  LET m_idx = dispatch_get_count(m_config.moduleName)
@@ -123,7 +123,8 @@ PUBLIC FUNCTION controller_navigate()
 
           ON ACTION modify
               IF m_config.hasModify THEN
-                 CALL dispatch_edit(m_config.moduleName)
+                 CALL dispatch_load_at(m_config.moduleName, m_idx)
+                 CALL dispatch_add_edit(m_config.moduleName, "C")
                  IF int_flag == FALSE THEN
                     CALL dispatch_refresh(m_config.moduleName, m_idx, "C")
                  END IF
@@ -131,6 +132,7 @@ PUBLIC FUNCTION controller_navigate()
               EXIT MENU
 
           ON ACTION delete
+              CALL dispatch_load_at(m_config.moduleName, m_idx)
               CALL dispatch_delete(m_config.moduleName)
               IF int_flag == FALSE THEN
                  CALL dispatch_refresh(m_config.moduleName, m_idx, "D")
@@ -263,7 +265,7 @@ PRIVATE FUNCTION controller_list_view()
    IF NOT int_flag THEN
       CASE selectedOption
          WHEN cAddRecord
-            CALL dispatch_add(m_config.moduleName)
+            CALL dispatch_add_edit(m_config.moduleName, "A")
             IF int_flag == FALSE THEN
                CALL dispatch_refresh(m_config.moduleName,
                   dispatch_get_count(m_config.moduleName), "A")
@@ -273,7 +275,8 @@ PRIVATE FUNCTION controller_list_view()
                AND selectedIdx >= 1
                AND selectedIdx <= dispatch_get_count(m_config.moduleName) THEN
                CALL dispatch_load_at(m_config.moduleName, selectedIdx)
-               CALL dispatch_edit(m_config.moduleName)
+               CALL dispatch_add_edit(m_config.moduleName, "C")
+               LET m_idx = selectedIdx
                IF int_flag == FALSE THEN
                   CALL dispatch_refresh(m_config.moduleName, selectedIdx, "C")
                END IF
@@ -283,6 +286,7 @@ PRIVATE FUNCTION controller_list_view()
                AND selectedIdx <= dispatch_get_count(m_config.moduleName) THEN
                CALL dispatch_load_at(m_config.moduleName, selectedIdx)
                CALL dispatch_delete(m_config.moduleName)
+               LET m_idx = selectedIdx
                IF int_flag == FALSE THEN
                   CALL dispatch_refresh(m_config.moduleName, selectedIdx, "D")
                END IF
@@ -320,7 +324,7 @@ END FUNCTION #controller_query_then_navigate
 -- =====================================================================
 PUBLIC FUNCTION controller_add()
 
-   CALL dispatch_add(m_config.moduleName)
+   CALL dispatch_add_edit(m_config.moduleName, "A")
 
 END FUNCTION #controller_add
 

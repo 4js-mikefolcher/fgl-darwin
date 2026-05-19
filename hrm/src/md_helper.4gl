@@ -5,6 +5,8 @@ PUBLIC CONSTANT cEdit = 3
 PUBLIC CONSTANT cDelete = 4
 PUBLIC CONSTANT cView = 5
 PUBLIC CONSTANT cAdvSearch = 6
+PUBLIC CONSTANT cExport = 7
+PUBLIC CONSTANT cAppend = 8
 
 PUBLIC CONSTANT cViewImage = "fa-eye"
 PUBLIC CONSTANT cEditImage = "fa-pencil"
