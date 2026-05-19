@@ -85,38 +85,6 @@ FUNCTION root_add_customers()
 END FUNCTION #root_add_customers
 
 -- =====================================================================
--- Function: view_customer
--- Purpose : View a specific customer record (called from other modules)
--- =====================================================================
-FUNCTION view_customer(cust_id)
-   DEFINE cust_id LIKE customers.customerid
-   DEFINE where_clause VARCHAR(500)
-
-   IF cust_id IS NULL OR LENGTH(cust_id) == 0 THEN
-      ERROR "Customer ID is missing or invalid"
-      RETURN
-   END IF
-
-   OPEN WINDOW viewCustomerWindow WITH FORM "customers"
-      ATTRIBUTES(STYLE="modulewindow")
-
-   LET where_clause = " customers.customerid = '", cust_id CLIPPED, "'"
-   CALL customers_do_load(where_clause)
-
-   IF customers_arr.getLength() == 0 THEN
-      CLOSE WINDOW viewCustomerWindow
-      ERROR "Customer not found"
-      RETURN
-   END IF
-
-   CALL controller_init(get_config())
-   CALL controller_navigate_view()
-
-   CLOSE WINDOW viewCustomerWindow
-
-END FUNCTION #view_customer
-
--- =====================================================================
 -- Dispatch interface: customers_get_count
 -- =====================================================================
 FUNCTION customers_get_count()

@@ -133,20 +133,3 @@ PUBLIC FUNCTION http_delete(url STRING) RETURNS (INTEGER, STRING)
       RETURN -1, ""
    END TRY
 END FUNCTION
-
-PUBLIC FUNCTION check_server(url STRING) RETURNS BOOLEAN
-   DEFINE req com.HttpRequest
-   DEFINE resp com.HttpResponse
-
-   TRY
-      LET req = com.HttpRequest.Create(url)
-      CALL req.setMethod("GET")
-      CALL req.setHeader("Accept", "application/json")
-      CALL req.setTimeout(5)
-      CALL req.doRequest()
-      LET resp = req.getResponse()
-      RETURN TRUE
-   CATCH
-      RETURN FALSE
-   END TRY
-END FUNCTION

@@ -2,7 +2,6 @@ IMPORT os
 IMPORT util
 
 DATABASE northwind
-DEFINE arr_max INTEGER
 DEFINE m_program_icons DYNAMIC ARRAY OF RECORD
     program_name STRING,
     icon_name    STRING
@@ -17,8 +16,6 @@ FUNCTION init_pgm()
     OPTIONS ERROR LINE LAST - 1
     OPTIONS INPUT WRAP
 
-    LET arr_max = 1000
-
     -- Load generic stylesheet for all windows
     CALL ui.Interface.loadStyles("generic.4st")
 
@@ -27,15 +24,6 @@ FUNCTION init_pgm()
 
     -- Register form initializer to auto-load action defaults
     CALL ui.Form.setDefaultInitializer("form_initializer")
-
-END FUNCTION
-
-FUNCTION get_arr_max()
-
-   IF arr_max == 0 THEN
-      LET arr_max = 1000
-   END IF
-   RETURN arr_max
 
 END FUNCTION
 

@@ -101,8 +101,6 @@ FUNCTION build_org_tree(emp_id LIKE employees.employeeid, level INTEGER)
    DEFINE idx INTEGER
    DEFINE l_org_arr DYNAMIC ARRAY OF t_org_rec
 
-   DISPLAY SFMT("Employee ID (%1) and Level (%2)", emp_id, level)
-
    -- If emp_id is NULL, we want to start with top-level employees (reportsto IS NULL)
    IF emp_id IS NULL THEN
       IF m_define_null_cursor THEN

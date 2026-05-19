@@ -5,7 +5,6 @@ IMPORT FGL controller
 IMPORT FGL model_cust_cust_demo
 IMPORT FGL ui_customers
 IMPORT FGL ui_cust_demo
-IMPORT FGL model_helper
 
 DATABASE northwind
 
