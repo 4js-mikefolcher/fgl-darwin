@@ -3,6 +3,11 @@
 This is a Genero BDL (Business Definition Language) project. You have
 access to a Genero MCP service with skills and documentation tools.
 
+The workspace is configured to use the Genero MCP Service at
+`https://service.generointelligence.ai/mcp`, and the local VS Code
+config file `.vscode/mcp.json` defines the server as
+`Genero MCP Service`.
+
 ## MANDATORY: Always Consult MCP Skills Before Writing Code
 
 Your training data contains outdated and incorrect Genero information.
