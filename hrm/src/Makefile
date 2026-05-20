@@ -1,16 +1,31 @@
 # Makefile for Genero BDL Application
-# Compiles .per forms and .4gl modules
+# Compiles .per forms and .4gl modules.
+#
+# Every .4gl source — library OR main program — compiles to a .42m via
+# `fglcomp -M`. There is no `fgl2p` link step: IMPORT FGL chains are
+# resolved at runtime by `fglrun` via FGLLDPATH (configured below).
+#
+# To launch a program:   fglrun bin/main_employees    (no extension needed)
+# To launch a form:      handled by the program itself
 
 # Directories
 BINDIR = ../../bin
 
 # Compilers
 FORMCOMP = fglform
-SRCCOMP = fgl2p
+MODCOMP  = fglcomp -M
 
-# FGLLDPATH for linking: include bin dir, POI API package, and existing system paths
-#POIAPI = /opt/fourjs/packages/v6/poiapi
-#LDPATH = FGLLDPATH=$(BINDIR):$(POIAPI):$$FGLLDPATH
+# ----------------------------------------------------------------------
+# FGLLDPATH for fglcomp / fglrun
+# ----------------------------------------------------------------------
+# fglcomp must find imported modules to verify call signatures:
+#   - BINDIR       — sibling app modules already compiled to .42m
+#   - PKGDIR/*     — fglpkg packages (poiapi, aim, restdblib, fglunit)
+#   - $$FGLLDPATH  — leave anything the caller already set
+PROJECT_ROOT = ../..
+PKGDIR       = $(PROJECT_ROOT)/.fglpkg/packages
+PKG_PATHS    = $(PKGDIR)/poiapi:$(PKGDIR)/aim:$(PKGDIR)/restdblib:$(PKGDIR)/fglunit
+LDPATH       = FGLLDPATH=$(BINDIR):$(PKG_PATHS):$$FGLLDPATH
 
 # Source files
 FORMS = employees.per employees_list.per empl_terr.per empl_terr_list.per region.per region_list.per territories.per territories_list.per \
@@ -67,42 +82,71 @@ FORM_TARGETS = $(BINDIR)/employees.42f \
                $(BINDIR)/report_viewer.42f \
                $(BINDIR)/bdl_menu.42f
 
-# Program targets
-PROG_TARGETS = $(BINDIR)/bdl_menu.42r \
-               $(BINDIR)/ifx_menu.42r \
-               $(BINDIR)/main_employees.42r \
-               $(BINDIR)/main_empl_terr.42r \
-               $(BINDIR)/main_region.42r \
-               $(BINDIR)/main_territories.42r \
-               $(BINDIR)/main_orders.42r \
-               $(BINDIR)/main_order_details.42r \
-               $(BINDIR)/main_categories.42r \
-               $(BINDIR)/main_customers.42r \
-               $(BINDIR)/main_products.42r \
-               $(BINDIR)/main_shippers.42r \
-               $(BINDIR)/main_suppliers.42r \
-               $(BINDIR)/main_usstates.42r \
-               $(BINDIR)/main_cust_demo.42r \
-               $(BINDIR)/main_cust_cust_demo.42r \
-               $(BINDIR)/mstr_dtl_order.42r \
-               $(BINDIR)/main_rpt_orders_by_customer.42r \
-               $(BINDIR)/main_rpt_orders_by_employee.42r \
-               $(BINDIR)/main_rpt_orders_by_product.42r \
-               $(BINDIR)/main_rpt_orders_by_daterange.42r \
-               $(BINDIR)/main_rpt_orders_generic.42r \
-               $(BINDIR)/main_rpt_org_chart.42r \
-               $(BINDIR)/main_rpt_products_by_category.42r \
-               $(BINDIR)/main_rpt_employees_with_totals.42r \
-               $(BINDIR)/main_rest_server.42r
+# ----------------------------------------------------------------------
+# All .4gl source files (libraries AND program entry points).
+# Every .4gl compiles to .42m the same way; programs are distinguished
+# from libraries only by having a MAIN block.
+# ----------------------------------------------------------------------
+MODULE_SOURCES = \
+    main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
+    model_helper.4gl \
+    model_employees.4gl model_empl_terr.4gl model_territories.4gl model_region.4gl \
+    model_orders.4gl model_order_details.4gl model_customers.4gl model_shippers.4gl \
+    model_products.4gl model_suppliers.4gl model_categories.4gl model_usstates.4gl \
+    ui_employees.4gl ui_empl_terr.4gl ui_territories.4gl ui_region.4gl \
+    ui_orders.4gl ui_order_details.4gl ui_customers.4gl ui_shippers.4gl \
+    ui_products.4gl ui_suppliers.4gl ui_categories.4gl ui_usstates.4gl \
+    model_cust_demo.4gl model_cust_cust_demo.4gl \
+    ui_cust_demo.4gl ui_cust_cust_demo.4gl \
+    md_order_details.4gl md_helper.4gl \
+    advsearch_orders.4gl dialog_prompt.4gl \
+    report_helper.4gl \
+    rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
+    rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl \
+    rpt_orders_generic.4gl rpt_org_chart.4gl \
+    rpt_products_by_category.4gl rpt_employees_with_totals.4gl \
+    rest_categories.4gl rest_customers.4gl rest_employees.4gl \
+    rest_orders.4gl rest_order_details.4gl rest_products.4gl \
+    rest_suppliers.4gl rest_shippers.4gl rest_region.4gl \
+    rest_territories.4gl rest_usstates.4gl rest_empl_terr.4gl \
+    rest_cust_demo.4gl rest_cust_cust_demo.4gl \
+    test_rest_lib.4gl \
+    bdl_menu.4gl ifx_menu.4gl mstr_dtl_order.4gl \
+    main_employees.4gl main_empl_terr.4gl main_region.4gl main_territories.4gl \
+    main_orders.4gl main_order_details.4gl main_categories.4gl main_customers.4gl \
+    main_products.4gl main_shippers.4gl main_suppliers.4gl main_usstates.4gl \
+    main_cust_demo.4gl main_cust_cust_demo.4gl \
+    main_rpt_orders_by_customer.4gl main_rpt_orders_by_employee.4gl \
+    main_rpt_orders_by_product.4gl main_rpt_orders_by_daterange.4gl \
+    main_rpt_orders_generic.4gl main_rpt_org_chart.4gl \
+    main_rpt_products_by_category.4gl main_rpt_employees_with_totals.4gl \
+    main_rest_server.4gl \
+    test_rest_shippers.4gl test_rest_categories.4gl test_rest_suppliers.4gl \
+    test_rest_region.4gl test_rest_usstates.4gl test_rest_products.4gl \
+    test_rest_customers.4gl test_rest_territories.4gl test_rest_employees.4gl \
+    test_rest_orders.4gl test_rest_order_details.4gl test_rest_cust_demo.4gl \
+    test_rest_empl_terr.4gl test_rest_cust_cust_demo.4gl
 
-# Default target - build everything
-all: $(BINDIR) $(FORM_TARGETS) $(PROG_TARGETS)
+# Compiled module targets (.42m in bin/)
+MODULE_TARGETS = $(patsubst %.4gl,$(BINDIR)/%.42m,$(MODULE_SOURCES))
 
-# Create bin directory if it doesn't exist
+# ----------------------------------------------------------------------
+# Default target — build forms + all .42m modules.
+# ----------------------------------------------------------------------
+all: $(BINDIR) $(FORM_TARGETS) $(MODULE_TARGETS)
+
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
+# Generic rule: compile any .4gl to .42m and move to bin/.
+# Library modules and main programs both follow this rule.
+$(BINDIR)/%.42m: %.4gl
+	$(LDPATH) $(MODCOMP) $<
+	mv $*.42m $(BINDIR)/
+
+# ----------------------------------------------------------------------
 # Form compilation rules
+# ----------------------------------------------------------------------
 $(BINDIR)/employees.42f: employees.per
 	$(FORMCOMP) $<
 	mv employees.42f $(BINDIR)/
@@ -267,205 +311,10 @@ $(BINDIR)/bdl_menu.42f: bdl_menu.per
 	$(FORMCOMP) $<
 	mv bdl_menu.42f $(BINDIR)/
 
-# Module compiler (individual .4gl -> .42m)
-MODCOMP = fglcomp -M
-
-# All library/module source files (compiled individually to .42m)
-MODULE_SOURCES = main_lib.4gl list_view_helper.4gl controller.4gl dispatch.4gl \
-                 model_helper.4gl \
-                 model_employees.4gl model_empl_terr.4gl model_territories.4gl model_region.4gl \
-                 model_orders.4gl model_order_details.4gl model_customers.4gl model_shippers.4gl \
-                 model_products.4gl model_suppliers.4gl model_categories.4gl model_usstates.4gl \
-                 ui_employees.4gl ui_empl_terr.4gl ui_territories.4gl ui_region.4gl \
-                 ui_orders.4gl ui_order_details.4gl ui_customers.4gl ui_shippers.4gl \
-                 ui_products.4gl ui_suppliers.4gl ui_categories.4gl ui_usstates.4gl \
-                 model_cust_demo.4gl model_cust_cust_demo.4gl \
-                 ui_cust_demo.4gl ui_cust_cust_demo.4gl \
-                 md_order_details.4gl md_helper.4gl \
-                 advsearch_orders.4gl dialog_prompt.4gl \
-                 report_helper.4gl \
-                 rpt_orders_by_customer.4gl rpt_orders_by_employee.4gl \
-                 rpt_orders_by_product.4gl rpt_orders_by_daterange.4gl \
-                 rpt_orders_generic.4gl rpt_org_chart.4gl \
-                 rpt_products_by_category.4gl rpt_employees_with_totals.4gl \
-                 rest_categories.4gl rest_customers.4gl rest_employees.4gl \
-                 rest_orders.4gl rest_order_details.4gl rest_products.4gl \
-                 rest_suppliers.4gl rest_shippers.4gl rest_region.4gl \
-                 rest_territories.4gl rest_usstates.4gl rest_empl_terr.4gl \
-                 rest_cust_demo.4gl rest_cust_cust_demo.4gl \
-                 test_rest_lib.4gl
-
-# Compiled module targets (.42m in bin/)
-MODULE_TARGETS = $(patsubst %.4gl,$(BINDIR)/%.42m,$(MODULE_SOURCES))
-
-# Generic rule: compile any .4gl module to .42m and move to bin/
-$(BINDIR)/%.42m: %.4gl
-	$(LDPATH) $(MODCOMP) $<
-	mv $*.42m $(BINDIR)/
-
-# Program linking rules (each main program links only itself; deps resolved via IMPORT FGL)
-# FGLLDPATH tells fgl2p where to find imported .42m modules
-$(BINDIR)/bdl_menu.42r: bdl_menu.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o bdl_menu.42r bdl_menu.4gl
-	mv bdl_menu.42r bdl_menu.42m $(BINDIR)/
-
-$(BINDIR)/ifx_menu.42r: ifx_menu.4gl
-	$(SRCCOMP) -o ifx_menu.42r ifx_menu.4gl
-	mv ifx_menu.42r ifx_menu.42m $(BINDIR)/
-
-$(BINDIR)/main_employees.42r: main_employees.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_employees.42r main_employees.4gl
-	mv main_employees.42r main_employees.42m $(BINDIR)/
-
-$(BINDIR)/main_empl_terr.42r: main_empl_terr.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_empl_terr.42r main_empl_terr.4gl
-	mv main_empl_terr.42r main_empl_terr.42m $(BINDIR)/
-
-$(BINDIR)/main_region.42r: main_region.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_region.42r main_region.4gl
-	mv main_region.42r main_region.42m $(BINDIR)/
-
-$(BINDIR)/main_territories.42r: main_territories.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_territories.42r main_territories.4gl
-	mv main_territories.42r main_territories.42m $(BINDIR)/
-
-$(BINDIR)/main_orders.42r: main_orders.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_orders.42r main_orders.4gl
-	mv main_orders.42r main_orders.42m $(BINDIR)/
-
-$(BINDIR)/main_order_details.42r: main_order_details.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_order_details.42r main_order_details.4gl
-	mv main_order_details.42r main_order_details.42m $(BINDIR)/
-
-$(BINDIR)/main_categories.42r: main_categories.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_categories.42r main_categories.4gl
-	mv main_categories.42r main_categories.42m $(BINDIR)/
-
-$(BINDIR)/main_customers.42r: main_customers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_customers.42r main_customers.4gl
-	mv main_customers.42r main_customers.42m $(BINDIR)/
-
-$(BINDIR)/main_products.42r: main_products.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_products.42r main_products.4gl
-	mv main_products.42r main_products.42m $(BINDIR)/
-
-$(BINDIR)/main_shippers.42r: main_shippers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_shippers.42r main_shippers.4gl
-	mv main_shippers.42r main_shippers.42m $(BINDIR)/
-
-$(BINDIR)/main_suppliers.42r: main_suppliers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_suppliers.42r main_suppliers.4gl
-	mv main_suppliers.42r main_suppliers.42m $(BINDIR)/
-
-$(BINDIR)/main_usstates.42r: main_usstates.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_usstates.42r main_usstates.4gl
-	mv main_usstates.42r main_usstates.42m $(BINDIR)/
-
-$(BINDIR)/main_cust_demo.42r: main_cust_demo.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_cust_demo.42r main_cust_demo.4gl
-	mv main_cust_demo.42r main_cust_demo.42m $(BINDIR)/
-
-$(BINDIR)/main_cust_cust_demo.42r: main_cust_cust_demo.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_cust_cust_demo.42r main_cust_cust_demo.4gl
-	mv main_cust_cust_demo.42r main_cust_cust_demo.42m $(BINDIR)/
-
-$(BINDIR)/mstr_dtl_order.42r: mstr_dtl_order.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o mstr_dtl_order.42r mstr_dtl_order.4gl
-	mv mstr_dtl_order.42r mstr_dtl_order.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_orders_by_customer.42r: main_rpt_orders_by_customer.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_orders_by_customer.42r main_rpt_orders_by_customer.4gl
-	mv main_rpt_orders_by_customer.42r main_rpt_orders_by_customer.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_orders_by_employee.42r: main_rpt_orders_by_employee.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_orders_by_employee.42r main_rpt_orders_by_employee.4gl
-	mv main_rpt_orders_by_employee.42r main_rpt_orders_by_employee.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_orders_by_product.42r: main_rpt_orders_by_product.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_orders_by_product.42r main_rpt_orders_by_product.4gl
-	mv main_rpt_orders_by_product.42r main_rpt_orders_by_product.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_orders_by_daterange.42r: main_rpt_orders_by_daterange.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_orders_by_daterange.42r main_rpt_orders_by_daterange.4gl
-	mv main_rpt_orders_by_daterange.42r main_rpt_orders_by_daterange.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_orders_generic.42r: main_rpt_orders_generic.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_orders_generic.42r main_rpt_orders_generic.4gl
-	mv main_rpt_orders_generic.42r main_rpt_orders_generic.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_org_chart.42r: main_rpt_org_chart.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_org_chart.42r main_rpt_org_chart.4gl
-	mv main_rpt_org_chart.42r main_rpt_org_chart.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_products_by_category.42r: main_rpt_products_by_category.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_products_by_category.42r main_rpt_products_by_category.4gl
-	mv main_rpt_products_by_category.42r main_rpt_products_by_category.42m $(BINDIR)/
-
-$(BINDIR)/main_rpt_employees_with_totals.42r: main_rpt_employees_with_totals.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rpt_employees_with_totals.42r main_rpt_employees_with_totals.4gl
-	mv main_rpt_employees_with_totals.42r main_rpt_employees_with_totals.42m $(BINDIR)/
-
-$(BINDIR)/main_rest_server.42r: main_rest_server.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o main_rest_server.42r main_rest_server.4gl
-	mv main_rest_server.42r main_rest_server.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_shippers.42r: test_rest_shippers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_shippers.42r test_rest_shippers.4gl
-	mv test_rest_shippers.42r test_rest_shippers.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_categories.42r: test_rest_categories.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_categories.42r test_rest_categories.4gl
-	mv test_rest_categories.42r test_rest_categories.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_suppliers.42r: test_rest_suppliers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_suppliers.42r test_rest_suppliers.4gl
-	mv test_rest_suppliers.42r test_rest_suppliers.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_region.42r: test_rest_region.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_region.42r test_rest_region.4gl
-	mv test_rest_region.42r test_rest_region.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_usstates.42r: test_rest_usstates.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_usstates.42r test_rest_usstates.4gl
-	mv test_rest_usstates.42r test_rest_usstates.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_products.42r: test_rest_products.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_products.42r test_rest_products.4gl
-	mv test_rest_products.42r test_rest_products.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_customers.42r: test_rest_customers.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_customers.42r test_rest_customers.4gl
-	mv test_rest_customers.42r test_rest_customers.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_territories.42r: test_rest_territories.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_territories.42r test_rest_territories.4gl
-	mv test_rest_territories.42r test_rest_territories.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_employees.42r: test_rest_employees.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_employees.42r test_rest_employees.4gl
-	mv test_rest_employees.42r test_rest_employees.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_orders.42r: test_rest_orders.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_orders.42r test_rest_orders.4gl
-	mv test_rest_orders.42r test_rest_orders.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_order_details.42r: test_rest_order_details.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_order_details.42r test_rest_order_details.4gl
-	mv test_rest_order_details.42r test_rest_order_details.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_cust_demo.42r: test_rest_cust_demo.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_cust_demo.42r test_rest_cust_demo.4gl
-	mv test_rest_cust_demo.42r test_rest_cust_demo.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_empl_terr.42r: test_rest_empl_terr.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_empl_terr.42r test_rest_empl_terr.4gl
-	mv test_rest_empl_terr.42r test_rest_empl_terr.42m $(BINDIR)/
-
-$(BINDIR)/test_rest_cust_cust_demo.42r: test_rest_cust_cust_demo.4gl $(MODULE_TARGETS)
-	$(LDPATH) $(SRCCOMP) -o test_rest_cust_cust_demo.42r test_rest_cust_cust_demo.4gl
-	mv test_rest_cust_cust_demo.42r test_rest_cust_cust_demo.42m $(BINDIR)/
-
-# Clean compiled files
+# ----------------------------------------------------------------------
+# Clean — remove compiled forms + modules. Also nukes any stale .42r
+# from the old fgl2p-based build.
+# ----------------------------------------------------------------------
 clean:
 	rm -f *.42f *.42m *.42r
 	rm -f $(BINDIR)/*.42f $(BINDIR)/*.42m $(BINDIR)/*.42r
@@ -473,59 +322,78 @@ clean:
 # Clean and rebuild
 rebuild: clean all
 
-# Compile all modules (convenience target)
+# Compile all modules (convenience target — same as `all` minus forms)
 modules: $(MODULE_TARGETS)
 
-# Individual targets for convenience
-employees: $(BINDIR)/employees.42f $(BINDIR)/employees_list.42f $(BINDIR)/main_employees.42r
-empl_terr: $(BINDIR)/empl_terr.42f $(BINDIR)/empl_terr_list.42f $(BINDIR)/main_empl_terr.42r
-region: $(BINDIR)/region.42f $(BINDIR)/region_list.42f $(BINDIR)/main_region.42r
-territories: $(BINDIR)/territories.42f $(BINDIR)/territories_list.42f $(BINDIR)/main_territories.42r
-orders: $(BINDIR)/orders.42f $(BINDIR)/orders_list.42f $(BINDIR)/main_orders.42r
-order_details: $(BINDIR)/order_details.42f $(BINDIR)/order_details_list.42f $(BINDIR)/main_order_details.42r
-categories: $(BINDIR)/categories.42f $(BINDIR)/categories_list.42f $(BINDIR)/main_categories.42r
-customers: $(BINDIR)/customers.42f $(BINDIR)/customers_list.42f $(BINDIR)/main_customers.42r
-products: $(BINDIR)/products.42f $(BINDIR)/products_list.42f $(BINDIR)/main_products.42r
-shippers: $(BINDIR)/shippers.42f $(BINDIR)/shippers_list.42f $(BINDIR)/main_shippers.42r
-suppliers: $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42r
-usstates: $(BINDIR)/usstates.42f $(BINDIR)/usstates_list.42f $(BINDIR)/main_usstates.42r
-cust_demo: $(BINDIR)/cust_demo.42f $(BINDIR)/cust_demo_list.42f $(BINDIR)/main_cust_demo.42r
-cust_cust_demo: $(BINDIR)/cust_cust_demo.42f $(BINDIR)/cust_cust_demo_list.42f $(BINDIR)/main_cust_cust_demo.42r
-mstr_dtl_order: $(BINDIR)/md_order_details.42f $(BINDIR)/mstr_order_list.42f $(BINDIR)/advsearch_orders.42f $(BINDIR)/mstr_dtl_order.42r
+# ----------------------------------------------------------------------
+# Per-program convenience targets — each pulls in the program's .42m
+# plus its forms. Programs are launched via `fglrun <name>` (no
+# extension); fglrun finds the .42m through FGLLDPATH.
+# ----------------------------------------------------------------------
+employees:        $(BINDIR)/employees.42f $(BINDIR)/employees_list.42f $(BINDIR)/main_employees.42m
+empl_terr:        $(BINDIR)/empl_terr.42f $(BINDIR)/empl_terr_list.42f $(BINDIR)/main_empl_terr.42m
+region:           $(BINDIR)/region.42f $(BINDIR)/region_list.42f $(BINDIR)/main_region.42m
+territories:      $(BINDIR)/territories.42f $(BINDIR)/territories_list.42f $(BINDIR)/main_territories.42m
+orders:           $(BINDIR)/orders.42f $(BINDIR)/orders_list.42f $(BINDIR)/main_orders.42m
+order_details:    $(BINDIR)/order_details.42f $(BINDIR)/order_details_list.42f $(BINDIR)/main_order_details.42m
+categories:       $(BINDIR)/categories.42f $(BINDIR)/categories_list.42f $(BINDIR)/main_categories.42m
+customers:        $(BINDIR)/customers.42f $(BINDIR)/customers_list.42f $(BINDIR)/main_customers.42m
+products:         $(BINDIR)/products.42f $(BINDIR)/products_list.42f $(BINDIR)/main_products.42m
+shippers:         $(BINDIR)/shippers.42f $(BINDIR)/shippers_list.42f $(BINDIR)/main_shippers.42m
+suppliers:        $(BINDIR)/suppliers.42f $(BINDIR)/main_suppliers.42m
+usstates:         $(BINDIR)/usstates.42f $(BINDIR)/usstates_list.42f $(BINDIR)/main_usstates.42m
+cust_demo:        $(BINDIR)/cust_demo.42f $(BINDIR)/cust_demo_list.42f $(BINDIR)/main_cust_demo.42m
+cust_cust_demo:   $(BINDIR)/cust_cust_demo.42f $(BINDIR)/cust_cust_demo_list.42f $(BINDIR)/main_cust_cust_demo.42m
+mstr_dtl_order:   $(BINDIR)/md_order_details.42f $(BINDIR)/mstr_order_list.42f $(BINDIR)/advsearch_orders.42f $(BINDIR)/mstr_dtl_order.42m
 
-ifx_menu: $(BINDIR)/ifx_menu.42r
-bdl_menu: $(BINDIR)/bdl_menu.42f $(BINDIR)/bdl_menu.42r
+ifx_menu:         $(BINDIR)/ifx_menu.42m
+bdl_menu:         $(BINDIR)/bdl_menu.42f $(BINDIR)/bdl_menu.42m
 
 # Report convenience targets
-rpt_orders_by_customer: $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_orders_by_customer.42r
-rpt_orders_by_employee: $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42r
-rpt_orders_by_product: $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42r
-rpt_orders_by_daterange: $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42r
-rpt_orders_generic: $(BINDIR)/rpt_orders_generic.42f $(BINDIR)/main_rpt_orders_generic.42r
-rpt_org_chart: $(BINDIR)/rpt_org_chart.42f $(BINDIR)/main_rpt_org_chart.42r
-rpt_products_by_category: $(BINDIR)/rpt_products_by_category.42f $(BINDIR)/main_rpt_products_by_category.42r
-rpt_employees_with_totals: $(BINDIR)/rpt_employees_with_totals.42f $(BINDIR)/main_rpt_employees_with_totals.42r
+rpt_orders_by_customer:     $(BINDIR)/rpt_orders_by_customer.42f $(BINDIR)/main_rpt_orders_by_customer.42m
+rpt_orders_by_employee:     $(BINDIR)/rpt_orders_by_employee.42f $(BINDIR)/main_rpt_orders_by_employee.42m
+rpt_orders_by_product:      $(BINDIR)/rpt_orders_by_product.42f $(BINDIR)/main_rpt_orders_by_product.42m
+rpt_orders_by_daterange:    $(BINDIR)/rpt_orders_by_daterange.42f $(BINDIR)/main_rpt_orders_by_daterange.42m
+rpt_orders_generic:         $(BINDIR)/rpt_orders_generic.42f $(BINDIR)/main_rpt_orders_generic.42m
+rpt_org_chart:              $(BINDIR)/rpt_org_chart.42f $(BINDIR)/main_rpt_org_chart.42m
+rpt_products_by_category:   $(BINDIR)/rpt_products_by_category.42f $(BINDIR)/main_rpt_products_by_category.42m
+rpt_employees_with_totals:  $(BINDIR)/rpt_employees_with_totals.42f $(BINDIR)/main_rpt_employees_with_totals.42m
 
-rest_server: $(BINDIR)/main_rest_server.42r
+rest_server: $(BINDIR)/main_rest_server.42m
 
-test_rest_shippers: $(BINDIR)/test_rest_shippers.42r
-test_rest_categories: $(BINDIR)/test_rest_categories.42r
-test_rest_suppliers: $(BINDIR)/test_rest_suppliers.42r
-test_rest_region: $(BINDIR)/test_rest_region.42r
-test_rest_usstates: $(BINDIR)/test_rest_usstates.42r
-test_rest_products: $(BINDIR)/test_rest_products.42r
-test_rest_customers: $(BINDIR)/test_rest_customers.42r
-test_rest_territories: $(BINDIR)/test_rest_territories.42r
-test_rest_employees: $(BINDIR)/test_rest_employees.42r
-test_rest_orders: $(BINDIR)/test_rest_orders.42r
-test_rest_order_details: $(BINDIR)/test_rest_order_details.42r
-test_rest_cust_demo: $(BINDIR)/test_rest_cust_demo.42r
-test_rest_empl_terr: $(BINDIR)/test_rest_empl_terr.42r
-test_rest_cust_cust_demo: $(BINDIR)/test_rest_cust_cust_demo.42r
-test_rest: $(BINDIR)/test_rest_shippers.42r $(BINDIR)/test_rest_categories.42r $(BINDIR)/test_rest_suppliers.42r \
-	$(BINDIR)/test_rest_region.42r $(BINDIR)/test_rest_usstates.42r $(BINDIR)/test_rest_products.42r \
-	$(BINDIR)/test_rest_customers.42r $(BINDIR)/test_rest_territories.42r $(BINDIR)/test_rest_employees.42r \
-	$(BINDIR)/test_rest_orders.42r $(BINDIR)/test_rest_order_details.42r $(BINDIR)/test_rest_cust_demo.42r \
-	$(BINDIR)/test_rest_empl_terr.42r $(BINDIR)/test_rest_cust_cust_demo.42r
+test_rest_shippers:        $(BINDIR)/test_rest_shippers.42m
+test_rest_categories:      $(BINDIR)/test_rest_categories.42m
+test_rest_suppliers:       $(BINDIR)/test_rest_suppliers.42m
+test_rest_region:          $(BINDIR)/test_rest_region.42m
+test_rest_usstates:        $(BINDIR)/test_rest_usstates.42m
+test_rest_products:        $(BINDIR)/test_rest_products.42m
+test_rest_customers:       $(BINDIR)/test_rest_customers.42m
+test_rest_territories:     $(BINDIR)/test_rest_territories.42m
+test_rest_employees:       $(BINDIR)/test_rest_employees.42m
+test_rest_orders:          $(BINDIR)/test_rest_orders.42m
+test_rest_order_details:   $(BINDIR)/test_rest_order_details.42m
+test_rest_cust_demo:       $(BINDIR)/test_rest_cust_demo.42m
+test_rest_empl_terr:       $(BINDIR)/test_rest_empl_terr.42m
+test_rest_cust_cust_demo:  $(BINDIR)/test_rest_cust_cust_demo.42m
+test_rest: \
+    $(BINDIR)/test_rest_shippers.42m $(BINDIR)/test_rest_categories.42m \
+    $(BINDIR)/test_rest_suppliers.42m $(BINDIR)/test_rest_region.42m \
+    $(BINDIR)/test_rest_usstates.42m $(BINDIR)/test_rest_products.42m \
+    $(BINDIR)/test_rest_customers.42m $(BINDIR)/test_rest_territories.42m \
+    $(BINDIR)/test_rest_employees.42m $(BINDIR)/test_rest_orders.42m \
+    $(BINDIR)/test_rest_order_details.42m $(BINDIR)/test_rest_cust_demo.42m \
+    $(BINDIR)/test_rest_empl_terr.42m $(BINDIR)/test_rest_cust_cust_demo.42m
 
-.PHONY: all clean rebuild modules employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates cust_demo cust_cust_demo mstr_dtl_order rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product rpt_orders_by_daterange rpt_orders_generic rpt_org_chart rpt_products_by_category rpt_employees_with_totals ifx_menu bdl_menu rest_server test_rest_shippers test_rest_categories test_rest_suppliers test_rest_region test_rest_usstates test_rest_products test_rest_customers test_rest_territories test_rest_employees test_rest_orders test_rest_order_details test_rest_cust_demo test_rest_empl_terr test_rest_cust_cust_demo test_rest
+.PHONY: all clean rebuild modules \
+    employees empl_terr region territories orders order_details \
+    categories customers products shippers suppliers usstates \
+    cust_demo cust_cust_demo mstr_dtl_order \
+    rpt_orders_by_customer rpt_orders_by_employee rpt_orders_by_product \
+    rpt_orders_by_daterange rpt_orders_generic rpt_org_chart \
+    rpt_products_by_category rpt_employees_with_totals \
+    ifx_menu bdl_menu rest_server \
+    test_rest_shippers test_rest_categories test_rest_suppliers \
+    test_rest_region test_rest_usstates test_rest_products \
+    test_rest_customers test_rest_territories test_rest_employees \
+    test_rest_orders test_rest_order_details test_rest_cust_demo \
+    test_rest_empl_terr test_rest_cust_cust_demo test_rest

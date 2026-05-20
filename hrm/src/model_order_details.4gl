@@ -159,6 +159,24 @@ PUBLIC FUNCTION (self t_order_detail) deleteRec() RETURNS (t_valid_rec)
 END FUNCTION #deleteRec
 
 -- =====================================================================
+-- Function: calcLineTotal (PUBLIC)
+-- Purpose : Canonical line-total formula for an order_details row.
+--          NVL-tolerant on every input: NULL discount, quantity, or
+--          unitprice contributes zero rather than NULL-poisoning the
+--          result. This is the single source of truth for the formula
+--          previously duplicated across md_order_details, ui_order_details,
+--          and rest_order_details.
+-- =====================================================================
+PUBLIC FUNCTION calcLineTotal(unitprice LIKE order_details.unitprice,
+                              quantity  LIKE order_details.quantity,
+                              discount  LIKE order_details.discount)
+                  RETURNS DECIMAL(12,2)
+
+   RETURN NVL(unitprice, 0) * NVL(quantity, 0) * (1 - NVL(discount, 0))
+
+END FUNCTION #calcLineTotal
+
+-- =====================================================================
 -- Function: validate_product (PUBLIC)
 -- =====================================================================
 PUBLIC FUNCTION (self t_order_detail) validate_product() RETURNS (t_valid_rec)

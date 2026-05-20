@@ -47,6 +47,42 @@ ggc-test-debug: all ggc-build
 ggc-clean:
 	$(MAKE) -C $(GGCDIR) clean
 
+# ----------------------------------------------------------------------
+# fglunit unit-test targets
+# ----------------------------------------------------------------------
+# Build + run the fglunit test suite under hrm/fglunit-src/. The child
+# Makefile takes care of FGLLDPATH, DBPATH, and FGLPROFILE so no shell
+# setup is needed here.
+#
+# Prerequisite: the hrm model modules (model_*.42m, main_lib.42m, etc.)
+# must already exist in bin/. They're produced by `make` in the hrm/ tree
+# and are deliberately not rebuilt here — the unit tests only need the
+# compiled .42m, not a full app re-link.
+#
+#   make unit-test        — compile + run every test program
+#   make unit-test-build  — compile only (no run)
+#   make unit-test-clean  — remove compiled test artifacts
+#   make unit-test-<name> — run a single suite, e.g.
+#                           make unit-test-model_categories
+#                           make unit-test-model_helper
+#                           make unit-test-main_lib
+
+UNITDIR = $(HRMDIR)/fglunit-src
+
+unit-test:
+	$(MAKE) -C $(UNITDIR) test
+
+unit-test-build:
+	$(MAKE) -C $(UNITDIR)
+
+unit-test-clean:
+	$(MAKE) -C $(UNITDIR) clean
+
+# Pattern target: forward `make unit-test-<name>` to the child's `run_<name>`
+# target (e.g. unit-test-model_categories -> run_model_categories).
+unit-test-%:
+	$(MAKE) -C $(UNITDIR) run_$*
+
 # Individual module targets
 employees:
 	$(MAKE) -C $(HRMDIR) employees
@@ -87,5 +123,5 @@ usstates:
 mstr_dtl_order:
 	$(MAKE) -C $(HRMDIR) mstr_dtl_order
 
-.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates mstr_dtl_order ggc-build ggc-test ggc-test-gui ggc-test-debug ggc-clean
+.PHONY: all clean rebuild employees empl_terr region territories orders order_details categories customers products shippers suppliers usstates mstr_dtl_order ggc-build ggc-test ggc-test-gui ggc-test-debug ggc-clean unit-test unit-test-build unit-test-clean
 

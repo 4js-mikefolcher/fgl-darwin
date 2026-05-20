@@ -213,7 +213,10 @@ PRIVATE FUNCTION order_details_do_load(where_clause)
    PREPARE p_order_details FROM sql_stmt
    DECLARE c_order_details CURSOR FOR p_order_details
    FOREACH c_order_details INTO curr_order_details.*
-      LET curr_order_details.totalprice = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
+      LET curr_order_details.totalprice =
+         model_order_details.calcLineTotal(curr_order_details.unitprice,
+                                           curr_order_details.quantity,
+                                           curr_order_details.discount)
       CALL order_details_arr.appendElement()
       LET order_details_arr[order_details_arr.getLength()] = curr_order_details
    END FOREACH
@@ -464,16 +467,15 @@ END FUNCTION #default_unitprice_from_product
 
 -- =====================================================================
 -- Function: calculate_total_price (PRIVATE)
--- Purpose : Calculate total sell price = unitprice * quantity * (1 - discount)
+-- Purpose : Recompute curr_order_details.totalprice for display during
+--          input. Presentation rule: while unitprice or quantity is
+--          still blank the total stays blank rather than flashing 0.00.
+--          The formula itself is delegated to the canonical model
+--          function.
 -- =====================================================================
 PRIVATE FUNCTION calculate_total_price()
-   DEFINE total DECIMAL(10,2)
 
-   IF curr_order_details.unitprice IS NULL THEN
-      LET curr_order_details.totalprice = NULL
-      RETURN
-   END IF
-   IF curr_order_details.quantity IS NULL THEN
+   IF curr_order_details.unitprice IS NULL OR curr_order_details.quantity IS NULL THEN
       LET curr_order_details.totalprice = NULL
       RETURN
    END IF
@@ -481,8 +483,10 @@ PRIVATE FUNCTION calculate_total_price()
       LET curr_order_details.discount = 0
    END IF
 
-   LET total = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
-   LET curr_order_details.totalprice = total
+   LET curr_order_details.totalprice =
+      model_order_details.calcLineTotal(curr_order_details.unitprice,
+                                        curr_order_details.quantity,
+                                        curr_order_details.discount)
 
 END FUNCTION #calculate_total_price
 

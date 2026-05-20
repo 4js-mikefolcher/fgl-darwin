@@ -49,3 +49,4 @@ fonts/
 .claude/
 .kiro/
 .windsurfrules
+.env.local

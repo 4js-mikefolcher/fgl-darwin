@@ -4,6 +4,7 @@
   "dependencies": {
     "fgl": {
       "aim": "^1.0.1",
+      "fglunit": "0.1.0",
       "poiapi": "^1.0.3",
       "restdblib": "^1.0.0"
     }

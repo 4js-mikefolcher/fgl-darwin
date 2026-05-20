@@ -242,7 +242,8 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
          #Update totals and append detail for existing order
          CALL append_search_detail(order_id, r_order_details.*, r_product.productname)
          LET order_result_list[header_idx].totalqty += NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt += calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
+         LET order_result_list[header_idx].totalamt +=
+            model_order_details.calcLineTotal(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
 
       ELSE
          LET header_idx += 1
@@ -260,7 +261,8 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
          LET order_result_list[header_idx].shipcountry = r_orders.shipcountry
 
          LET order_result_list[header_idx].totalqty = NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt = calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
+         LET order_result_list[header_idx].totalamt =
+            model_order_details.calcLineTotal(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
 
          LET order_result_list[header_idx].employeename = SFMT("%1 %2", r_employee.firstname, r_employee.lastname)
          LET order_result_list[header_idx].companyname = r_customer.companyname
@@ -314,18 +316,10 @@ PRIVATE FUNCTION append_search_detail(order_id LIKE orders.orderid,
    LET order_detail_dict[order_id][idx].quantity = r_dtl.quantity
    LET order_detail_dict[order_id][idx].unitprice = r_dtl.unitprice
    LET order_detail_dict[order_id][idx].discount = r_dtl.discount
-   LET order_detail_dict[order_id][idx].totalprice = calc_line_total(r_dtl.unitprice, r_dtl.quantity, r_dtl.discount)
+   LET order_detail_dict[order_id][idx].totalprice =
+      model_order_details.calcLineTotal(r_dtl.unitprice, r_dtl.quantity, r_dtl.discount)
 
 END FUNCTION #append_search_detail
-
-PRIVATE FUNCTION calc_line_total(
-   unitprice LIKE order_details.unitprice,
-   quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount) RETURNS (DECIMAL(12,2))
-
-   RETURN NVL(unitprice * quantity * (1 - NVL(discount, 0)), 0)
-
-END FUNCTION #calc_line_total
 
 PRIVATE FUNCTION set_current_recs() RETURNS ()
 
@@ -1021,11 +1015,14 @@ END FUNCTION #view_md_order
 
 -- =====================================================================
 -- Function: calcPrice (PRIVATE)
--- Purpose : Calculate total sell price = unitprice * quantity * (1 - discount)
+-- Purpose : Update self.totalprice from current unitprice/quantity/discount.
+--          Thin wrapper over model_order_details.calcLineTotal so the
+--          formula lives in exactly one place.
 -- =====================================================================
 PRIVATE FUNCTION (self t_detail_input_rec) calcPrice() RETURNS ()
 
-   LET self.totalprice = NVL(self.unitprice,0) * NVL(self.quantity,0) * (1 - NVL(self.discount,0))
+   LET self.totalprice =
+      model_order_details.calcLineTotal(self.unitprice, self.quantity, self.discount)
 
 END FUNCTION #calcPrice
 
