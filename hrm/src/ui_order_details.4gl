@@ -4,6 +4,7 @@ IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_order_details
+IMPORT FGL model_orders
 IMPORT FGL ui_orders
 IMPORT FGL ui_products
 IMPORT FGL model_helper
@@ -213,7 +214,10 @@ PRIVATE FUNCTION order_details_do_load(where_clause)
    PREPARE p_order_details FROM sql_stmt
    DECLARE c_order_details CURSOR FOR p_order_details
    FOREACH c_order_details INTO curr_order_details.*
-      LET curr_order_details.totalprice = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
+      LET curr_order_details.totalprice =
+         model_order_details.calcLineTotal(curr_order_details.unitprice,
+                                           curr_order_details.quantity,
+                                           curr_order_details.discount)
       CALL order_details_arr.appendElement()
       LET order_details_arr[order_details_arr.getLength()] = curr_order_details
    END FOREACH
@@ -225,8 +229,7 @@ END FUNCTION #order_details_do_load
 -- Dispatch interface: order_details_do_add_edit
 -- =====================================================================
 FUNCTION order_details_do_add_edit(mode CHAR(1))
-   DEFINE order_details_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
+   DEFINE val_status t_valid_rec
    DEFINE selected_order_id LIKE orders.orderid
    DEFINE selected_product_id LIKE products.productid
    DEFINE selected_product_name LIKE products.productname
@@ -270,18 +273,16 @@ FUNCTION order_details_do_add_edit(mode CHAR(1))
          END IF
 
       AFTER FIELD orderid
-         CALL validate_orderid_field()
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
+         LET val_status = model_orders.validate_orderid(curr_order_details.orderid)
+         IF NOT val_status.valid_status THEN
+            ERROR val_status.valid_msg
             NEXT FIELD orderid
          END IF
 
       AFTER FIELD productid
-         CALL validate_productid_field()
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
+         LET val_status = curr_order_details.validate_product()
+         IF NOT val_status.valid_status THEN
+            ERROR val_status.valid_msg
             NEXT FIELD productid
          ELSE
             CALL default_unitprice_from_product(curr_order_details.productid)
@@ -295,10 +296,9 @@ FUNCTION order_details_do_add_edit(mode CHAR(1))
          CALL calculate_total_price()
 
       AFTER FIELD discount
-         CALL validate_discount_field()
-            RETURNING order_details_valid, valid_msg
-         IF NOT order_details_valid THEN
-            ERROR valid_msg
+         LET val_status = model_order_details.validateDiscount(curr_order_details.discount)
+         IF NOT val_status.valid_status THEN
+            ERROR val_status.valid_msg
             NEXT FIELD discount
          ELSE
             CALL calculate_total_price()
@@ -464,16 +464,15 @@ END FUNCTION #default_unitprice_from_product
 
 -- =====================================================================
 -- Function: calculate_total_price (PRIVATE)
--- Purpose : Calculate total sell price = unitprice * quantity * (1 - discount)
+-- Purpose : Recompute curr_order_details.totalprice for display during
+--          input. Presentation rule: while unitprice or quantity is
+--          still blank the total stays blank rather than flashing 0.00.
+--          The formula itself is delegated to the canonical model
+--          function.
 -- =====================================================================
 PRIVATE FUNCTION calculate_total_price()
-   DEFINE total DECIMAL(10,2)
 
-   IF curr_order_details.unitprice IS NULL THEN
-      LET curr_order_details.totalprice = NULL
-      RETURN
-   END IF
-   IF curr_order_details.quantity IS NULL THEN
+   IF curr_order_details.unitprice IS NULL OR curr_order_details.quantity IS NULL THEN
       LET curr_order_details.totalprice = NULL
       RETURN
    END IF
@@ -481,56 +480,10 @@ PRIVATE FUNCTION calculate_total_price()
       LET curr_order_details.discount = 0
    END IF
 
-   LET total = curr_order_details.unitprice * curr_order_details.quantity * (1 - curr_order_details.discount)
-   LET curr_order_details.totalprice = total
+   LET curr_order_details.totalprice =
+      model_order_details.calcLineTotal(curr_order_details.unitprice,
+                                        curr_order_details.quantity,
+                                        curr_order_details.discount)
 
 END FUNCTION #calculate_total_price
 
--- =====================================================================
--- Function: validate_discount_field (PRIVATE)
--- Purpose : Validate that discount factor is between 0 and 0.99999999
--- =====================================================================
-PRIVATE FUNCTION validate_discount_field()
-   DEFINE valid_flag SMALLINT
-
-   IF curr_order_details.discount IS NOT NULL THEN
-      IF curr_order_details.discount < 0 OR curr_order_details.discount > 0.99999999 THEN
-         ERROR "Discount Factor must be between 0 and 0.99999999"
-         RETURN FALSE, "Discount Factor must be between 0 and 0.99999999"
-      END IF
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_discount_field
-
--- =====================================================================
--- Function: validate_orderid_field (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_orderid_field()
-
-   IF curr_order_details.orderid IS NOT NULL THEN
-      SELECT 1 FROM orders WHERE orders.orderid = curr_order_details.orderid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Order ID does not exist in orders table"
-      END IF
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_orderid_field
-
--- =====================================================================
--- Function: validate_productid_field (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_productid_field()
-   DEFINE product_name LIKE products.productname
-
-   IF curr_order_details.productid IS NOT NULL THEN
-      SELECT productname INTO product_name FROM products WHERE products.productid = curr_order_details.productid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Product ID does not exist in products table"
-      END IF
-      LET curr_order_details.productname = product_name
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_productid_field

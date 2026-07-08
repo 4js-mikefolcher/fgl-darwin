@@ -38,5 +38,9 @@ cust_cust_demo:
 mstr_dtl_order:
 	$(MAKE) -C $(SRCDIR) mstr_dtl_order
 
-.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo mstr_dtl_order
+# fglunit tests
+test_unit:
+	$(MAKE) -C fglunit-src test
+
+.PHONY: all clean rebuild employees empl_terr region territories cust_demo cust_cust_demo mstr_dtl_order test_unit
 

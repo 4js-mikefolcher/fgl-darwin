@@ -1,4 +1,5 @@
 IMPORT FGL model_helper
+IMPORT FGL model_orders
 SCHEMA northwind
 
 PUBLIC TYPE t_order_detail RECORD
@@ -59,9 +60,8 @@ PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid
 
    # Validate foreign keys
    IF mode == "A" AND self.orderid > 0 THEN
-      SELECT 1 INTO detailExists FROM orders WHERE orders.orderid = self.orderid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         CALL valid_rec.failed("Order ID does not exist in orders table")
+      LET valid_rec = model_orders.validate_orderid(self.orderid)
+      IF NOT valid_rec.valid_status THEN
          RETURN valid_rec
       END IF
    END IF
@@ -82,8 +82,8 @@ PUBLIC FUNCTION (self t_order_detail) validateRec(mode CHAR(1)) RETURNS (t_valid
       CALL valid_rec.failed("Quantity must be at least 1")
       RETURN valid_rec
    END IF
-   IF self.discount < 0 OR self.discount >= 1 THEN
-      CALL valid_rec.failed("Discount Factor must be between 0 and 1")
+   LET valid_rec = validateDiscount(self.discount)
+   IF NOT valid_rec.valid_status THEN
       RETURN valid_rec
    END IF
 
@@ -157,6 +157,84 @@ PUBLIC FUNCTION (self t_order_detail) deleteRec() RETURNS (t_valid_rec)
    RETURN del_status
 
 END FUNCTION #deleteRec
+
+-- =====================================================================
+-- Function: validateList (PUBLIC)
+-- Purpose : List-level validation for an array of order_detail rows.
+--          Currently enforces: no two rows may share the same productid
+--          (a single order can't list the same product twice — callers
+--          should consolidate them).
+-- Returns : t_valid_rec carrying the rule's message, plus the 1-based
+--          index of the offending row (the second occurrence of a
+--          duplicate). Returns 0 when no list-level rule was violated.
+--          Per-row rules belong in validateRec; this function is for
+--          rules that only make sense across an array.
+-- =====================================================================
+PUBLIC FUNCTION validateList(arr DYNAMIC ARRAY OF t_order_detail)
+                  RETURNS (t_valid_rec, INTEGER)
+   DEFINE valid_status t_valid_rec
+   DEFINE i, j INTEGER
+
+   FOR i = 1 TO arr.getLength()
+      IF arr[i].productid IS NULL THEN
+         CONTINUE FOR
+      END IF
+      FOR j = i + 1 TO arr.getLength()
+         IF arr[j].productid IS NOT NULL
+            AND arr[i].productid == arr[j].productid THEN
+            CALL valid_status.failed(
+               "Cannot have 2 or more detail items with the same product, please consolidate")
+            RETURN valid_status, j
+         END IF
+      END FOR
+   END FOR
+
+   CALL valid_status.success("Okay")
+   RETURN valid_status, 0
+
+END FUNCTION #validateList
+
+-- =====================================================================
+-- Function: validateDiscount (PUBLIC)
+-- Purpose : Range check on the discount factor. Canonical rule is
+--          0 <= discount < 1. NULL is treated as "not entered yet" and
+--          short-circuits to success — callers that require a value
+--          (validateRec) check NULL separately before invoking this.
+-- =====================================================================
+PUBLIC FUNCTION validateDiscount(discount LIKE order_details.discount)
+                  RETURNS (t_valid_rec)
+   DEFINE valid_status t_valid_rec
+
+   IF discount IS NULL THEN
+      CALL valid_status.success("")
+      RETURN valid_status
+   END IF
+   IF discount < 0 OR discount >= 1 THEN
+      CALL valid_status.failed("Discount Factor must be between 0 and 1")
+   ELSE
+      CALL valid_status.success("Okay")
+   END IF
+   RETURN valid_status
+
+END FUNCTION #validateDiscount
+
+-- =====================================================================
+-- Function: calcLineTotal (PUBLIC)
+-- Purpose : Canonical line-total formula for an order_details row.
+--          NVL-tolerant on every input: NULL discount, quantity, or
+--          unitprice contributes zero rather than NULL-poisoning the
+--          result. This is the single source of truth for the formula
+--          previously duplicated across md_order_details, ui_order_details,
+--          and rest_order_details.
+-- =====================================================================
+PUBLIC FUNCTION calcLineTotal(unitprice LIKE order_details.unitprice,
+                              quantity  LIKE order_details.quantity,
+                              discount  LIKE order_details.discount)
+                  RETURNS DECIMAL(12,2)
+
+   RETURN NVL(unitprice, 0) * NVL(quantity, 0) * (1 - NVL(discount, 0))
+
+END FUNCTION #calcLineTotal
 
 -- =====================================================================
 -- Function: validate_product (PUBLIC)

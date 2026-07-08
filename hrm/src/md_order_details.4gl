@@ -200,101 +200,35 @@ PUBLIC FUNCTION mstr_detail_orders()
 END FUNCTION #mstr_detail_orders
 
 PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
-   DEFINE r_orders RECORD LIKE orders.*
-   DEFINE r_order_details RECORD LIKE order_details.*
-   DEFINE r_employee RECORD
-      employeeid LIKE employees.employeeid,
-      firstname LIKE employees.firstname,
-      lastname LIKE employees.lastname
-   END RECORD
-   DEFINE r_customer RECORD LIKE customers.*
-   DEFINE r_product RECORD LIKE products.*
-   DEFINE r_shipper RECORD LIKE shippers.*
+   DEFINE rows DYNAMIC ARRAY OF model_orders.t_order_search_row
+   DEFINE i, header_idx INTEGER
+   DEFINE prev_order_id LIKE orders.orderid
 
-   DEFINE order_id LIKE orders.orderid = 0
-
-   VAR sqlText = SFMT(
-      "%1 %2 %3 %4 %5 %6 %7 %8 %9 %10",
-      "SELECT orders.*, order_details.*, employees.employeeid, employees.firstname, ",
-      "  employees.lastname, customers.*, products.*, shippers.*",
-      "  FROM orders ",
-      "  INNER JOIN employees ON employees.employeeid = orders.employeeid ",
-      "  INNER JOIN customers ON customers.customerid = orders.customerid ",
-      "  LEFT OUTER JOIN order_details ON order_details.orderid = orders.orderid ",
-      "  LEFT OUTER JOIN products ON products.productid = order_details.productid ",
-      "  LEFT OUTER JOIN shippers ON shippers.shipperid = orders.shipvia ",
-      SFMT(" WHERE %1 ", where_clause),
-      " ORDER BY orders.orderid "
-   )
+   LET rows = model_orders.searchHeadersWithDetails(where_clause)
 
    CALL order_result_list.clear()
    CALL order_header_dict.clear()
    CALL order_detail_dict.clear()
 
-   VAR header_idx = 0
+   LET prev_order_id = 0
+   LET header_idx    = 0
 
-   DECLARE cursSearchQuery CURSOR FROM sqlText
-   FOREACH cursSearchQuery INTO r_orders.*, r_order_details.*, r_employee.*,
-      r_customer.*, r_product.*, r_shipper.*
-
-      IF order_id == r_orders.orderid THEN
-
-         #Update totals and append detail for existing order
-         CALL append_search_detail(order_id, r_order_details.*, r_product.productname)
-         LET order_result_list[header_idx].totalqty += NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt += calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
-
-      ELSE
-         LET header_idx += 1
-
-         LET order_id = r_orders.orderid
-
-         #Load the order_header_list record for each new order id
-         LET order_result_list[header_idx].orderid = r_orders.orderid
-         LET order_result_list[header_idx].orderdate = r_orders.orderdate
-         LET order_result_list[header_idx].customerid = r_orders.customerid
-         LET order_result_list[header_idx].employeeid = r_orders.employeeid
-         LET order_result_list[header_idx].freight = r_orders.freight
-         LET order_result_list[header_idx].shipcity = r_orders.shipcity
-         LET order_result_list[header_idx].shipname = r_orders.shipname
-         LET order_result_list[header_idx].shipcountry = r_orders.shipcountry
-
-         LET order_result_list[header_idx].totalqty = NVL(r_order_details.quantity,0)
-         LET order_result_list[header_idx].totalamt = calc_line_total(r_order_details.unitprice, r_order_details.quantity, r_order_details.discount)
-
-         LET order_result_list[header_idx].employeename = SFMT("%1 %2", r_employee.firstname, r_employee.lastname)
-         LET order_result_list[header_idx].companyname = r_customer.companyname
-
-         LET order_result_list[header_idx].rowedit = cEditImage
-         LET order_result_list[header_idx].rowdelete = cDeleteImage
-         LET order_result_list[header_idx].rowview = cViewImage
-
-         #Load the orders record
-         LET order_header_dict[order_id].orderid = r_orders.orderid
-         LET order_header_dict[order_id].orderdate = r_orders.orderdate
-         LET order_header_dict[order_id].customerid = r_orders.customerid
-         LET order_header_dict[order_id].employeeid = r_orders.employeeid
-         LET order_header_dict[order_id].freight = r_orders.freight
-         LET order_header_dict[order_id].requireddate = r_orders.requireddate
-         LET order_header_dict[order_id].shipaddress = r_orders.shipaddress
-         LET order_header_dict[order_id].shipcity = r_orders.shipcity
-         LET order_header_dict[order_id].shipcountry = r_orders.shipcountry
-         LET order_header_dict[order_id].shipname = r_orders.shipname
-         LET order_header_dict[order_id].shippeddate = r_orders.shippeddate
-         LET order_header_dict[order_id].shippostalcode = r_orders.shippostalcode
-         LET order_header_dict[order_id].shipregion = r_orders.shipregion
-         LET order_header_dict[order_id].shipvia = r_orders.shipvia
-         LET order_header_dict[order_id].customername = r_customer.companyname
-         LET order_header_dict[order_id].employeename = SFMT("%1 %2", r_employee.firstname, r_employee.lastname)
-
-         #Append first detail record if present
-         IF NVL(r_order_details.orderid, 0) > 0 THEN
-            CALL append_search_detail(order_id, r_order_details.*, r_product.productname)
-         END IF
-
+   FOR i = 1 TO rows.getLength()
+      IF rows[i].orderid != prev_order_id THEN
+         LET header_idx    += 1
+         LET prev_order_id  = rows[i].orderid
+         CALL init_header_row(header_idx, rows[i])
       END IF
 
-   END FOREACH
+      IF rows[i].productid IS NOT NULL THEN
+         CALL append_search_detail_row(rows[i])
+         LET order_result_list[header_idx].totalqty += NVL(rows[i].quantity, 0)
+         LET order_result_list[header_idx].totalamt +=
+            model_order_details.calcLineTotal(rows[i].unitprice,
+                                              rows[i].quantity,
+                                              rows[i].discount)
+      END IF
+   END FOR
 
    IF where_clause IS NULL OR where_clause.getLength() = 0 THEN
       DISPLAY "Showing all orders" TO formonly.query_label
@@ -304,28 +238,61 @@ PRIVATE FUNCTION execute_search(where_clause STRING) RETURNS ()
 
 END FUNCTION #execute_search
 
-PRIVATE FUNCTION append_search_detail(order_id LIKE orders.orderid,
-   r_dtl RECORD LIKE order_details.*, product_name LIKE products.productname) RETURNS ()
+PRIVATE FUNCTION init_header_row(idx INTEGER, row model_orders.t_order_search_row)
+   -- Display-list row (totals start at 0; details add to them in caller)
+   LET order_result_list[idx].orderid      = row.orderid
+   LET order_result_list[idx].orderdate    = row.orderdate
+   LET order_result_list[idx].customerid   = row.customerid
+   LET order_result_list[idx].employeeid   = row.employeeid
+   LET order_result_list[idx].freight      = row.freight
+   LET order_result_list[idx].shipcity     = row.shipcity
+   LET order_result_list[idx].shipname     = row.shipname
+   LET order_result_list[idx].shipcountry  = row.shipcountry
+   LET order_result_list[idx].employeename = row.employeename
+   LET order_result_list[idx].companyname  = row.customername
+   LET order_result_list[idx].totalqty     = 0
+   LET order_result_list[idx].totalamt     = 0
+   LET order_result_list[idx].rowedit      = cEditImage
+   LET order_result_list[idx].rowdelete    = cDeleteImage
+   LET order_result_list[idx].rowview      = cViewImage
 
-   VAR idx = order_detail_dict[order_id].getLength() + 1
-   LET order_detail_dict[order_id][idx].orderid = r_dtl.orderid
-   LET order_detail_dict[order_id][idx].productid = r_dtl.productid
-   LET order_detail_dict[order_id][idx].productname = product_name
-   LET order_detail_dict[order_id][idx].quantity = r_dtl.quantity
-   LET order_detail_dict[order_id][idx].unitprice = r_dtl.unitprice
-   LET order_detail_dict[order_id][idx].discount = r_dtl.discount
-   LET order_detail_dict[order_id][idx].totalprice = calc_line_total(r_dtl.unitprice, r_dtl.quantity, r_dtl.discount)
+   -- Full header dict entry (drives edit/view dialogs further on)
+   LET order_header_dict[row.orderid].orderid        = row.orderid
+   LET order_header_dict[row.orderid].orderdate      = row.orderdate
+   LET order_header_dict[row.orderid].customerid     = row.customerid
+   LET order_header_dict[row.orderid].employeeid     = row.employeeid
+   LET order_header_dict[row.orderid].freight        = row.freight
+   LET order_header_dict[row.orderid].requireddate   = row.requireddate
+   LET order_header_dict[row.orderid].shipaddress    = row.shipaddress
+   LET order_header_dict[row.orderid].shipcity       = row.shipcity
+   LET order_header_dict[row.orderid].shipcountry    = row.shipcountry
+   LET order_header_dict[row.orderid].shipname       = row.shipname
+   LET order_header_dict[row.orderid].shippeddate    = row.shippeddate
+   LET order_header_dict[row.orderid].shippostalcode = row.shippostalcode
+   LET order_header_dict[row.orderid].shipregion     = row.shipregion
+   LET order_header_dict[row.orderid].shipvia        = row.shipvia
+   LET order_header_dict[row.orderid].customername   = row.customername
+   LET order_header_dict[row.orderid].employeename   = row.employeename
 
-END FUNCTION #append_search_detail
+END FUNCTION #init_header_row
 
-PRIVATE FUNCTION calc_line_total(
-   unitprice LIKE order_details.unitprice,
-   quantity LIKE order_details.quantity,
-   discount LIKE order_details.discount) RETURNS (DECIMAL(12,2))
+PRIVATE FUNCTION append_search_detail_row(row model_orders.t_order_search_row)
+   DEFINE order_id LIKE orders.orderid
+   DEFINE idx INTEGER
 
-   RETURN NVL(unitprice * quantity * (1 - NVL(discount, 0)), 0)
+   LET order_id = row.orderid
+   LET idx      = order_detail_dict[order_id].getLength() + 1
 
-END FUNCTION #calc_line_total
+   LET order_detail_dict[order_id][idx].orderid     = order_id
+   LET order_detail_dict[order_id][idx].productid   = row.productid
+   LET order_detail_dict[order_id][idx].productname = row.productname
+   LET order_detail_dict[order_id][idx].quantity    = row.quantity
+   LET order_detail_dict[order_id][idx].unitprice   = row.unitprice
+   LET order_detail_dict[order_id][idx].discount    = row.discount
+   LET order_detail_dict[order_id][idx].totalprice  =
+      model_order_details.calcLineTotal(row.unitprice, row.quantity, row.discount)
+
+END FUNCTION #append_search_detail_row
 
 PRIVATE FUNCTION set_current_recs() RETURNS ()
 
@@ -772,17 +739,25 @@ PRIVATE DIALOG details_input(input_mode CHAR(1))
       AFTER INPUT
          #Do all input validation
          CALL array_cleanup(DIALOG)
-         VAR outerIdx = 0
-         FOR outerIdx = 1 TO curr_detail_list.getLength()
-            VAR innerIdx = 0
-            FOR innerIdx = outerIdx + 1 TO curr_detail_list.getLength()
-               IF curr_detail_list[innerIdx].productid == curr_detail_list[outerIdx].productid THEN
-                  ERROR "Cannot have 2 or more detail items with the same product, please consolidate"
-                  CALL DIALOG.setCurrentRow("s_details", innerIdx)
-                  CONTINUE DIALOG
-               END IF
-            END FOR
+
+         #Defer the list-level rule (no duplicate products) to the model.
+         #The UI converts its enriched display rows to model t_order_detail
+         #records, asks the model for a verdict, and uses the returned row
+         #index to position the cursor on the offender.
+         VAR detail_arr DYNAMIC ARRAY OF model_order_details.t_order_detail
+         VAR idx = 0
+         FOR idx = 1 TO curr_detail_list.getLength()
+            LET detail_arr[idx] = curr_detail_list[idx].toOrderDetail()
          END FOR
+         VAR list_status t_valid_rec
+         VAR dup_idx INTEGER
+         CALL model_order_details.validateList(detail_arr)
+            RETURNING list_status, dup_idx
+         IF NOT list_status.valid_status THEN
+            ERROR list_status.valid_msg
+            CALL DIALOG.setCurrentRow("s_details", dup_idx)
+            CONTINUE DIALOG
+         END IF
 
    END INPUT
 
@@ -1021,11 +996,14 @@ END FUNCTION #view_md_order
 
 -- =====================================================================
 -- Function: calcPrice (PRIVATE)
--- Purpose : Calculate total sell price = unitprice * quantity * (1 - discount)
+-- Purpose : Update self.totalprice from current unitprice/quantity/discount.
+--          Thin wrapper over model_order_details.calcLineTotal so the
+--          formula lives in exactly one place.
 -- =====================================================================
 PRIVATE FUNCTION (self t_detail_input_rec) calcPrice() RETURNS ()
 
-   LET self.totalprice = NVL(self.unitprice,0) * NVL(self.quantity,0) * (1 - NVL(self.discount,0))
+   LET self.totalprice =
+      model_order_details.calcLineTotal(self.unitprice, self.quantity, self.discount)
 
 END FUNCTION #calcPrice
 

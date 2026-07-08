@@ -4,6 +4,8 @@ IMPORT FGL dialog_prompt
 IMPORT FGL list_view_helper
 IMPORT FGL controller
 IMPORT FGL model_orders
+IMPORT FGL model_customers
+IMPORT FGL model_employees
 IMPORT FGL model_shippers
 IMPORT FGL ui_customers
 IMPORT FGL ui_employees
@@ -271,8 +273,7 @@ END FUNCTION #orders_do_load
 -- Dispatch interface: orders_do_add_edit
 -- =====================================================================
 FUNCTION orders_do_add_edit(mode CHAR(1))
-   DEFINE orders_valid SMALLINT
-   DEFINE valid_msg CHAR(75)
+   DEFINE val_status t_valid_rec
    DEFINE selected_customer_id LIKE customers.customerid
    DEFINE selected_customer_name LIKE customers.companyname
    DEFINE selected_employee_id LIKE employees.employeeid
@@ -311,28 +312,30 @@ FUNCTION orders_do_add_edit(mode CHAR(1))
          END IF
 
       AFTER FIELD customerid
-         CALL validate_customer_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD customerid
-         ELSE
+         IF curr_orders.customerid IS NOT NULL AND LENGTH(curr_orders.customerid) > 0 THEN
+            LET val_status = model_customers.validate_customer(curr_orders.customerid)
+            IF NOT val_status.valid_status THEN
+               ERROR val_status.valid_msg
+               NEXT FIELD customerid
+            END IF
+            LET curr_orders.customername = val_status.valid_msg
             CALL curr_orders.default_shipping_from_customer()
          END IF
 
       AFTER FIELD employeeid
-         CALL validate_employee_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
-            NEXT FIELD employeeid
+         IF curr_orders.employeeid IS NOT NULL THEN
+            LET val_status = model_employees.validate_employee(curr_orders.employeeid)
+            IF NOT val_status.valid_status THEN
+               ERROR val_status.valid_msg
+               NEXT FIELD employeeid
+            END IF
+            LET curr_orders.employeename = val_status.valid_msg
          END IF
 
       AFTER FIELD shipvia
-         CALL validate_shipvia_field()
-            RETURNING orders_valid, valid_msg
-         IF NOT orders_valid THEN
-            ERROR valid_msg
+         LET val_status = model_shippers.validate_shipvia(curr_orders.shipvia)
+         IF NOT val_status.valid_status THEN
+            ERROR val_status.valid_msg
             NEXT FIELD shipvia
          END IF
 
@@ -565,53 +568,4 @@ END FUNCTION #order_lookup_menu
 
 
 
--- =====================================================================
--- Function: validate_employee_field (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_employee_field()
-   DEFINE employee_name CHAR(32)
-
-   IF curr_orders.employeeid IS NOT NULL THEN
-      SELECT firstname || " " || lastname INTO employee_name
-         FROM employees WHERE employees.employeeid = curr_orders.employeeid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Employee ID does not exist in employees table"
-      END IF
-      LET curr_orders.employeename = employee_name
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_employee_field
-
--- =====================================================================
--- Function: validate_customer_field (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_customer_field()
-   DEFINE customer_name LIKE customers.companyname
-
-   IF curr_orders.customerid IS NOT NULL AND LENGTH(curr_orders.customerid) > 0 THEN
-      SELECT companyname INTO customer_name FROM customers WHERE customers.customerid = curr_orders.customerid
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Customer ID does not exist in customers table"
-      END IF
-      LET curr_orders.customername = customer_name
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_customer_field
-
--- =====================================================================
--- Function: validate_shipvia_field (PRIVATE)
--- =====================================================================
-PRIVATE FUNCTION validate_shipvia_field()
-
-   IF curr_orders.shipvia IS NOT NULL THEN
-      SELECT shipperid FROM shippers WHERE shippers.shipperid = curr_orders.shipvia
-      IF sqlca.sqlcode == NOTFOUND THEN
-         RETURN FALSE, "Shipper ID does not exist in shippers table"
-      END IF
-   END IF
-   RETURN TRUE, "Okay"
-
-END FUNCTION #validate_shipvia_field
 
