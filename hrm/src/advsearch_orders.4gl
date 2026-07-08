@@ -5,13 +5,15 @@ PUBLIC FUNCTION advsearch_orders() RETURNS (STRING)
 
    LET int_flag = FALSE
 
-   CONSTRUCT where_clause 
-      ON orders.orderid, orders.customerid, customers.companyname,
-         orders.employeeid, employees.firstname, employees.lastname,
-         orders.orderdate, orders.requireddate, orders.shippeddate,
-         orders.shipvia, orders.freight, orders.shipname, orders.shipaddress,
-         orders.shipcity,orders.shipregion,orders.shippostalcode, orders.shipcountry
-      FROM s_advsearch.*
+   -- BY NAME resolves screen-field -> column via the form's ATTRIBUTES
+   -- section. UI module lists only form field names; the table.column
+   -- bindings live in advsearch_orders.per.
+   CONSTRUCT BY NAME where_clause
+      ON orderid, customerid, companyname,
+         employeeid, firstname, lastname,
+         orderdate, requireddate, shippeddate,
+         shipvia, freight, shipname, shipaddress,
+         shipcity, shipregion, shippostalcode, shipcountry
       ATTRIBUTES(CANCEL = FALSE, ACCEPT = FALSE)
 
       ON ACTION cancel_search

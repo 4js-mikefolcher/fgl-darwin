@@ -7,7 +7,7 @@ LAYOUT (TEXT="Orders Advanced Search", STYLE="dialog")
 {
 ["Order ID: "           ][orderid      ]
 ["Customer ID: "        ][customerid      ]
-["Customer Name: "      ][customername                          ]
+["Customer Name: "      ][companyname                          ]
 ["Employee ID: "        ][employeeid   ]
 ["Employee First Name: "][firstname                           ]
 ["Employee Last Name: " ][lastname                           ]
@@ -37,7 +37,7 @@ END --TABLES
 ATTRIBUTES
   orderid = orders.orderid;
   customerid = orders.customerid;
-  customername = customers.companyname;
+  companyname = customers.companyname;
   employeeid = orders.employeeid;
   firstname = employees.firstname;
   lastname = employees.lastname;

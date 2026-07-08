@@ -110,11 +110,32 @@ END FUNCTION
 -- =============================================================================
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   -- model_categories.insertRec uses VALUES (DEFAULT, ...) for categoryid,
-   -- but the Postgres categories.categoryid column has no sequence/identity
-   -- default. The insert fails with "null value in column ...". Skipping
-   -- until the schema gains a sequence (or the model switches to an
-   -- explicit ID allocation strategy).
-   CALL Assertions.skip(
-      "Postgres categories.categoryid has no sequence; insertRec DEFAULT fails")
+   DEFINE cat t_category
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET cat.categoryname = "FGTST"
+   LET cat.description  = "fglunit insert"
+
+   LET ins_status = cat.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(cat.categoryid > 0,
+      "categoryid must be populated from sqlca.sqlerrd[2]")
+
+   LET cat.categoryname = "FGTST2"
+   LET upd_status = cat.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT categoryname INTO check_name FROM categories WHERE categoryid = cat.categoryid
+   CALL Assertions.assertEquals("FGTST2", check_name,
+      "category name must be updated in the database")
+
+   LET del_status = cat.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM categories WHERE categoryid = cat.categoryid
+   CALL Assertions.assertEqualsInt(0, check_count,
+      "category row must be gone after deleteRec")
 END FUNCTION

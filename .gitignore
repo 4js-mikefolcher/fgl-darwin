@@ -50,3 +50,5 @@ fonts/
 .kiro/
 .windsurfrules
 .env.local
+playground/
+.codex/

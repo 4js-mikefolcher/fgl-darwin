@@ -122,6 +122,29 @@ PUBLIC FUNCTION test_validate_shipvia_null()
 END FUNCTION
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres shippers.shipperid has no sequence; insertRec DEFAULT fails")
+   DEFINE s t_shipper
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET s.companyname = "FGTST Ship"
+   LET s.phone       = "555-0001"
+
+   LET ins_status = s.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(s.shipperid > 0, "shipperid must be populated from sqlca.sqlerrd[2]")
+
+   LET s.companyname = "FGTST Ship2"
+   LET upd_status = s.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT companyname INTO check_name FROM shippers WHERE shipperid = s.shipperid
+   CALL Assertions.assertEquals("FGTST Ship2", check_name, "companyname must be updated")
+
+   LET del_status = s.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM shippers WHERE shipperid = s.shipperid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "dependencies": {
     "fgl": {
-      "aim": "^1.0.1",
-      "fglunit": "0.1.0",
-      "poiapi": "^1.0.3",
-      "restdblib": "^1.0.0"
+      "megamenu": "1.0.1",
+      "poiapi": "\u003e=1.4.0"
+    }
+  },
+  "devDependencies": {
+    "fgl": {
+      "fglunit": "0.2.0"
     }
   }
 }

@@ -103,6 +103,31 @@ PUBLIC FUNCTION test_validate_change_missing()
 END FUNCTION
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres products.productid has no sequence; insertRec DEFAULT fails")
+   DEFINE p t_product
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET p.productname  = "FGTST Product"
+   LET p.discontinued = 0
+   SELECT MIN(supplierid)  INTO p.supplierid FROM suppliers
+   SELECT MIN(categoryid)  INTO p.categoryid FROM categories
+
+   LET ins_status = p.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(p.productid > 0, "productid must be populated")
+
+   LET p.productname = "FGTST Product2"
+   LET upd_status = p.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT productname INTO check_name FROM products WHERE productid = p.productid
+   CALL Assertions.assertEquals("FGTST Product2", check_name, "productname must be updated")
+
+   LET del_status = p.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM products WHERE productid = p.productid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

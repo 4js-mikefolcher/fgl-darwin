@@ -74,6 +74,28 @@ PUBLIC FUNCTION test_validate_change_missing()
 END FUNCTION
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres suppliers.supplierid has no sequence; insertRec DEFAULT fails")
+   DEFINE s t_supplier
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET s.companyname = "FGTST Supplier"
+
+   LET ins_status = s.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(s.supplierid > 0, "supplierid must be populated")
+
+   LET s.companyname = "FGTST Supplier2"
+   LET upd_status = s.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT companyname INTO check_name FROM suppliers WHERE supplierid = s.supplierid
+   CALL Assertions.assertEquals("FGTST Supplier2", check_name, "companyname must be updated")
+
+   LET del_status = s.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM suppliers WHERE supplierid = s.supplierid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

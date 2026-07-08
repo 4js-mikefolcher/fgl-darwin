@@ -211,6 +211,29 @@ END FUNCTION
 -- =============================================================================
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres employees.employeeid has no sequence; insertRec DEFAULT fails")
+   DEFINE e t_employee
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET e = valid_employee_rec()
+   LET e.lastname = "fglunit"
+
+   LET ins_status = e.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(e.employeeid > 0, "employeeid must be populated")
+
+   LET e.lastname = "fglunit2"
+   LET upd_status = e.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT lastname INTO check_name FROM employees WHERE employeeid = e.employeeid
+   CALL Assertions.assertEquals("fglunit2", check_name, "lastname must be updated")
+
+   LET del_status = e.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM employees WHERE employeeid = e.employeeid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

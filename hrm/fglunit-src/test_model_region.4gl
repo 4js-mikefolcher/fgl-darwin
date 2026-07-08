@@ -74,6 +74,29 @@ PUBLIC FUNCTION test_validate_change_missing()
 END FUNCTION
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres region.regionid has no sequence; insertRec DEFAULT fails")
+   DEFINE r t_region
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_desc STRING
+   DEFINE check_count INTEGER
+
+   LET r.regiondescription = "fglunit-N"
+
+   LET ins_status = r.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(r.regionid > 0, "regionid must be populated")
+
+   LET r.regiondescription = "fglunit-N2"
+   LET upd_status = r.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT regiondescription INTO check_desc FROM region WHERE regionid = r.regionid
+   CALL Assertions.assertContains(check_desc, "fglunit-N2",
+      "description must be updated (CHAR(20) right-pads, hence assertContains)")
+
+   LET del_status = r.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM region WHERE regionid = r.regionid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

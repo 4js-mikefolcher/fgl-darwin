@@ -60,6 +60,30 @@ PUBLIC FUNCTION test_validate_change_missing()
 END FUNCTION
 
 PUBLIC FUNCTION test_crud_lifecycle()
-   CALL Assertions.skip(
-      "Postgres usstates.stateid has no sequence; insertRec DEFAULT fails")
+   DEFINE s t_usstate
+   DEFINE ins_status, upd_status, del_status t_valid_rec
+   DEFINE check_name STRING
+   DEFINE check_count INTEGER
+
+   LET s.statename   = "FGTST State"
+   LET s.stateabbr   = "ZZ"
+   LET s.stateregion = "fglunit"
+
+   LET ins_status = s.insertRec()
+   CALL Assertions.assertTrue(ins_status.valid_status,
+      "insertRec must succeed (sqlcode=" || sqlca.sqlcode || ")")
+   CALL Assertions.assertTrue(s.stateid > 0, "stateid must be populated")
+
+   LET s.statename = "FGTST State2"
+   LET upd_status = s.updateRec()
+   CALL Assertions.assertTrue(upd_status.valid_status, "updateRec must succeed")
+
+   SELECT statename INTO check_name FROM usstates WHERE stateid = s.stateid
+   CALL Assertions.assertEquals("FGTST State2", check_name, "statename must be updated")
+
+   LET del_status = s.deleteRec()
+   CALL Assertions.assertTrue(del_status.valid_status, "deleteRec must succeed")
+
+   SELECT COUNT(*) INTO check_count FROM usstates WHERE stateid = s.stateid
+   CALL Assertions.assertEqualsInt(0, check_count, "row must be gone after deleteRec")
 END FUNCTION

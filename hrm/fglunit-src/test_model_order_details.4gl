@@ -35,6 +35,22 @@ MAIN
    CALL FglUnit.register("test_validate_product_missing",    FUNCTION test_validate_product_missing)
    CALL FglUnit.register("test_validate_product_null",       FUNCTION test_validate_product_null)
 
+   -- validateList (cross-row rules - currently: no duplicate productid)
+   CALL FglUnit.register("test_validateList_empty",             FUNCTION test_validateList_empty)
+   CALL FglUnit.register("test_validateList_single_row",        FUNCTION test_validateList_single_row)
+   CALL FglUnit.register("test_validateList_all_distinct",      FUNCTION test_validateList_all_distinct)
+   CALL FglUnit.register("test_validateList_duplicate_adjacent",FUNCTION test_validateList_duplicate_adjacent)
+   CALL FglUnit.register("test_validateList_duplicate_spread",  FUNCTION test_validateList_duplicate_spread)
+   CALL FglUnit.register("test_validateList_null_productid",    FUNCTION test_validateList_null_productid)
+
+   -- validateDiscount (range check helper used by both validateRec and the UI)
+   CALL FglUnit.register("test_validateDiscount_zero",          FUNCTION test_validateDiscount_zero)
+   CALL FglUnit.register("test_validateDiscount_mid",           FUNCTION test_validateDiscount_mid)
+   CALL FglUnit.register("test_validateDiscount_negative",      FUNCTION test_validateDiscount_negative)
+   CALL FglUnit.register("test_validateDiscount_one",           FUNCTION test_validateDiscount_one)
+   CALL FglUnit.register("test_validateDiscount_above_one",     FUNCTION test_validateDiscount_above_one)
+   CALL FglUnit.register("test_validateDiscount_null",          FUNCTION test_validateDiscount_null)
+
    -- calcLineTotal (canonical line-total formula)
    CALL FglUnit.register("test_calcLineTotal_basic",            FUNCTION test_calcLineTotal_basic)
    CALL FglUnit.register("test_calcLineTotal_zero_discount",    FUNCTION test_calcLineTotal_zero_discount)
@@ -296,6 +312,148 @@ PUBLIC FUNCTION test_validate_product_null()
    LET v = d.validate_product()
 
    CALL Assertions.assertTrue(v.valid_status, "NULL productid must short-circuit to success")
+END FUNCTION
+
+-- =============================================================================
+-- validateList - cross-row rules for the detail array
+-- =============================================================================
+
+PRIVATE FUNCTION detail_row(orderid INTEGER, productid INTEGER) RETURNS (t_order_detail)
+   DEFINE d t_order_detail
+   LET d.orderid   = orderid
+   LET d.productid = productid
+   LET d.unitprice = 1.00
+   LET d.quantity  = 1
+   LET d.discount  = 0
+   RETURN d
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_empty()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertTrue(v.valid_status, "empty array must pass")
+   CALL Assertions.assertEqualsInt(0, dup, "empty array yields dup_idx=0")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_single_row()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   LET arr[1] = detail_row(100, 1)
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertTrue(v.valid_status, "single row cannot have a duplicate")
+   CALL Assertions.assertEqualsInt(0, dup, "single row yields dup_idx=0")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_all_distinct()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   LET arr[1] = detail_row(100, 1)
+   LET arr[2] = detail_row(100, 2)
+   LET arr[3] = detail_row(100, 3)
+
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertTrue(v.valid_status, "three distinct productids must pass")
+   CALL Assertions.assertEqualsInt(0, dup, "distinct rows yield dup_idx=0")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_duplicate_adjacent()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   LET arr[1] = detail_row(100, 1)
+   LET arr[2] = detail_row(100, 1)   -- duplicate of row 1
+   LET arr[3] = detail_row(100, 2)
+
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertFalse(v.valid_status, "adjacent duplicate must fail")
+   CALL Assertions.assertEqualsInt(2, dup,
+      "dup_idx must point at the second occurrence (row 2), not the first")
+   CALL Assertions.assertContains(v.valid_msg, "same product",
+      "msg must mention duplicate product")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_duplicate_spread()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   LET arr[1] = detail_row(100, 5)
+   LET arr[2] = detail_row(100, 7)
+   LET arr[3] = detail_row(100, 9)
+   LET arr[4] = detail_row(100, 5)   -- duplicate of row 1, far apart
+
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertFalse(v.valid_status, "non-adjacent duplicate must fail")
+   CALL Assertions.assertEqualsInt(4, dup,
+      "dup_idx must point at row 4 (second occurrence), even when far from the first")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateList_null_productid()
+   DEFINE arr DYNAMIC ARRAY OF t_order_detail
+   DEFINE v t_valid_rec
+   DEFINE dup INTEGER
+
+   -- Rows with NULL productid are still being filled in by the user;
+   -- they must not be flagged as "duplicates of each other".
+   LET arr[1] = detail_row(100, NULL)
+   LET arr[2] = detail_row(100, NULL)
+   LET arr[3] = detail_row(100, 1)
+
+   CALL model_order_details.validateList(arr) RETURNING v, dup
+   CALL Assertions.assertTrue(v.valid_status,
+      "two rows with NULL productid must not be flagged as duplicates")
+   CALL Assertions.assertEqualsInt(0, dup, "NULL-only conflict yields dup_idx=0")
+END FUNCTION
+
+-- =============================================================================
+-- validateDiscount - canonical range check used by both validateRec and UI
+-- =============================================================================
+
+PUBLIC FUNCTION test_validateDiscount_zero()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(0)
+   CALL Assertions.assertTrue(v.valid_status, "discount=0 must pass")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateDiscount_mid()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(0.25)
+   CALL Assertions.assertTrue(v.valid_status, "discount=0.25 must pass")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateDiscount_negative()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(-0.01)
+   CALL Assertions.assertFalse(v.valid_status, "negative discount must fail")
+   CALL Assertions.assertContains(v.valid_msg, "between 0 and 1", "msg mentions range")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateDiscount_one()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(1)
+   CALL Assertions.assertFalse(v.valid_status,
+      "discount=1 must fail (boundary is half-open: >= 1 rejected)")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateDiscount_above_one()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(1.5)
+   CALL Assertions.assertFalse(v.valid_status, "discount>1 must fail")
+END FUNCTION
+
+PUBLIC FUNCTION test_validateDiscount_null()
+   DEFINE v t_valid_rec
+   LET v = model_order_details.validateDiscount(NULL)
+   CALL Assertions.assertTrue(v.valid_status,
+      "NULL discount must short-circuit to success (validateRec checks NULL separately)")
 END FUNCTION
 
 -- =============================================================================

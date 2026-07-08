@@ -278,30 +278,33 @@ the `FROM s_advsearch.*` mapping present, this can be rewritten as
 Ordered by **leverage** (one change × many violations) and **risk**
 (domain-rule consolidation before persistence-layer rewrites).
 
-1. **Add `model_order_details.calcLineTotal(unitprice, quantity, discount)`** —
-   removes **5 duplicate copies** of the formula in one shot
+1. **[DONE]** **Add `model_order_details.calcLineTotal(unitprice, quantity, discount)`** —
+   removed **5 duplicate copies** of the formula
    ([md_order_details.4gl:321](../hrm/src/md_order_details.4gl#L321),
    [md_order_details.4gl:1026](../hrm/src/md_order_details.4gl#L1026),
    [ui_order_details.4gl:216](../hrm/src/ui_order_details.4gl#L216),
    [ui_order_details.4gl:469](../hrm/src/ui_order_details.4gl#L469),
    and three sites in
    [rest_order_details.4gl](../hrm/src/rest_order_details.4gl)).
-   Smallest diff, highest payoff.
 
-2. **Delete the duplicate validators in `ui_orders.4gl`** ([§C](#c-ui_orders4gl--high-3--2))
+2. **[DONE]** **Delete the duplicate validators in `ui_orders.4gl`** ([§C](#c-ui_orders4gl--high-3--2))
    and `ui_order_details.4gl` ([§B](#b-ui_order_details4gl--high-5-domain-rule-leaks-3-schema-leaks)).
-   Purely subtractive — the model functions already exist and are even
-   already used elsewhere (`md_order_details:672`). Replace local
-   calls with model calls; delete the private copies.
+   Replaced local copies with calls to existing model functions.
 
-3. **Move the duplicate-product guard into
+3. **[DONE]** **Move the duplicate-product guard into
    `model_order_details.validateRec`** ([§A](#a-md_order_details4gl--high-5-distinct-violations-3-categories))
-   as a list-position check (validateRec is per-row; add a sibling
-   `validateList(arr)` that scans for duplicates across the array).
+   as a list-position check via the new
+   `model_order_details.validateList(arr)`.
 
-4. **Walkthrough: `searchHeadersWithDetails`** (below) — moves the
-   6-table JOIN out of `md_order_details.execute_search`. Highest
-   risk; do this with steps 1-3 done so the test surface is stable.
+4. **[DONE]** **Walkthrough: `searchHeadersWithDetails`** (below) —
+   moved the 4-table JOIN out of `md_order_details.execute_search` into
+   `model_orders.searchHeadersWithDetails(where_clause)`, retyped the
+   row as `model_orders.t_order_search_row`, and switched
+   `advsearch_orders.4gl` to `CONSTRUCT BY NAME ... ON <form-fields>`
+   (DDA: UI mentions no `table.column`). Note: the originally-audited
+   `LEFT OUTER JOIN shippers` was dead (selected but never read) and
+   was dropped — 5 tables, not 6. `execute_search` is now a pure
+   pivot-for-display.
 
 5. **Establish the `model_<table>.fetchList(where_clause)` pattern**
    in one model (start with `model_categories` — single-table, low

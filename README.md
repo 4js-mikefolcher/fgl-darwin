@@ -33,14 +33,10 @@ The application has been modernized with:
 ```
 fgl-darwin/
 ├── dbs/
-│   ├── northwind.4db                 # Database definition
-│   ├── northwind.sch                 # Database schema
-│   ├── northwind_pgs_84x.4gl        # PostgreSQL database creation script
-│   ├── informix/
-│   │   └── northwind.informix.sql    # Informix SQL schema
+│   ├── northwind.sch                 # Database schema (the app compiles against this)
 │   └── postgres/
-│       ├── createdb.txt              # PostgreSQL setup instructions
 │       └── fglprofile.pgs            # PostgreSQL FGLPROFILE
+│       # Database creation/load moved to the fgl-northwind project (see Building)
 ├── bin/                               # Compiled output (.42f, .42m, .42r)
 ├── hrm/
 │   ├── bin/                          # Legacy compiled output (symlink or copy)
@@ -252,10 +248,7 @@ The application uses the Northwind database with the following tables:
 - PostgreSQL or Informix database with Northwind schema
 
 ### Create the Database
-```bash
-cd bin
-fglrun create_pgs_db.42r
-```
+The database creation and data-load scripts live in the separate [fgl-northwind](https://github.com/4js-mikefolcher/fgl-northwind) project — clone and run it to build and populate the Northwind database, then return here to compile the application.
 
 ### Compile All Modules
 ```bash
